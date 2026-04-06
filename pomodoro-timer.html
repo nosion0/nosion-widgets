@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Timer</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  .card {
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 24px;
+    padding: 40px 48px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+  }
+
+  /* 모드 탭 */
+  .mode-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 32px;
+  }
+
+  .tab {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #9ca3af;
+    background: transparent;
+    border: 1px solid #e5e5e5;
+    border-radius: 100px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .tab:hover { background: #f9fafb; color: #4b5563; }
+  .tab.active {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+    color: #ffffff;
+  }
+
+  /* 세션 도트 */
+  .session-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    transition: background 0.2s;
+  }
+
+  .dot.done { background: #1a1a1a; }
+  .dot.current { background: #4b5563; }
+
+  /* 타이머 링 */
+  .ring-wrapper {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 28px;
+  }
+
+  .ring-svg {
+    width: 180px;
+    height: 180px;
+    transform: rotate(-90deg);
+  }
+
+  .ring-bg {
+    fill: none;
+    stroke: #f3f4f6;
+    stroke-width: 4;
+  }
+
+  .ring-progress {
+    fill: none;
+    stroke: #1a1a1a;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s linear;
+  }
+
+  .ring-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .time-display {
+    font-size: 48px;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: -2px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mode-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #9ca3af;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* 컨트롤 버튼 */
+  .controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .btn-main {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    background: #1a1a1a;
+    border: none;
+    border-radius: 100px;
+    padding: 12px 36px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+  }
+
+  .btn-main:hover { opacity: 0.8; }
+
+  .btn-icon {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #9ca3af;
+    background: transparent;
+    border: 1px solid #e5e5e5;
+    border-radius: 100px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .btn-icon:hover { background: #f9fafb; color: #4b5563; }
+
+  /* 구분선 */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: #f3f4f6;
+    margin: 0 0 20px;
+  }
+
+  /* 오늘 통계 */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+  }
+
+  .stat-item { text-align: center; }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 400;
+    color: #9ca3af;
+    margin-top: 4px;
+    letter-spacing: 0.03em;
+  }
+
+  @media (max-width: 360px) {
+    .card { padding: 32px 24px; }
+    .time-display { font-size: 40px; }
+    .ring-wrapper { width: 160px; height: 160px; }
+    .ring-svg { width: 160px; height: 160px; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- 모드 탭 -->
+  <div class="mode-tabs">
+    <button class="tab active" id="tab-focus" onclick="setMode('focus')">집중</button>
+    <button class="tab" id="tab-short" onclick="setMode('short')">짧은 휴식</button>
+    <button class="tab" id="tab-long" onclick="setMode('long')">긴 휴식</button>
+  </div>
+
+  <!-- 세션 도트 -->
+  <div class="session-dots" id="session-dots"></div>
+
+  <!-- 링 타이머 -->
+  <div class="ring-wrapper">
+    <svg class="ring-svg" viewBox="0 0 180 180">
+      <circle class="ring-bg" cx="90" cy="90" r="82"/>
+      <circle class="ring-progress" id="ring" cx="90" cy="90" r="82"
+        stroke-dasharray="515.2"
+        stroke-dashoffset="0"/>
+    </svg>
+    <div class="ring-center">
+      <div class="time-display" id="time-display">25:00</div>
+      <div class="mode-label" id="mode-label">FOCUS</div>
+    </div>
+  </div>
+
+  <!-- 컨트롤 -->
+  <div class="controls">
+    <button class="btn-icon" onclick="resetTimer()">초기화</button>
+    <button class="btn-main" id="btn-start" onclick="toggleTimer()">시작</button>
+    <button class="btn-icon" onclick="skipTimer()">건너뛰기</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 통계 -->
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-value" id="stat-sessions">0</div>
+      <div class="stat-label">완료 세션</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stat-focus">0</div>
+      <div class="stat-label">집중 분</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const MODES = {
+    focus: { label: 'FOCUS',      duration: 25 * 60 },
+    short: { label: 'SHORT BREAK', duration: 5 * 60  },
+    long:  { label: 'LONG BREAK',  duration: 15 * 60 }
+  };
+
+  const CIRCUMFERENCE = 2 * Math.PI * 82; // ~515.2
+
+  let mode = 'focus';
+  let totalSecs = MODES.focus.duration;
+  let remainSecs = totalSecs;
+  let running = false;
+  let intervalId = null;
+
+  // 세션 추적 (집중 4회마다 긴 휴식)
+  let focusDone = parseInt(localStorage.getItem('pomo_focus') || '0');
+  let focusMins = parseInt(localStorage.getItem('pomo_mins') || '0');
+  let todayKey = new Date().toDateString();
+  if (localStorage.getItem('pomo_date') !== todayKey) {
+    focusDone = 0; focusMins = 0;
+    localStorage.setItem('pomo_date', todayKey);
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function updateDisplay() {
+    const m = Math.floor(remainSecs / 60);
+    const s = remainSecs % 60;
+    document.getElementById('time-display').textContent = `${pad(m)}:${pad(s)}`;
+
+    // 링 진행
+    const progress = remainSecs / totalSecs;
+    const offset = CIRCUMFERENCE * (1 - progress);
+    document.getElementById('ring').style.strokeDashoffset = offset;
+
+    // 통계
+    document.getElementById('stat-sessions').textContent = focusDone;
+    document.getElementById('stat-focus').textContent = focusMins;
+
+    // 도트 (최대 4개)
+    const dots = document.getElementById('session-dots');
+    dots.innerHTML = '';
+    const cycle = focusDone % 4;
+    for (let i = 0; i < 4; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      if (i < cycle) dot.classList.add('done');
+      else if (i === cycle && mode === 'focus') dot.classList.add('current');
+      dots.appendChild(dot);
+    }
+  }
+
+  function setMode(m) {
+    if (running) return;
+    mode = m;
+    totalSecs = MODES[m].duration;
+    remainSecs = totalSecs;
+
+    document.getElementById('tab-focus').classList.toggle('active', m === 'focus');
+    document.getElementById('tab-short').classList.toggle('active', m === 'short');
+    document.getElementById('tab-long').classList.toggle('active', m === 'long');
+    document.getElementById('mode-label').textContent = MODES[m].label;
+    document.getElementById('btn-start').textContent = '시작';
+
+    updateDisplay();
+  }
+
+  function toggleTimer() {
+    if (running) {
+      clearInterval(intervalId);
+      running = false;
+      document.getElementById('btn-start').textContent = '계속';
+    } else {
+      running = true;
+      document.getElementById('btn-start').textContent = '일시정지';
+      intervalId = setInterval(() => {
+        remainSecs--;
+        updateDisplay();
+        if (remainSecs <= 0) {
+          clearInterval(intervalId);
+          running = false;
+          onComplete();
+        }
+      }, 1000);
+    }
+  }
+
+  function onComplete() {
+    if (mode === 'focus') {
+      focusDone++;
+      focusMins += 25;
+      localStorage.setItem('pomo_focus', focusDone);
+      localStorage.setItem('pomo_mins', focusMins);
+
+      // 4회 완료 시 긴 휴식 자동 전환
+      if (focusDone % 4 === 0) {
+        setMode('long');
+      } else {
+        setMode('short');
+      }
+    } else {
+      setMode('focus');
+    }
+
+    // 알림 (허용된 경우)
+    if (Notification && Notification.permission === 'granted') {
+      new Notification('⏰ 타이머 완료!', {
+        body: mode === 'focus' ? '집중 시간이 끝났습니다. 휴식하세요!' : '휴식이 끝났습니다. 집중할 시간!',
+        silent: false
+      });
+    }
+  }
+
+  function resetTimer() {
+    clearInterval(intervalId);
+    running = false;
+    remainSecs = totalSecs;
+    document.getElementById('btn-start').textContent = '시작';
+    updateDisplay();
+  }
+
+  function skipTimer() {
+    clearInterval(intervalId);
+    running = false;
+    onComplete();
+  }
+
+  // 알림 권한 요청
+  if (Notification && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  // 초기화
+  document.getElementById('mode-label').textContent = MODES[mode].label;
+  updateDisplay();
+</script>
+</body>
+</html>

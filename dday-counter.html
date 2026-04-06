@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>D-Day Counter — nosion</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" as="style" onload="this.rel='stylesheet'"
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 24px;
+      padding: 40px 36px 36px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    /* ── 상태: 표시 모드 ── */
+    .display-mode .label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #9ca3af;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .display-mode .event-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 32px;
+      line-height: 1.3;
+    }
+
+    .dday-wrap {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .dday-prefix {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+    }
+
+    .dday-number {
+      font-size: 88px;
+      font-weight: 800;
+      color: #1a1a1a;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .dday-number.today {
+      font-size: 64px;
+    }
+
+    .dday-sub {
+      font-size: 13px;
+      color: #9ca3af;
+      font-weight: 400;
+      margin-bottom: 28px;
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: #f3f4f6;
+      margin: 0 0 20px;
+    }
+
+    .target-date-display {
+      font-size: 13px;
+      color: #9ca3af;
+      font-weight: 400;
+      margin-bottom: 20px;
+    }
+
+    .edit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 20px;
+      border: 1px solid #e5e5e5;
+      border-radius: 999px;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .edit-btn:hover {
+      background: #f9fafb;
+      color: #4b5563;
+    }
+
+    .edit-btn svg {
+      flex-shrink: 0;
+    }
+
+    /* ── 상태: 설정 모드 ── */
+    .setup-mode {
+      display: none;
+    }
+    .setup-mode .setup-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+    }
+
+    .field {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #9ca3af;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #1a1a1a;
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus {
+      border-color: #1a1a1a;
+    }
+    .field input::placeholder {
+      color: #d1d5db;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .btn-cancel {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #e5e5e5;
+      border-radius: 999px;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-cancel:hover { background: #f9fafb; }
+
+    .btn-save {
+      flex: 2;
+      padding: 10px;
+      border: 1px solid #1a1a1a;
+      border-radius: 999px;
+      background: #1a1a1a;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-save:hover { opacity: 0.8; }
+
+    /* ── 첫 실행 모드 ── */
+    .first-run {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .first-run .icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+    .first-run p {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+    .first-run span {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 20px;
+    }
+    .first-run .btn-start {
+      padding: 10px 28px;
+      border: 1px solid #1a1a1a;
+      border-radius: 999px;
+      background: #1a1a1a;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .first-run .btn-start:hover { opacity: 0.8; }
+  </style>
+</head>
+<body>
+<div class="card" id="card">
+
+  <!-- 표시 모드 -->
+  <div class="display-mode" id="displayMode">
+    <div class="label">D-Day</div>
+    <div class="event-title" id="eventTitle">목표일</div>
+
+    <div class="dday-wrap">
+      <span class="dday-prefix" id="ddayPrefix">D-</span>
+      <span class="dday-number" id="ddayNumber">0</span>
+    </div>
+    <div class="dday-sub" id="ddaySub">남은 날</div>
+
+    <div class="divider"></div>
+    <div class="target-date-display" id="targetDateDisplay"></div>
+
+    <button class="edit-btn" onclick="openSetup()">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z"/>
+      </svg>
+      날짜 변경
+    </button>
+  </div>
+
+  <!-- 첫 실행 -->
+  <div class="first-run" id="firstRun">
+    <div class="icon">🗓</div>
+    <p>D-Day 카운터</p>
+    <span>목표일을 설정해보세요</span>
+    <button class="btn-start" onclick="openSetup()">시작하기</button>
+  </div>
+
+  <!-- 설정 모드 -->
+  <div class="setup-mode" id="setupMode">
+    <div class="setup-title">날짜 설정</div>
+    <div class="field">
+      <label>이벤트 이름</label>
+      <input type="text" id="inputTitle" placeholder="예: 수능 D-Day, 런칭일, 기념일" maxlength="30" />
+    </div>
+    <div class="field">
+      <label>목표 날짜</label>
+      <input type="date" id="inputDate" />
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="cancelSetup()">취소</button>
+      <button class="btn-save" onclick="saveSetup()">저장</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const STORAGE_KEY = 'nosion_dday_v1';
+
+  function loadData() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; }
+    catch { return null; }
+  }
+
+  function saveData(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function calcDday(targetDateStr) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(targetDateStr);
+    target.setHours(0, 0, 0, 0);
+    return Math.round((target - today) / (1000 * 60 * 60 * 24));
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  }
+
+  function renderDisplay(data) {
+    document.getElementById('firstRun').style.display = 'none';
+    document.getElementById('setupMode').style.display = 'none';
+    document.getElementById('displayMode').style.display = 'block';
+
+    const diff = calcDday(data.date);
+    const numEl = document.getElementById('ddayNumber');
+    const prefixEl = document.getElementById('ddayPrefix');
+    const subEl = document.getElementById('ddaySub');
+
+    document.getElementById('eventTitle').textContent = data.title || '목표일';
+    document.getElementById('targetDateDisplay').textContent = formatDate(data.date);
+
+    if (diff === 0) {
+      prefixEl.textContent = '';
+      numEl.textContent = 'D-Day';
+      numEl.classList.add('today');
+      subEl.textContent = '오늘이 그날입니다 🎉';
+    } else if (diff > 0) {
+      prefixEl.textContent = 'D-';
+      numEl.textContent = diff;
+      numEl.classList.remove('today');
+      subEl.textContent = `앞으로 ${diff}일 남았습니다`;
+    } else {
+      prefixEl.textContent = 'D+';
+      numEl.textContent = Math.abs(diff);
+      numEl.classList.remove('today');
+      subEl.textContent = `${Math.abs(diff)}일 전이었습니다`;
+    }
+  }
+
+  function renderFirst() {
+    document.getElementById('displayMode').style.display = 'none';
+    document.getElementById('setupMode').style.display = 'none';
+    document.getElementById('firstRun').style.display = 'flex';
+  }
+
+  function openSetup() {
+    const data = loadData();
+    document.getElementById('displayMode').style.display = 'none';
+    document.getElementById('firstRun').style.display = 'none';
+    document.getElementById('setupMode').style.display = 'block';
+    if (data) {
+      document.getElementById('inputTitle').value = data.title || '';
+      document.getElementById('inputDate').value = data.date || '';
+    } else {
+      document.getElementById('inputTitle').value = '';
+      // default: 30 days from now
+      const d = new Date();
+      d.setDate(d.getDate() + 30);
+      document.getElementById('inputDate').value = d.toISOString().slice(0, 10);
+    }
+  }
+
+  function cancelSetup() {
+    const data = loadData();
+    if (data) renderDisplay(data);
+    else renderFirst();
+  }
+
+  function saveSetup() {
+    const title = document.getElementById('inputTitle').value.trim() || '목표일';
+    const date = document.getElementById('inputDate').value;
+    if (!date) { alert('날짜를 선택해주세요.'); return; }
+    const data = { title, date };
+    saveData(data);
+    renderDisplay(data);
+  }
+
+  // 매 자정 갱신
+  function scheduleNextDay() {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const ms = tomorrow - now;
+    setTimeout(() => {
+      const data = loadData();
+      if (data) renderDisplay(data);
+      scheduleNextDay();
+    }, ms);
+  }
+
+  // 초기화
+  (function init() {
+    const data = loadData();
+    if (data) renderDisplay(data);
+    else renderFirst();
+    scheduleNextDay();
+  })();
+</script>
+</body>
+</html>

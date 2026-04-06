@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Clock</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  .card {
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 24px;
+    padding: 40px 48px;
+    width: 100%;
+    max-width: 480px;
+    text-align: center;
+  }
+
+  .time-wrapper {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 2px;
+    margin-bottom: 8px;
+  }
+
+  .time-display {
+    font-size: 80px;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: -3px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .seconds {
+    font-size: 36px;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-left: 4px;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 4px;
+  }
+
+  .period {
+    font-size: 16px;
+    font-weight: 600;
+    color: #9ca3af;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: #f3f4f6;
+    margin: 20px 0;
+  }
+
+  .date-display {
+    font-size: 15px;
+    font-weight: 400;
+    color: #9ca3af;
+    letter-spacing: 0.02em;
+  }
+
+  .day-display {
+    font-size: 13px;
+    font-weight: 400;
+    color: #d1d5db;
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* 포맷 토글 버튼 */
+  .controls {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #9ca3af;
+    background: transparent;
+    border: 1px solid #e5e5e5;
+    border-radius: 100px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn:hover {
+    background: #f9fafb;
+    color: #4b5563;
+  }
+
+  .btn.active {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+    color: #ffffff;
+  }
+
+  /* 초 숨김 상태 */
+  .seconds.hidden {
+    display: none;
+  }
+
+  /* 세로형 레이아웃 (tall) */
+  @media (max-width: 360px) {
+    .time-display {
+      font-size: 60px;
+    }
+    .seconds {
+      font-size: 28px;
+    }
+    .card {
+      padding: 32px 28px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="period" id="period">AM</div>
+  <div class="time-wrapper">
+    <div class="time-display" id="time">12:00</div>
+    <div class="seconds" id="seconds">00</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="date-display" id="date">2026년 4월 3일</div>
+  <div class="day-display" id="day">FRIDAY</div>
+
+  <div class="controls">
+    <button class="btn active" id="btn-12" onclick="setFormat(12)">12H</button>
+    <button class="btn" id="btn-24" onclick="setFormat(24)">24H</button>
+    <button class="btn active" id="btn-sec" onclick="toggleSeconds()">초</button>
+  </div>
+</div>
+
+<script>
+  let format = 12;
+  let showSeconds = true;
+
+  const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
+  const DAYS_EN = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+
+  function pad(n) {
+    return String(n).padStart(2, '0');
+  }
+
+  function tick() {
+    const now = new Date();
+    const h24 = now.getHours();
+    const m = now.getMinutes();
+    const s = now.getSeconds();
+
+    // 시간
+    if (format === 12) {
+      const h12 = h24 % 12 || 12;
+      document.getElementById('time').textContent = `${h12}:${pad(m)}`;
+      document.getElementById('period').textContent = h24 < 12 ? 'AM' : 'PM';
+      document.getElementById('period').style.visibility = 'visible';
+    } else {
+      document.getElementById('time').textContent = `${pad(h24)}:${pad(m)}`;
+      document.getElementById('period').style.visibility = 'hidden';
+    }
+
+    // 초
+    document.getElementById('seconds').textContent = pad(s);
+
+    // 날짜
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const date = now.getDate();
+    const dayIdx = now.getDay();
+
+    document.getElementById('date').textContent = `${year}년 ${month}월 ${date}일`;
+    document.getElementById('day').textContent = DAYS_EN[dayIdx];
+  }
+
+  function setFormat(f) {
+    format = f;
+    document.getElementById('btn-12').classList.toggle('active', f === 12);
+    document.getElementById('btn-24').classList.toggle('active', f === 24);
+    localStorage.setItem('clock_format', f);
+    tick();
+  }
+
+  function toggleSeconds() {
+    showSeconds = !showSeconds;
+    document.getElementById('seconds').classList.toggle('hidden', !showSeconds);
+    document.getElementById('btn-sec').classList.toggle('active', showSeconds);
+    localStorage.setItem('clock_seconds', showSeconds ? '1' : '0');
+  }
+
+  // 설정 복원
+  const savedFormat = localStorage.getItem('clock_format');
+  const savedSeconds = localStorage.getItem('clock_seconds');
+  if (savedFormat) {
+    format = parseInt(savedFormat);
+    document.getElementById('btn-12').classList.toggle('active', format === 12);
+    document.getElementById('btn-24').classList.toggle('active', format === 24);
+  }
+  if (savedSeconds === '0') {
+    showSeconds = false;
+    document.getElementById('seconds').classList.add('hidden');
+    document.getElementById('btn-sec').classList.remove('active');
+  }
+
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>
