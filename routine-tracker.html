@@ -1040,18 +1040,10 @@
 
     /* ============================================
        위치 이동 (카드 빈 영역 드래그)
-       노션 임베드(iframe)에서는 비활성화
        ============================================ */
     const POS_KEY = 'nosion-routine-tracker-pos-v1';
     const widgetEl = document.getElementById('widget');
-    const isInIframe = window.self !== window.top;
 
-    // iframe 환경에서는 grab 커서 숨김
-    if (isInIframe) {
-      cardEl.style.cursor = 'default';
-    }
-
-    // 변수와 함수는 항상 선언 (브라우저/노션 공통)
     let offsetX = 0;
     let offsetY = 0;
     let moveDrag = null;
@@ -1123,9 +1115,6 @@
     // 초기 위치 적용
     applyPosition();
 
-    // iframe 밖(브라우저)에서만 이벤트 리스너 등록
-    if (!isInIframe) {
-
     // 카드에 mousedown — 단, 인터랙티브 요소는 제외
     cardEl.addEventListener('mousedown', (e) => {
       // 리사이즈 핸들은 별도 핸들러가 이미 처리
@@ -1160,9 +1149,8 @@
 
     document.addEventListener('touchend', endMove);
     document.addEventListener('touchcancel', endMove);
-    } // iframe 체크 블록 끝
 
-    // 크기 초기화 버튼 (iframe 여부와 무관하게 작동)
+    // 크기 초기화 버튼 — 크기와 위치 모두 원복
     const DEFAULT_WIDTH = 360;
     const resizeResetBtn = document.getElementById('resizeResetBtn');
     resizeResetBtn.addEventListener('click', () => {
@@ -1170,14 +1158,11 @@
       cardHeight = null;
       applyCardSize();
       saveSize();
-      
-      // iframe 밖에서만 위치 리셋
-      if (!isInIframe) {
-        offsetX = 0;
-        offsetY = 0;
-        applyPosition();
-        savePosition();
-      }
+
+      offsetX = 0;
+      offsetY = 0;
+      applyPosition();
+      savePosition();
     });
   </script>
 </body>
