@@ -30,22 +30,21 @@
                    system-ui, 'Segoe UI', sans-serif;
       background: var(--background);
       color: var(--foreground);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem 2rem;
+      padding: 1rem;
+      margin: 0;
+      overflow: auto;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       word-break: keep-all;
     }
 
-    /* 위젯 래퍼 */
+    /* 위젯 래퍼 (노션 임베드 최적화) */
     .widget-wrapper {
       display: flex;
       align-items: flex-start;
       gap: 0.5rem;
       position: relative;
+      width: fit-content;
     }
 
     /* 카드 */
@@ -63,6 +62,16 @@
       overflow: hidden;
       min-width: 0;
       min-height: 0;
+      cursor: grab;
+    }
+
+    .card.dragging {
+      cursor: grabbing;
+    }
+
+    /* widget-wrapper에 transform 적용 (위치 이동) */
+    .widget-wrapper.moved {
+      transition: none;
     }
 
     .card .header {
@@ -245,6 +254,8 @@
       white-space: nowrap;
       letter-spacing: -0.005em;
       min-width: 0;
+      position: relative;
+      z-index: 5;
     }
 
     .habit-name:hover,
@@ -1027,14 +1038,146 @@
     // 초기 크기 적용
     applyCardSize();
 
-    // 크기 초기화 버튼
+    /* ============================================
+       위치 이동 (카드 빈 영역 드래그)
+       노션 임베드(iframe)에서는 비활성화
+       ============================================ */
+    const POS_KEY = 'nosion-routine-tracker-pos-v1';
+    const widgetEl = document.getElementById('widget');
+    const isInIframe = window.self !== window.top;
+
+    // iframe 환경에서는 grab 커서 숨김
+    if (isInIframe) {
+      cardEl.style.cursor = 'default';
+    }
+
+    // 변수와 함수는 항상 선언 (브라우저/노션 공통)
+    let offsetX = 0;
+    let offsetY = 0;
+    let moveDrag = null;
+
+    // localStorage 위치 로드
+    try {
+      const savedPos = localStorage.getItem(POS_KEY);
+      if (savedPos) {
+        const p = JSON.parse(savedPos);
+        if (typeof p.x === 'number') offsetX = p.x;
+        if (typeof p.y === 'number') offsetY = p.y;
+      }
+    } catch (e) {}
+
+    function applyPosition() {
+      widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+
+    function savePosition() {
+      try {
+        localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY }));
+      } catch (e) {}
+    }
+
+    // 드래그 시작 가능한 영역인지 판별
+    function isDraggableTarget(target) {
+      const blocked = [
+        '.dot',
+        '.habit-name',
+        '.control-btn',
+        '.resize-handle',
+        '.reset-confirm',
+        'button',
+        '[contenteditable]'
+      ];
+      for (const sel of blocked) {
+        if (target.closest && target.closest(sel)) return false;
+      }
+      return true;
+    }
+
+    function startMove(x, y) {
+      moveDrag = {
+        startX: x,
+        startY: y,
+        startOffsetX: offsetX,
+        startOffsetY: offsetY
+      };
+      document.body.style.userSelect = 'none';
+      cardEl.classList.add('dragging');
+    }
+
+    function doMove(x, y) {
+      if (!moveDrag) return;
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
+      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
+      applyPosition();
+    }
+
+    function endMove() {
+      if (moveDrag) {
+        savePosition();
+        moveDrag = null;
+        document.body.style.userSelect = '';
+        cardEl.classList.remove('dragging');
+      }
+    }
+
+    // 초기 위치 적용
+    applyPosition();
+
+    // iframe 밖(브라우저)에서만 이벤트 리스너 등록
+    if (!isInIframe) {
+
+    // 카드에 mousedown — 단, 인터랙티브 요소는 제외
+    cardEl.addEventListener('mousedown', (e) => {
+      // 리사이즈 핸들은 별도 핸들러가 이미 처리
+      if (!isDraggableTarget(e.target)) return;
+      e.preventDefault();
+      startMove(e.clientX, e.clientY);
+    });
+
+    cardEl.addEventListener('touchstart', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      const t = e.touches[0];
+      startMove(t.clientX, t.clientY);
+    }, { passive: true });
+
+    // 글로벌 이벤트 (이미 등록된 mouseup/touchend는 endResize만 처리하므로 별도 추가)
+    document.addEventListener('mousemove', (e) => {
+      if (moveDrag) {
+        e.preventDefault();
+        doMove(e.clientX, e.clientY);
+      }
+    });
+
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('mouseleave', endMove);
+
+    document.addEventListener('touchmove', (e) => {
+      if (moveDrag) {
+        const t = e.touches[0];
+        doMove(t.clientX, t.clientY);
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+    } // iframe 체크 블록 끝
+
+    // 크기 초기화 버튼 (iframe 여부와 무관하게 작동)
     const DEFAULT_WIDTH = 360;
     const resizeResetBtn = document.getElementById('resizeResetBtn');
     resizeResetBtn.addEventListener('click', () => {
       cardWidth = DEFAULT_WIDTH;
-      cardHeight = null; // null = 콘텐츠 자동 높이
+      cardHeight = null;
       applyCardSize();
       saveSize();
+      
+      // iframe 밖에서만 위치 리셋
+      if (!isInIframe) {
+        offsetX = 0;
+        offsetY = 0;
+        applyPosition();
+        savePosition();
+      }
     });
   </script>
 </body>
