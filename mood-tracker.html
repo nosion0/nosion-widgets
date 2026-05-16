@@ -58,7 +58,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.75rem 1.75rem 1.5rem;
-      width: 380px;
+      width: 360px;
       position: relative;
       box-shadow: none;
       display: flex;
@@ -211,10 +211,10 @@
       padding-top: 1rem;
     }
 
-    /* 그리드: [감정명 68px] [도트 7개 1fr씩] [카운트 auto] / [헤더 행] + [5 감정 행] */
+    /* 그리드: [아이콘 32px] [도트 7개 1fr씩] [카운트 auto] / [헤더 행] + [5 감정 행] */
     .tracker {
       display: grid;
-      grid-template-columns: 68px repeat(7, minmax(0, 1fr)) auto;
+      grid-template-columns: 32px repeat(7, minmax(0, 1fr)) auto;
       grid-template-rows: auto repeat(5, minmax(0, 1fr));
       gap: 0.5rem 0.5rem;
       align-items: center;
@@ -234,35 +234,80 @@
       user-select: none;
     }
 
-    /* 감정 이름 */
-    .habit-name {
-      font-size: 0.8125rem;
-      color: var(--foreground);
-      cursor: text;
-      outline: none;
-      padding: 2px 4px;
-      margin-left: -4px;
-      border-radius: 4px;
-      transition: background var(--transition);
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      letter-spacing: -0.005em;
-      min-width: 0;
-      position: relative;
-      z-index: 5;
-    }
-
-    .habit-name:hover,
-    .habit-name:focus {
-      background: var(--muted);
-    }
-
-    .habit-name:empty::before {
-      content: attr(data-placeholder);
+    /* 감정 아이콘 (lucide-react 스타일 라인 페이스) */
+    .mood-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      margin: 0 auto;
       color: var(--muted-foreground);
-      opacity: 0.4;
+      opacity: 0.55;
+      transition: color var(--transition), opacity var(--transition);
+      position: relative;
+      cursor: help;
+      flex-shrink: 0;
+    }
+
+    .mood-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .mood-icon.has-data {
+      color: var(--foreground);
+      opacity: 1;
+    }
+
+    /* 아이콘 호버 시 한글 이름 툴팁 (우측 등장) */
+    .mood-icon[data-tooltip]::before,
+    .mood-icon[data-tooltip]::after {
+      position: absolute;
+      left: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease 0s;
+      z-index: 50;
+    }
+
+    .mood-icon[data-tooltip]::before {
+      content: attr(data-tooltip);
+      background: var(--card);
+      color: var(--foreground);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 0.3125rem 0.625rem;
+      font-size: 0.6875rem;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+      font-family: inherit;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .mood-icon[data-tooltip]::after {
+      content: '';
+      left: calc(100% + 3px);
+      width: 5px;
+      height: 5px;
+      background: var(--card);
+      border-left: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .mood-icon[data-tooltip]:hover::before,
+    .mood-icon[data-tooltip]:hover::after {
+      opacity: 1;
+      transition-delay: 0.4s;
     }
 
     /* 도트 셀 */
@@ -612,6 +657,22 @@
     const DAYS_COUNT = 7;
     const NOT_LOGGED = -1;
 
+    // 5단계 감정 — 위에서 아래로 좋음 → 나쁨
+    // lucide-react Laugh / Smile / Meh / Frown / Angry 아이콘
+    const MOOD_LABELS = ['매우좋음', '좋음', '평범', '나쁨', '화남'];
+    const MOOD_ICONS = [
+      // 0. Laugh (매우좋음)
+      '<circle cx="12" cy="12" r="10"/><path d="M18 13a6 6 0 0 1-6 5 6 6 0 0 1-6-5h12Z"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>',
+      // 1. Smile (좋음)
+      '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>',
+      // 2. Meh (평범)
+      '<circle cx="12" cy="12" r="10"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>',
+      // 3. Frown (나쁨)
+      '<circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>',
+      // 4. Angry (화남)
+      '<circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><path d="m7.5 8 2.5 1.5"/><path d="m16.5 8-2.5 1.5"/>'
+    ];
+
     function getMondayKey(date = new Date()) {
       const d = new Date(date);
       d.setHours(0, 0, 0, 0);
@@ -634,7 +695,6 @@
 
     const defaultState = () => ({
       weekKey: getMondayKey(),
-      labels: ['매우좋음', '좋음', '보통', '나쁨', '매우나쁨'],
       // 각 요일에 선택된 감정 행 인덱스 (-1 = 미기록)
       data: Array(DAYS_COUNT).fill(NOT_LOGGED)
     });
@@ -644,21 +704,14 @@
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        const labels = (parsed.labels && parsed.labels.length === LEVELS_COUNT)
-          ? parsed.labels
-          : state.labels;
         if (parsed.weekKey !== state.weekKey) {
-          // 새 주 → 레이블만 유지하고 데이터 리셋
-          state = {
-            weekKey: state.weekKey,
-            labels,
-            data: Array(DAYS_COUNT).fill(NOT_LOGGED)
-          };
+          // 새 주 → 데이터 리셋
+          state = { weekKey: state.weekKey, data: Array(DAYS_COUNT).fill(NOT_LOGGED) };
         } else {
           const data = (Array.isArray(parsed.data) && parsed.data.length === DAYS_COUNT)
             ? parsed.data.map(v => (typeof v === 'number' && v >= 0 && v < LEVELS_COUNT) ? v : NOT_LOGGED)
             : state.data;
-          state = { weekKey: parsed.weekKey, labels, data };
+          state = { weekKey: parsed.weekKey, data };
         }
       }
     } catch (e) {
@@ -707,10 +760,15 @@
 
     function updateRowRate(l) {
       const rateEl = rateRefs[l];
-      if (!rateEl) return;
+      const iconEl = iconRefs[l];
       const c = countForLevel(l);
-      rateEl.textContent = `${c}/${DAYS_COUNT}`;
-      rateEl.classList.toggle('has-data', c > 0);
+      if (rateEl) {
+        rateEl.textContent = `${c}/${DAYS_COUNT}`;
+        rateEl.classList.toggle('has-data', c > 0);
+      }
+      if (iconEl) {
+        iconEl.classList.toggle('has-data', c > 0);
+      }
     }
 
     function refreshColumn(d) {
@@ -776,9 +834,12 @@
       updateTrendChart();
     }
 
+    const iconRefs = [];
+
     function renderTracker() {
       trackerEl.innerHTML = '';
       rateRefs.length = 0;
+      iconRefs.length = 0;
       for (let l = 0; l < LEVELS_COUNT; l++) {
         for (let d = 0; d < DAYS_COUNT; d++) dotRefs[l][d] = null;
       }
@@ -793,26 +854,18 @@
       });
       trackerEl.appendChild(document.createElement('div'));
 
-      // 2~6행: 감정 레이블 + 도트 7개 + 카운트
+      // 2~6행: 감정 아이콘 + 도트 7개 + 카운트
       for (let l = 0; l < LEVELS_COUNT; l++) {
-        const name = document.createElement('div');
-        name.className = 'habit-name';
-        name.contentEditable = 'true';
-        name.spellcheck = false;
-        name.dataset.placeholder = '감정 ' + (l + 1);
-        name.textContent = state.labels[l] || '';
-
-        name.addEventListener('blur', () => {
-          const text = name.textContent.trim().slice(0, 8);
-          state.labels[l] = text || ('감정 ' + (l + 1));
-          name.textContent = state.labels[l];
-          save();
-        });
-        name.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') { e.preventDefault(); name.blur(); }
-        });
-
-        trackerEl.appendChild(name);
+        const icon = document.createElement('div');
+        icon.className = 'mood-icon';
+        icon.dataset.tooltip = MOOD_LABELS[l];
+        icon.setAttribute('aria-label', MOOD_LABELS[l]);
+        icon.setAttribute('title', MOOD_LABELS[l]);
+        icon.innerHTML =
+          `<svg viewBox="0 0 24 24" aria-hidden="true">${MOOD_ICONS[l]}</svg>`;
+        if (countForLevel(l) > 0) icon.classList.add('has-data');
+        trackerEl.appendChild(icon);
+        iconRefs[l] = icon;
 
         for (let d = 0; d < DAYS_COUNT; d++) {
           const cell = document.createElement('div');
@@ -823,7 +876,7 @@
           dot.type = 'button';
           if (state.data[d] === l) dot.classList.add('on');
           dot.setAttribute('aria-label',
-            `${state.labels[l]} ${DAYS_KO[d]}요일 ${state.data[d] === l ? '선택됨' : ''}`
+            `${MOOD_LABELS[l]} ${DAYS_KO[d]}요일 ${state.data[d] === l ? '선택됨' : ''}`
           );
 
           dot.addEventListener('click', () => {
@@ -905,7 +958,7 @@
 
     const cardEl = document.getElementById('card');
 
-    let cardWidth = 380;
+    let cardWidth = 360;
     let cardHeight = null;
 
     try {
@@ -1051,7 +1104,7 @@
     function isDraggableTarget(target) {
       const blocked = [
         '.dot',
-        '.habit-name',
+        '.mood-icon',
         '.control-btn',
         '.resize-handle',
         '.reset-confirm',
@@ -1123,7 +1176,7 @@
     document.addEventListener('touchcancel', endMove);
 
     // 크기 초기화 버튼 — 크기와 위치 모두 원복
-    const DEFAULT_WIDTH = 380;
+    const DEFAULT_WIDTH = 360;
     const resizeResetBtn = document.getElementById('resizeResetBtn');
     resizeResetBtn.addEventListener('click', () => {
       cardWidth = DEFAULT_WIDTH;
