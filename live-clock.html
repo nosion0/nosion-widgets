@@ -528,6 +528,13 @@
         direction, startX: x, startY: y,
         startWidth: rect.width, startHeight: rect.height
       };
+      if (getComputedStyle(widgetEl).position !== 'fixed') {
+        const wrapperRect = widgetEl.getBoundingClientRect();
+        widgetEl.style.position = 'fixed';
+        widgetEl.style.left = wrapperRect.left + 'px';
+        widgetEl.style.top = wrapperRect.top + 'px';
+        widgetEl.style.transform = 'none';
+      }
       startLeft = parseFloat(widgetEl.style.left) || 0;
       startTop = parseFloat(widgetEl.style.top) || 0;
       document.body.style.userSelect = 'none';
