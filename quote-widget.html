@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>명언 위젯</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 10% 55%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+                   system-ui, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      word-break: keep-all;
+    }
+
+    body {
+      padding: 1rem;
+      box-sizing: border-box;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .widget-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      position: relative;
+      width: fit-content;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 2rem 1.5rem;
+      width: 360px;
+      min-height: 220px;
+      position: relative;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .card.dragging { cursor: grabbing; }
+
+    /* === 명언 본문 === */
+    .quote-body {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 0.5rem 0;
+      user-select: none;
+      min-height: 0;
+    }
+
+    .quote-text {
+      font-size: 1.0625rem;
+      font-weight: 500;
+      color: var(--foreground);
+      letter-spacing: -0.015em;
+      line-height: 1.55;
+      text-align: center;
+      transition: opacity 0.25s ease;
+    }
+
+    .quote-text.fading {
+      opacity: 0;
+    }
+
+    .quote-author {
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      letter-spacing: 0.01em;
+      transition: opacity 0.25s ease;
+    }
+
+    .quote-author.fading {
+      opacity: 0;
+    }
+
+    .quote-author::before {
+      content: '— ';
+      opacity: 0.6;
+    }
+
+    /* === 페이지네이션 === */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      padding-top: 0.75rem;
+      user-select: none;
+    }
+
+    .nav-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      border-radius: 50%;
+      transition: background var(--transition), color var(--transition);
+      padding: 0;
+    }
+
+    .nav-btn:hover {
+      background: var(--muted);
+      color: var(--foreground);
+    }
+
+    .nav-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.5;
+    }
+
+    .pagination-info {
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+      opacity: 0.6;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      min-width: 3rem;
+      text-align: center;
+    }
+
+    /* === 우측 컨트롤 === */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      opacity: 0.25;
+      transition: opacity var(--transition);
+      padding-top: 0.25rem;
+    }
+
+    .widget-wrapper:hover .controls { opacity: 1; }
+
+    .control-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: rgba(115, 115, 115, 0.5);
+      cursor: pointer;
+      transition: color var(--transition);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .control-btn:hover:not(:disabled) { color: var(--foreground); }
+    .control-btn svg { width: 13px; height: 13px; stroke-width: 2; }
+
+    .control-btn[data-tooltip]::before,
+    .control-btn[data-tooltip]::after {
+      position: absolute;
+      right: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease 0s;
+      z-index: 50;
+    }
+
+    .control-btn[data-tooltip]::before {
+      content: attr(data-tooltip);
+      background: var(--card);
+      color: var(--foreground);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 0.3125rem 0.625rem;
+      font-size: 0.6875rem;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+      font-family: inherit;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .control-btn[data-tooltip]::after {
+      content: '';
+      right: calc(100% + 3px);
+      width: 5px;
+      height: 5px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transform: translateY(-50%) rotate(-45deg);
+    }
+
+    .control-btn[data-tooltip]:hover::before,
+    .control-btn[data-tooltip]:hover::after {
+      opacity: 1;
+      transition-delay: 0.4s;
+    }
+
+    /* === 4방향 리사이즈 핸들 === */
+    .resize-handle {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      z-index: 20;
+    }
+
+    .resize-handle .bar {
+      background: var(--border);
+      transition: opacity var(--transition), background var(--transition),
+                  width 0.15s ease, height 0.15s ease;
+      border-radius: 999px;
+      opacity: 0;
+    }
+
+    .widget-wrapper:hover .resize-handle .bar { opacity: 1; }
+    .resize-handle:hover .bar { background: var(--muted-foreground); }
+
+    .handle-top    { top: 0; left: 50%; transform: translate(-50%, -50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-top .bar { width: 36px; height: 1px; }
+    .handle-top:hover .bar { height: 3px; }
+
+    .handle-bottom { bottom: 0; left: 50%; transform: translate(-50%, 50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-bottom .bar { width: 36px; height: 1px; }
+    .handle-bottom:hover .bar { height: 3px; }
+
+    .handle-left   { left: 0; top: 50%; transform: translate(-50%, -50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-left .bar { width: 1px; height: 36px; }
+    .handle-left:hover .bar { width: 3px; }
+
+    .handle-right  { right: 0; top: 50%; transform: translate(50%, -50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-right .bar { width: 1px; height: 36px; }
+    .handle-right:hover .bar { width: 3px; }
+  </style>
+</head>
+<body>
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
+
+      <!-- 명언 본문 -->
+      <div class="quote-body">
+        <div class="quote-text" id="quoteText">—</div>
+        <div class="quote-author" id="quoteAuthor">—</div>
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div class="pagination">
+        <button class="nav-btn" id="prevBtn" type="button" aria-label="이전 명언">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <span class="pagination-info" id="paginationInfo">—</span>
+        <button class="nav-btn" id="nextBtn" type="button" aria-label="다음 명언">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 4방향 리사이즈 핸들 -->
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+    <!-- 우측 컨트롤 -->
+    <div class="controls">
+      <button class="control-btn" id="resizeResetBtn"
+              data-tooltip="크기 초기화" title="크기 초기화"
+              type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+      <button class="control-btn" id="randomBtn"
+              data-tooltip="랜덤" title="랜덤"
+              type="button" aria-label="랜덤 명언">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/>
+          <circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/>
+          <circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/>
+          <circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================
+       명언 컬렉션 (50개)
+       ============================================ */
+    const QUOTES = [
+      { text: '지식을 얻으려면 매일 조금씩 더하라. 지혜를 얻으려면 매일 조금씩 버려라.', author: '노자' },
+      { text: '길을 찾는다. 길이 없으면 길을 만든다.', author: '신용호' },
+      { text: '해결될 수 있는 문제라면 걱정할 필요가 없다. 해결될 수 없는 문제라면 걱정해도 소용없다.', author: '달라이 라마' },
+      { text: '사람이 자신의 본성을 바꿀 때, 그를 향한 세상의 태도도 변한다.', author: '마하트마 간디' },
+      { text: '더 적게, 하지만 더 좋게', author: '디터 람스' },
+      { text: '정신에 목적이 있는 사람은 육체에 지배되지 않는다', author: '김성근' },
+      { text: '당신이 반복적으로 하는 일. 그것이 바로 당신이다. 그러므로 탁월함은 행동이 아니라 습관에서 나온다.', author: '아리스토텔레스' },
+      { text: '빠르고 대단한 발전을 추구하지 마라. 날마다 조금씩 나아지려고 노력해라. 그것이 실력을 습득하는 유일한 길이다. 그렇게 얻은 실력은 오래 유지된다.', author: '존 우든' },
+      { text: '어떤 한 가지를 깊이 연구하고 끝까지 파헤치는 과정을 통해 세상사의 본질에 눈뜨게 된다. 하찮아 보이는 일이라도 주어진 일을 천직이라 생각하고 몸과 마음을 다해 달려들어보라.', author: '이나모리 가즈오' },
+      { text: '어제는 한낱 꿈에 지나지 않고 내일은 하나의 환상일 뿐이다. 하지만 최선을 다한 오늘은 어제를 행복의 꿈으로 만들고 내일을 희망의 비전으로 변화시킨다.', author: '유일한' },
+      { text: '조직의 목적은 사람의 장점을 생산으로 연결하고, 그 사람의 약점을 중화시키는 것이다.', author: '피터 드러커' },
+      { text: '일한 보람을 느끼려고 만들기 위해서는 일 자체에 책임감을 갖게 해야만 한다.', author: '피터 드러커' },
+      { text: '모든 실패, 모든 아픔, 모든 난관은 그 이면에 가장 가치있는 것을 숨기고 있고, 이 숨김을 찾는 것은 고요한 침묵을 통한 생각의 힘이다.', author: '김승호' },
+      { text: '훌륭한 경쟁자보다 더 큰 축복은 없다.', author: '조던 피터슨' },
+      { text: '아무리 작은 악이라도 악한 일은 하지 말아야 한다. 선한 일은 작다고 해서 하지 않으면 안 된다.', author: '유비' },
+      { text: '나는 평생토록 성공은 여정 자체에서 찾을 수 있다고 믿어왔다. 승리와 패배는 그런 노력의 부산물일 뿐이다. 내게 가장 중요하고 오래가는 것은 준비하는 과정 그 자체다.', author: '존 우든' },
+      { text: '여정 자체가 도착지보다 낫다', author: '세르반테스' },
+      { text: '우리가 반복적으로 하는 행동이 바로 우리의 인격이 된다.', author: '아리스토텔레스' },
+      { text: '세상에 큰일이란 없습니다. 작은 일들을 사랑으로 할 뿐이죠', author: '마더 테레사' },
+      { text: '나는 세상을 강자와 약자, 성공과 실패로 나누지 않는다. 나는 세상을 배우는 자와 배우지 않는 자로 나눈다.', author: '벤저민 바버' },
+      { text: '시간이 흐르면 자연히 변한다고 하지만, 당신 스스로를 바꾸지 않으면 아무것도 변하지 않는다.', author: '앤디 워홀' },
+      { text: '과거는 버리고 미래를 향해가라. 꿈을 향해 당당하게 나가라. 당신이 상상했던 삶을 살아라.', author: '헨리 데이비드 소로' },
+      { text: '나는 기억을 사용하지만, 기억이 나를 사용하는 것은 허락하지 않을 것이다.', author: '디팩 초프라' },
+      { text: '꿈과 상상력을 가진 사람은 실패를 두려워하지 않는다. 그들에게 실패는 유쾌한 도전의 결과일 뿐이다.', author: '에드 마일렛' },
+      { text: '매일 위대해질 수 있는지 자신에게 물어라. 매일 중요한 질문을 던지면 그 하루가 심오해지고 위대해진다.', author: '에드 마일렛' },
+      { text: '살아가면서 우리가 내리는 모든 판단 가운데, 우리 내적 기준에 따라 자신에게 내리는 평가보다 더 중요한 것은 없다.', author: '데니스 웨이틀리' },
+      { text: '반딧불이는 폭풍에도 빛을 잃지 않는다. 빛이 자기 안에 있기 때문이다.', author: '스와미 웨다 바라티' },
+      { text: '난 어떠한 상황에도 쾌활하고 행복하기로 단단히 마음을 먹었다. 우리 불행의 많은 부분이 상황이 아니라, 우리 태도에 의해 결정된다는 걸 살면서 깨달았기 때문이다.', author: '마사 워싱턴' },
+      { text: '당신의 인생에서 가장 중요한 두 날은 당신이 태어난 날과 그 이유를 찾는 날이다.', author: '마크 트웨인' },
+      { text: '짧은 시간들을 소중하게 다루어라. 그러면 시간은 스스로를 돌볼 것이다.', author: '체스터필드' },
+      { text: '한 시간을 아무렇지도 않게 낭비하는 사람은 아직 인생의 가치를 발견하지 못했기 때문이다.', author: '찰스 다윈' },
+      { text: '대체 어디를 걷고 있는가? 그건 다른 사람의 길이 아닌가? 걷기 힘든 이유가 바로 거기에 있다. 너는 너의 길을 걸어라. 그럼 멀리까지 갈 수 있다.', author: '헤르만 헤세' },
+      { text: '인간은 모두 평등하다. 그러나 태생이 아닌 태도가 차이를 만든다. 타고난 미모는 눈을 사로잡지만 기품 있는 태도는 영혼까지 사로잡는다.', author: '볼테르' },
+      { text: '성실하지 않은 사람도 성실한 것처럼 속일 수 있다. 그러나 그것은 자신을 망치는 슬픈 연기에 불과하다.', author: '요한 볼프강 괴테' },
+      { text: '밤이 오는 하늘을 같이 보면서도 누군가는 해가 졌다라고 말하지만 누군가는 별이 떴다라고 말합니다. 상황이 어떻든 어둠을 볼 수도 있고 반대로 빛을 볼 수도 있습니다.', author: '김종원' },
+      { text: '사실 우리의 삶은 과거나 지금이나 똑같다. 수십만 년 동안 인간을 움직인 생리적, 심리적 프로세스가 지금도 여전히 작동 중이다.', author: '카를 융' },
+      { text: '뛰어난 실력을 갖추기 위해 내가 얼마나 노력했는지 안다면 사람들은 지금 내 모습을 전혀 경이롭게 여기지 않을 겁니다.', author: '미켈란젤로' },
+      { text: '선비가 공부할 때, 첫째는 뜻을 가져야 하고, 둘째는 식견을 가져야 하며, 셋째는 끈기를 가져야 한다.', author: '쩡궈판' },
+      { text: '성공에는 연속의 법칙이 있다. 실패는 단지 중간 결과물일 뿐이다. 계속 행동하는 사람은 언젠가 성공이 다가오는 것을 막을 수 없다.', author: '토마스 에디슨' },
+      { text: '항상 끝을 보는 것, 그것이 진정한 시작이다.', author: '보도 섀퍼' },
+      { text: '우리는 백 번을 살아도 다 쓰지 못할 잠재력을 지니고 태어났다.', author: '데니스 웨이틀리' },
+      { text: '우리는 세상을 있는 그대로 보지 않고, 마치 우리를 보듯이 본다.', author: '아나이스 닌' },
+      { text: '마음으로 상상하고 믿을 수 있는 것이라면 무엇이든 성취할 수 있다는 사실을 기억하라', author: '나폴레온 힐' },
+      { text: '우리가 반복적으로 하는 일이 곧 우리 자신이다. 탁월함은 행동이 아니라 습관이다.', author: '아리스토텔레스' },
+      { text: '분초를 소중히 다루면 몇 년의 시간도 저절로 빛날 것이다.', author: '벤저민 프랭클린' },
+      { text: '떨어지기는 목표한 경로를 모두 오르지는 못한다는 뜻이지만 그렇다고 포기한 것은 아니다. 반면 내려가기는 중도에 포기를 한다는 뜻이다.', author: '짐 콜린스' },
+      { text: '살아야 할 이유가 있는 사람은 모든 어려움을 어떻게 해서든 견뎌낸다', author: '프리드리히 니체' },
+      { text: '단순함이 복잡함보다 더 어려울 수 있다. 생각을 명료하게 다듬어 단순하게 만들기 위해 열심히 노력해야 한다. 단순한 생각에 도달하면 산도 옮길 수 있기 때문이다.', author: '스티브 잡스' },
+      { text: '완벽함은 더는 추가할 게 없을 때가 아니라 더는 뺄 게 없을 때 이루어진다.', author: '생텍쥐페리' },
+      { text: '알면서 행하지 않으면 정말로 아는 게 아니다.', author: '스티븐 코비' },
+      { text: '한 사람의 삶은 그 사람이 생각하는 대로 이루어진다.', author: '마르쿠스 아우렐리우스' },
+      { text: '결과에 충분한 주의를 기울이기만 하면 틀림없이 그것을 이룰 것이다. 다만 이런 목표를 진정으로 바라야 하고, 상충되는 수많은 목표를 똑같은 강도로 동시에 바라서는 안 된다.', author: '윌리엄 제임스' },
+      { text: '확고한 목적을 지닌 사람은 반드시 이를 성취하며, 목표를 이루기 위해 존재까지 걸고자 하는 의지에 맞설 것은 아무것도 없다.', author: '디즈레일리' },
+      { text: '믿는 자에게는 모든 것이 가능하니라.', author: '마가복음 9:23' },
+      { text: '의심은 배신자이다. 의심하면 시도하기가 두려워져 얻을 수 있는 이익을 놓쳐 버린다.', author: '윌리엄 셰익스피어' },
+      { text: '오늘이 곧 삶이다. 오늘 하루라는 짧은 시간 속에 자랑스러운 성장, 영광스러운 행동, 빛나는 아름다움이 모두 담겨 있다.', author: '얼 나이팅게일' },
+      { text: '다른 초에 불을 나눠준다고 해서 초의 불빛이 약해지지는 않는다.', author: '얼 나이팅게일' },
+      { text: '인생의 성공은 재능이나 기회의 문제가 아니라 집중과 끈기의 문제', author: '찰스 윌리엄 웬트' },
+      { text: '꿈을 향해 대담하게 나아가고 꿈꿨던 삶을 위해 노력하면 평소에는 기대하지도 못했던 성공을 거둘 수 있다.', author: '헨리 데이비드 소로' },
+      { text: '무의식을 의식화 하지 않으면 무의식이 삶의 방향을 결정하고, 우리는 이것을 운명이라 부른다.', author: '카를 융' },
+      { text: '아침에 침대와 이불을 정리하는 사람은 부자가 될 가능성이 206% 높다.', author: '랜달 벨' },
+      { text: '당신의 미소가 세상을 바꿀 수 있게 하라. 하지만 세상이 당신의 미소를 바꾸게는 내버려 두지 마라.', author: '중국 속담' },
+      { text: '없는 것만 바라보면 없는 자가 되어버려 있는 것도 사라진다. 있는 것에 감사하면 있는 자가 되어버려 없는 것도 나타난다.', author: '이하영' },
+      { text: '당신이 통제할 수 있는 힘은 가난, 무지, 두려움과 미신을 모두 합친 것보다 더 강하다.', author: '앤드루 카네기' },
+      { text: '인간은 오직 다른 인간을 위해 존재한다.', author: '알베르트 아인슈타인' },
+      { text: '보이지 않는 것을 믿는 것이 신념이다. 그러면 믿는 것을 볼 수 있다.', author: '밥 프록터' },
+      { text: '모든 것을 빼앗아도 뺏을 수 없는 한 가지가 있다. 주어진 환경 안에서 자신의 태도를 선택하는 것, 그리고 자신의 길을 선택하는 것이다.', author: '빅터 프랭클' },
+      { text: '더 위대한 자아에 신경 쓰는 사람은 위대해지고, 편협한 자아에 신경 쓰는 사람은 편협해진다.', author: '밥 프록터' },
+      { text: '교정도 중요하지만 격려가 더 큰 역할을 한다.', author: '요한 볼프강 괴테' },
+      { text: '다이아몬드는 원래 울퉁불퉁한 석탄이다. 압력과 열을 이겨내야만 아름다운 보석으로 거듭날 수 있다.', author: '밥 프록터' },
+      { text: '사람들은 대부분 일 년에 두세 번 정도 생각한다. 나는 일주일에 두세 번 생각하는 것만으로도 국제적 명성을 얻었다.', author: '조지 버나드 쇼' },
+      { text: '자기가 갇혔는지 모르는 사람은 감옥에서 탈출할 수 없다.', author: '버넌 하워드' },
+      { text: '나는 차를 탈 때마다 항상 무엇이 잘못됐고 어떻게 개선해야 할지 생각한다.', author: '월트 디즈니' },
+      { text: '내일에는 두 가지 손잡이가 있다. 우리는 불안이라는 손잡이와 믿음이라는 손잡이 중 하나만 선택할 수 있다.', author: '로자 파크스' },
+    ];
+
+    /* ============================================
+       상태 관리 & 표시
+       ============================================ */
+    const STORAGE_KEY = 'nosion-quote-widget-v1';
+    const FADE_MS = 250;
+
+    let currentIndex = 0;
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved !== null) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 0 && parsed < QUOTES.length) {
+          currentIndex = parsed;
+        }
+      } else {
+        // 첫 방문 — 오늘 날짜 기반 시작 (매일 다른 명언 자연스럽게)
+        const now = new Date();
+        const seed = now.getFullYear() * 366 + now.getMonth() * 31 + now.getDate();
+        currentIndex = seed % QUOTES.length;
+      }
+    } catch (e) {}
+
+    function saveIndex() {
+      try { localStorage.setItem(STORAGE_KEY, String(currentIndex)); } catch (e) {}
+    }
+
+    const quoteTextEl = document.getElementById('quoteText');
+    const quoteAuthorEl = document.getElementById('quoteAuthor');
+    const paginationInfoEl = document.getElementById('paginationInfo');
+
+    function render() {
+      const q = QUOTES[currentIndex];
+      quoteTextEl.textContent = q.text;
+      quoteAuthorEl.textContent = q.author;
+      paginationInfoEl.textContent = `${currentIndex + 1} / ${QUOTES.length}`;
+    }
+
+    function transitionTo(newIndex) {
+      // 페이드 아웃 → 변경 → 페이드 인
+      quoteTextEl.classList.add('fading');
+      quoteAuthorEl.classList.add('fading');
+      setTimeout(() => {
+        currentIndex = (newIndex + QUOTES.length) % QUOTES.length;
+        render();
+        saveIndex();
+        quoteTextEl.classList.remove('fading');
+        quoteAuthorEl.classList.remove('fading');
+      }, FADE_MS);
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      transitionTo(currentIndex - 1);
+    });
+    document.getElementById('nextBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      transitionTo(currentIndex + 1);
+    });
+    document.getElementById('randomBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      // 현재와 다른 인덱스
+      let next;
+      do {
+        next = Math.floor(Math.random() * QUOTES.length);
+      } while (next === currentIndex && QUOTES.length > 1);
+      transitionTo(next);
+    });
+
+    // 키보드 네비게이션 (좌/우 화살표)
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+      if (e.key === 'ArrowLeft') transitionTo(currentIndex - 1);
+      else if (e.key === 'ArrowRight') transitionTo(currentIndex + 1);
+    });
+
+    render();
+
+    /* ============================================
+       4방향 리사이즈 (노시언 공통 패턴)
+       ============================================ */
+    const SIZE_KEY = 'nosion-quote-widget-size-v1';
+    const MIN_WIDTH = 280;
+    const MAX_WIDTH = 600;
+    const MIN_HEIGHT = 200;
+    const MAX_HEIGHT = 500;
+
+    const cardEl = document.getElementById('card');
+    let cardWidth = 360;
+    let cardHeight = null;
+
+    try {
+      const savedSize = localStorage.getItem(SIZE_KEY);
+      if (savedSize) {
+        const s = JSON.parse(savedSize);
+        if (typeof s.width === 'number') {
+          cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width));
+        }
+        if (typeof s.height === 'number' && s.height > 0) {
+          cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height));
+        }
+      }
+    } catch (e) {}
+
+    function applyCardSize() {
+      cardEl.style.width = cardWidth + 'px';
+      if (cardHeight !== null) cardEl.style.height = cardHeight + 'px';
+      else cardEl.style.height = '';
+    }
+    function saveSize() {
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify({ width: cardWidth, height: cardHeight }));
+      } catch (e) {}
+    }
+
+    let resizeDrag = null;
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = { direction, startX: x, startY: y, startWidth: rect.width, startHeight: rect.height };
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX;
+      const dy = y - resizeDrag.startY;
+      const dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeDrag.startWidth + delta));
+      } else if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeDrag.startHeight + delta));
+      }
+      applyCardSize();
+    }
+    function endResize() {
+      if (resizeDrag) {
+        saveSize();
+        resizeDrag = null;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      }
+    }
+
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+      const direction = handle.dataset.direction;
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        startResize(direction, e.clientX, e.clientY);
+      });
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        startResize(direction, t.clientX, t.clientY);
+      }, { passive: false });
+    });
+
+    document.addEventListener('mousemove', (e) => { if (resizeDrag) { e.preventDefault(); moveResize(e.clientX, e.clientY); } });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('mouseleave', endResize);
+    document.addEventListener('touchmove', (e) => { if (resizeDrag) { const t = e.touches[0]; moveResize(t.clientX, t.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+
+    applyCardSize();
+
+    /* ============================================
+       위치 이동 (카드 빈 영역 드래그)
+       ============================================ */
+    const POS_KEY = 'nosion-quote-widget-pos-v1';
+    const widgetEl = document.getElementById('widget');
+
+    let offsetX = 0, offsetY = 0;
+    let moveDrag = null;
+
+    try {
+      const savedPos = localStorage.getItem(POS_KEY);
+      if (savedPos) {
+        const p = JSON.parse(savedPos);
+        if (typeof p.x === 'number') offsetX = p.x;
+        if (typeof p.y === 'number') offsetY = p.y;
+      }
+    } catch (e) {}
+
+    function applyPosition() {
+      widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+    function savePosition() {
+      try { localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY })); } catch (e) {}
+    }
+
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      const blocked = ['.control-btn', '.resize-handle', '.nav-btn', 'button', '[contenteditable]', 'a', 'input'];
+      for (const sel of blocked) if (target.closest(sel)) return false;
+      return true;
+    }
+
+    function startMove(x, y) {
+      moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY };
+      document.body.style.userSelect = 'none';
+      cardEl.classList.add('dragging');
+    }
+    function doMove(x, y) {
+      if (!moveDrag) return;
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
+      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
+      applyPosition();
+    }
+    function endMove() {
+      if (moveDrag) {
+        savePosition();
+        moveDrag = null;
+        document.body.style.userSelect = '';
+        cardEl.classList.remove('dragging');
+      }
+    }
+
+    applyPosition();
+
+    cardEl.addEventListener('mousedown', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      e.preventDefault();
+      startMove(e.clientX, e.clientY);
+    });
+    cardEl.addEventListener('touchstart', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      const t = e.touches[0];
+      startMove(t.clientX, t.clientY);
+    }, { passive: true });
+
+    document.addEventListener('mousemove', (e) => { if (moveDrag) { e.preventDefault(); doMove(e.clientX, e.clientY); } });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('mouseleave', endMove);
+    document.addEventListener('touchmove', (e) => { if (moveDrag) { const t = e.touches[0]; doMove(t.clientX, t.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    // 크기 초기화 — 크기 + 위치 모두 원복
+    const DEFAULT_WIDTH = 360;
+    document.getElementById('resizeResetBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      cardWidth = DEFAULT_WIDTH;
+      cardHeight = null;
+      applyCardSize();
+      saveSize();
+      offsetX = 0; offsetY = 0;
+      applyPosition();
+      savePosition();
+    });
+  </script>
+</body>
+</html>
