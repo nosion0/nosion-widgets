@@ -982,24 +982,20 @@
       const dy = y - resizeDrag.startY;
       const dir = resizeDrag.direction;
 
-      if (dir === 'right') {
-        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + dx));
-      }
-      if (dir === 'left') {
-        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth - dx));
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
         const actualDelta = cardWidth - resizeDrag.startWidth;
         if (widgetEl.style.position === 'fixed') {
-          widgetEl.style.left = (startLeft - actualDelta) + 'px';
+          widgetEl.style.left = (startLeft - actualDelta / 2) + 'px';
         }
       }
-      if (dir === 'bottom') {
-        cardHeight = Math.max(MIN_HEIGHT, resizeDrag.startHeight + dy);
-      }
-      if (dir === 'top') {
-        cardHeight = Math.max(MIN_HEIGHT, resizeDrag.startHeight - dy);
+      if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta);
         const actualDelta = cardHeight - resizeDrag.startHeight;
         if (widgetEl.style.position === 'fixed') {
-          widgetEl.style.top = (startTop - actualDelta) + 'px';
+          widgetEl.style.top = (startTop - actualDelta / 2) + 'px';
         }
       }
 
