@@ -701,6 +701,13 @@
           startH = card.offsetHeight;
           startX = e.clientX;
           startY = e.clientY;
+          if (getComputedStyle(wrapper).position !== 'fixed') {
+            const wrapperRect = wrapper.getBoundingClientRect();
+            wrapper.style.position = 'fixed';
+            wrapper.style.left = wrapperRect.left + 'px';
+            wrapper.style.top = wrapperRect.top + 'px';
+            wrapper.style.transform = 'none';
+          }
           startLeft = parseFloat(wrapper.style.left) || 0;
           startTop = parseFloat(wrapper.style.top) || 0;
           e.preventDefault();
