@@ -518,15 +518,18 @@
 
     /* ===== Resize ===== */
     (function () {
+      const wrapper = document.getElementById('widget');
       const card = document.getElementById('card');
       const MIN_W = 220, MAX_W = 700, MIN_H = 160;
-      let on = false, dir = '', sw = 0, sh = 0, sx = 0, sy = 0;
+      let on = false, dir = '', sw = 0, sh = 0, sx = 0, sy = 0, startLeft = 0, startTop = 0;
 
       document.querySelectorAll('.resize-handle').forEach(h => {
         h.addEventListener('mousedown', e => {
           on = true; dir = h.dataset.direction;
           sw = card.offsetWidth; sh = card.offsetHeight;
           sx = e.clientX; sy = e.clientY;
+          startLeft = parseFloat(wrapper.style.left) || 0;
+          startTop = parseFloat(wrapper.style.top) || 0;
           e.preventDefault(); e.stopPropagation();
         });
       });
@@ -534,15 +537,34 @@
       document.addEventListener('mousemove', e => {
         if (!on) return;
         const dx = e.clientX - sx, dy = e.clientY - sy;
-        if (dir === 'right')  card.style.width  = `${Math.min(MAX_W, Math.max(MIN_W, sw + dx))}px`;
-        if (dir === 'left')   card.style.width  = `${Math.min(MAX_W, Math.max(MIN_W, sw - dx))}px`;
-        if (dir === 'bottom') card.style.height = `${Math.max(MIN_H, sh + dy)}px`;
-        if (dir === 'top')    card.style.height = `${Math.max(MIN_H, sh - dy)}px`;
+        if (dir === 'right' || dir === 'left') {
+          const delta = dir === 'right' ? dx : -dx;
+          const newW = Math.min(MAX_W, Math.max(MIN_W, sw + delta));
+          const actualDelta = newW - sw;
+          card.style.width = `${newW}px`;
+          if (wrapper.style.position === 'fixed') {
+            wrapper.style.left = `${startLeft - actualDelta / 2}px`;
+          }
+        }
+        if (dir === 'bottom' || dir === 'top') {
+          const delta = dir === 'bottom' ? dy : -dy;
+          const newH = Math.max(MIN_H, sh + delta);
+          const actualDelta = newH - sh;
+          card.style.height = `${newH}px`;
+          if (wrapper.style.position === 'fixed') {
+            wrapper.style.top = `${startTop - actualDelta / 2}px`;
+          }
+        }
       });
 
       document.addEventListener('mouseup', () => {
         if (!on) return; on = false;
-        try { localStorage.setItem(K_SIZE, JSON.stringify({ w: card.offsetWidth, h: card.offsetHeight })); } catch (e) {}
+        try {
+          localStorage.setItem(K_SIZE, JSON.stringify({ w: card.offsetWidth, h: card.offsetHeight }));
+          if (wrapper.style.position === 'fixed') {
+            localStorage.setItem(K_POS, JSON.stringify({ left: wrapper.style.left, top: wrapper.style.top }));
+          }
+        } catch (e) {}
       });
 
       try {

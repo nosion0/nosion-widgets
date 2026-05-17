@@ -710,12 +710,15 @@
     }
 
     let resizeDrag = null;
+    let startLeft = 0, startTop = 0;
     function startResize(direction, x, y) {
       const rect = cardEl.getBoundingClientRect();
       resizeDrag = {
         direction, startX: x, startY: y,
         startWidth: rect.width, startHeight: rect.height
       };
+      startLeft = parseFloat(widgetEl.style.left) || 0;
+      startTop = parseFloat(widgetEl.style.top) || 0;
       document.body.style.userSelect = 'none';
       document.body.style.cursor =
         (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
@@ -728,15 +731,26 @@
       if (dir === 'right' || dir === 'left') {
         const delta = dir === 'right' ? dx : -dx;
         cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeDrag.startWidth + delta));
+        const actualDelta = cardWidth - resizeDrag.startWidth;
+        if (widgetEl.style.position === 'fixed') {
+          widgetEl.style.left = (startLeft - actualDelta / 2) + 'px';
+        }
       } else if (dir === 'bottom' || dir === 'top') {
         const delta = dir === 'bottom' ? dy : -dy;
         cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeDrag.startHeight + delta));
+        const actualDelta = cardHeight - resizeDrag.startHeight;
+        if (widgetEl.style.position === 'fixed') {
+          widgetEl.style.top = (startTop - actualDelta / 2) + 'px';
+        }
       }
       applyCardSize();
     }
     function endResize() {
       if (resizeDrag) {
         saveSize();
+        if (widgetEl.style.position === 'fixed') {
+          try { localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY, left: widgetEl.style.left, top: widgetEl.style.top })); } catch (e) {}
+        }
         resizeDrag = null;
         document.body.style.userSelect = '';
         document.body.style.cursor = '';
