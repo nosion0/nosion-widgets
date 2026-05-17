@@ -7,24 +7,13 @@
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
-    :root {
-      --background: hsl(0 0% 100%);
-      --foreground: hsl(220 10% 55%);
-      --card: hsl(0 0% 100%);
-      --border: hsl(220 9% 84%);
-      --muted: hsl(210 20% 96%);
-      --muted-foreground: hsl(215 14% 50%);
-      --radius: 0.75rem;
-      --transition: 0.2s ease;
-    }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
                    system-ui, 'Segoe UI', sans-serif;
-      background: var(--background);
-      color: var(--foreground);
+      background: hsl(0 0% 100%);
+      color: hsl(220 10% 55%);
       margin: 0;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
@@ -40,23 +29,102 @@
       overflow: hidden;
     }
 
+    /* ===== Widget wrapper ===== */
     .widget-wrapper {
       display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
+      align-items: center;
+      gap: 0.75rem;
       position: relative;
       width: fit-content;
     }
 
+    /* ===== Left panel (hover only) ===== */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .widget-wrapper:hover .left-panel {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .panel-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1px solid hsl(220 9% 86%);
+      border-radius: 0.5rem;
+      background: hsl(0 0% 100%);
+      padding: 0.4rem 0.7rem;
+      font-size: 0.75rem;
+      font-family: inherit;
+      color: hsl(215 14% 50%);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      text-align: left;
+    }
+
+    .panel-btn:hover {
+      background: hsl(210 20% 96%);
+    }
+
+    .panel-btn.cols-active {
+      border-color: hsl(145 45% 48%);
+      color: hsl(145 45% 38%);
+    }
+
+    .panel-btn svg {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+      stroke: currentColor;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      padding: 0.375rem 0.25rem 0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.6875rem;
+      color: hsl(215 14% 50%);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-dot.past    { background: hsl(220 15% 16%); }
+    .legend-dot.future  { background: hsl(220 9% 87%); }
+    .legend-dot.holiday { background: hsl(215 12% 65%); }
+
+    /* ===== Card ===== */
     .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem 1.75rem;
-      width: 360px;
+      background: hsl(0 0% 100%);
+      border: 1px solid hsl(220 9% 88%);
+      border-radius: 0.875rem;
+      padding: 1.5rem 1.25rem 1.25rem;
+      width: 280px;
       position: relative;
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 1.25rem;
       overflow: hidden;
       box-shadow: none;
@@ -65,168 +133,37 @@
 
     .card.dragging { cursor: grabbing; }
 
-    /* === Segment control === */
-    .seg-control {
-      display: flex;
-      background: var(--muted);
-      border-radius: 0.5rem;
-      padding: 3px;
-      gap: 2px;
+    /* ===== Mode title ===== */
+    .mode-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: hsl(220 15% 16%);
+      letter-spacing: -0.02em;
+      user-select: none;
     }
 
-    .seg-btn {
-      flex: 1;
-      border: none;
-      background: transparent;
-      border-radius: 0.375rem;
-      padding: 0.3rem 0;
-      font-family: inherit;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--muted-foreground);
-      cursor: pointer;
-      transition: background var(--transition), color var(--transition);
-      letter-spacing: 0.02em;
-    }
-
-    .seg-btn.active {
-      background: var(--card);
-      color: var(--foreground);
-    }
-
-    /* === Period row === */
-    .period-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }
-
-    .period-label {
-      font-size: 0.9375rem;
-      font-weight: 500;
-      color: var(--foreground);
-      letter-spacing: -0.01em;
-    }
-
-    .period-pct {
-      font-size: 0.8125rem;
-      color: var(--muted-foreground);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* === Dot grid === */
+    /* ===== Dot grid ===== */
     .dot-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, var(--dot-size, 5px));
-      gap: var(--dot-gap, 2.5px);
+      grid-template-columns: repeat(var(--cols, 7), 1fr);
+      gap: 2.5px;
+      width: 100%;
       transition: opacity 0.15s ease;
     }
 
     .dot-grid.fading { opacity: 0; }
 
     .dot {
-      width: var(--dot-size, 5px);
-      height: var(--dot-size, 5px);
+      aspect-ratio: 1;
       border-radius: 50%;
-      background: var(--border);
+      background: hsl(220 15% 16%);
     }
 
-    .dot.filled { background: var(--foreground); }
+    .dot.future        { background: hsl(220 9% 87%); }
+    .dot.holiday-past  { background: hsl(215 12% 65%); }
+    .dot.holiday-future{ background: hsl(215 10% 78%); }
 
-    .dot.today {
-      background: hsl(220 10% 42%);
-      box-shadow: 0 0 0 1.5px hsl(220 10% 42%), 0 0 0 3px hsl(220 10% 90%);
-    }
-
-    /* === Stats === */
-    .stats-row {
-      display: flex;
-    }
-
-    .stat-item {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.2rem;
-    }
-
-    .stat-item + .stat-item {
-      border-left: 1px solid var(--border);
-    }
-
-    .stat-value {
-      font-size: 1.25rem;
-      font-weight: 500;
-      color: var(--foreground);
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.02em;
-    }
-
-    .stat-label {
-      font-size: 0.6875rem;
-      color: var(--muted-foreground);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    /* === Holiday section === */
-    .holiday-section {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .holiday-section.hidden { display: none; }
-
-    .section-label {
-      font-size: 0.6875rem;
-      color: var(--muted-foreground);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .holiday-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
-    }
-
-    .holiday-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .holiday-name {
-      font-size: 0.8125rem;
-      color: var(--foreground);
-    }
-
-    .holiday-meta {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
-
-    .holiday-date {
-      font-size: 0.75rem;
-      color: var(--muted-foreground);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .holiday-dday {
-      font-size: 0.75rem;
-      color: hsl(220 10% 42%);
-      font-variant-numeric: tabular-nums;
-      min-width: 3rem;
-      text-align: right;
-      font-weight: 500;
-    }
-
-    .holiday-dday.dday { color: var(--muted-foreground); }
-
-    /* === Resize handles === */
+    /* ===== Resize handles ===== */
     .resize-handle {
       position: absolute;
       z-index: 10;
@@ -235,186 +172,117 @@
       justify-content: center;
     }
     .handle-top, .handle-bottom { left: 0; right: 0; height: 12px; cursor: ns-resize; }
-    .handle-top { top: 0; }
+    .handle-top    { top: 0; }
     .handle-bottom { bottom: 0; }
     .handle-left, .handle-right { top: 0; bottom: 0; width: 12px; cursor: ew-resize; }
-    .handle-left { left: 0; }
+    .handle-left  { left: 0; }
     .handle-right { right: 0; }
 
     .resize-handle .bar {
       border-radius: 99px;
-      background: var(--border);
+      background: hsl(220 9% 84%);
       opacity: 0;
-      transition: opacity var(--transition);
+      transition: opacity 0.2s ease;
     }
     .handle-top .bar, .handle-bottom .bar { width: 32px; height: 3px; }
     .handle-left .bar, .handle-right .bar { width: 3px; height: 32px; }
     .resize-handle:hover .bar { opacity: 1; }
-
-    /* === Controls === */
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
-      opacity: 0.25;
-      transition: opacity var(--transition);
-    }
-    .widget-wrapper:hover .controls { opacity: 1; }
-
-    .control-btn {
-      width: 28px;
-      height: 28px;
-      border-radius: 0.4rem;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--muted-foreground);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      transition: background var(--transition), color var(--transition);
-      position: relative;
-    }
-    .control-btn:hover { background: var(--muted); color: var(--foreground); }
-    .control-btn svg { width: 13px; height: 13px; stroke-width: 1.75; }
-
-    .control-btn[data-tooltip]::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      right: calc(100% + 8px);
-      top: 50%;
-      transform: translateY(-50%);
-      background: hsl(220 10% 30%);
-      color: #fff;
-      font-size: 0.6875rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.35rem;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.15s ease;
-    }
-    .control-btn[data-tooltip]:hover::after { opacity: 1; }
   </style>
 </head>
 <body>
   <div class="widget-wrapper" id="widget">
-    <div class="card" id="card">
 
-      <div class="seg-control" id="segControl">
-        <button class="seg-btn" data-mode="year" type="button">연간</button>
-        <button class="seg-btn" data-mode="quarter" type="button">분기</button>
-        <button class="seg-btn" data-mode="month" type="button">월간</button>
-      </div>
-
-      <div class="period-row">
-        <span class="period-label" id="periodLabel">2026년</span>
-        <span class="period-pct" id="periodPct">0%</span>
-      </div>
-
-      <div class="dot-grid" id="dotGrid"></div>
-
-      <div class="stats-row">
-        <div class="stat-item">
-          <span class="stat-value" id="elapsedDays">—</span>
-          <span class="stat-label">경과</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="remainingDays">—</span>
-          <span class="stat-label">남은</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="totalDays">—</span>
-          <span class="stat-label">전체</span>
-        </div>
-      </div>
-
-      <div class="holiday-section" id="holidaySection">
-        <span class="section-label">다음 공휴일</span>
-        <div class="holiday-list" id="holidayList"></div>
-      </div>
-
-      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
-      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
-      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
-      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
-    </div>
-
-    <div class="controls">
-      <button class="control-btn" id="resizeResetBtn" type="button"
-              data-tooltip="크기 초기화" title="크기 초기화" aria-label="카드 크기 초기화">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="15 3 21 3 21 9"/>
-          <polyline points="9 21 3 21 3 15"/>
-          <line x1="21" y1="3" x2="14" y2="10"/>
-          <line x1="3" y1="21" x2="10" y2="14"/>
-        </svg>
-      </button>
-      <button class="control-btn" id="holidayToggleBtn" type="button"
-              data-tooltip="공휴일 토글" title="공휴일 토글" aria-label="공휴일 표시 토글">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- Left hover panel -->
+    <div class="left-panel" id="leftPanel">
+      <button class="panel-btn" id="modeBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2"/>
           <line x1="16" y1="2" x2="16" y2="6"/>
           <line x1="8" y1="2" x2="8" y2="6"/>
           <line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
+        <span id="modeBtnLabel">분기</span>
       </button>
+
+      <button class="panel-btn" id="holidayBtn" type="button">
+        <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span id="holidayBtnLabel">휴일: 표시</span>
+      </button>
+
+      <button class="panel-btn cols-active" id="colBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        <span id="colBtnLabel">7열</span>
+      </button>
+
+      <div class="legend" id="legend">
+        <div class="legend-item">
+          <span class="legend-dot past"></span>지난 날
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot future"></span>미래
+        </div>
+        <div class="legend-item" id="holidayLegend">
+          <span class="legend-dot holiday"></span>휴일
+        </div>
+      </div>
+    </div>
+
+    <!-- Main card -->
+    <div class="card" id="card">
+      <div class="mode-title" id="modeTitle">2분기</div>
+      <div class="dot-grid" id="dotGrid"></div>
+
+      <div class="resize-handle handle-top"    data-direction="top">   <div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left"   data-direction="left">  <div class="bar"></div></div>
+      <div class="resize-handle handle-right"  data-direction="right"> <div class="bar"></div></div>
     </div>
   </div>
 
   <script>
     /* ===== Korean public holidays 2025–2026 ===== */
-    const HOLIDAYS = [
-      { date: '2025-01-01', name: '신정' },
-      { date: '2025-01-28', name: '설날 연휴' },
-      { date: '2025-01-29', name: '설날' },
-      { date: '2025-01-30', name: '설날 연휴' },
-      { date: '2025-03-01', name: '삼일절' },
-      { date: '2025-04-06', name: '국회의원선거' },
-      { date: '2025-05-05', name: '어린이날·석가탄신일' },
-      { date: '2025-05-06', name: '대체공휴일' },
-      { date: '2025-06-06', name: '현충일' },
-      { date: '2025-08-15', name: '광복절' },
-      { date: '2025-10-03', name: '개천절' },
-      { date: '2025-10-05', name: '추석 연휴' },
-      { date: '2025-10-06', name: '추석' },
-      { date: '2025-10-07', name: '추석 연휴' },
-      { date: '2025-10-08', name: '대체공휴일' },
-      { date: '2025-10-09', name: '한글날' },
-      { date: '2025-12-25', name: '성탄절' },
-      { date: '2026-01-01', name: '신정' },
-      { date: '2026-02-16', name: '설날 연휴' },
-      { date: '2026-02-17', name: '설날' },
-      { date: '2026-02-18', name: '설날 연휴' },
-      { date: '2026-03-01', name: '삼일절' },
-      { date: '2026-05-05', name: '어린이날' },
-      { date: '2026-05-24', name: '석가탄신일' },
-      { date: '2026-06-06', name: '현충일' },
-      { date: '2026-08-15', name: '광복절' },
-      { date: '2026-09-24', name: '추석 연휴' },
-      { date: '2026-09-25', name: '추석' },
-      { date: '2026-09-26', name: '추석 연휴' },
-      { date: '2026-10-03', name: '개천절' },
-      { date: '2026-10-09', name: '한글날' },
-      { date: '2026-12-25', name: '성탄절' },
-    ];
+    const HOLIDAYS = new Set([
+      '2025-01-01','2025-01-28','2025-01-29','2025-01-30',
+      '2025-03-01','2025-04-06','2025-05-05','2025-05-06',
+      '2025-06-06','2025-08-15','2025-10-03','2025-10-05',
+      '2025-10-06','2025-10-07','2025-10-08','2025-10-09','2025-12-25',
+      '2026-01-01','2026-02-16','2026-02-17','2026-02-18',
+      '2026-03-01','2026-05-05','2026-05-24','2026-06-06',
+      '2026-08-15','2026-09-24','2026-09-25','2026-09-26',
+      '2026-10-03','2026-10-09','2026-12-25',
+    ]);
 
     /* ===== localStorage keys ===== */
     const KEY_MODE     = 'nosion-day-counter-mode-v1';
     const KEY_HOLIDAYS = 'nosion-day-counter-holidays-v1';
+    const KEY_COLS     = 'nosion-day-counter-cols-v1';
     const KEY_SIZE     = 'nosion-day-counter-size-v1';
     const KEY_POS      = 'nosion-day-counter-pos-v1';
 
+    /* ===== Column options per mode ===== */
+    const COL_OPTIONS = {
+      year:    [15, 20, 25],
+      quarter: [7, 10, 13],
+    };
+
     /* ===== State ===== */
-    let mode = 'year';
+    let mode = 'quarter';
     let showHolidays = true;
+    let colIdx = { year: 0, quarter: 0 };
 
     try {
       const m = localStorage.getItem(KEY_MODE);
-      if (['year', 'quarter', 'month'].includes(m)) mode = m;
+      if (m === 'year' || m === 'quarter') mode = m;
       const h = localStorage.getItem(KEY_HOLIDAYS);
       if (h !== null) showHolidays = h === 'true';
+      const c = JSON.parse(localStorage.getItem(KEY_COLS) || 'null');
+      if (c) colIdx = { ...colIdx, ...c };
     } catch (e) {}
 
     /* ===== Date utilities ===== */
@@ -423,12 +291,14 @@
       return new Date(d.getFullYear(), d.getMonth(), d.getDate());
     }
 
-    function diffDays(a, b) { return Math.round((b - a) / 86400000); }
-
-    function parseDate(str) {
-      const [y, m, d] = str.split('-').map(Number);
-      return new Date(y, m - 1, d);
+    function dateKey(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     }
+
+    function diffDays(a, b) { return Math.round((b - a) / 86400000); }
 
     function getRange() {
       const now = today();
@@ -440,143 +310,116 @@
         const end   = new Date(y, 11, 31);
         const total   = diffDays(start, end) + 1;
         const elapsed = diffDays(start, now);
-        return { total, elapsed, label: `${y}년` };
+        return { start, total, elapsed, label: '1년' };
       }
 
-      if (mode === 'quarter') {
-        const q     = Math.floor(mo / 3);
-        const start = new Date(y, q * 3, 1);
-        const end   = new Date(y, q * 3 + 3, 0);
-        const total   = diffDays(start, end) + 1;
-        const elapsed = diffDays(start, now);
-        return { total, elapsed, label: `${y}년 ${q + 1}분기` };
-      }
-
-      // month
-      const start   = new Date(y, mo, 1);
-      const end     = new Date(y, mo + 1, 0);
-      const total   = end.getDate();
-      const elapsed = now.getDate() - 1;
-      return { total, elapsed, label: `${y}년 ${mo + 1}월` };
+      // quarter
+      const q     = Math.floor(mo / 3);
+      const start = new Date(y, q * 3, 1);
+      const end   = new Date(y, q * 3 + 3, 0);
+      const total   = diffDays(start, end) + 1;
+      const elapsed = diffDays(start, now);
+      return { start, total, elapsed, label: `${q + 1}분기` };
     }
-
-    /* ===== Dot config per mode ===== */
-    const DOT_CFG = {
-      year:    { size: '5px',  gap: '2.5px' },
-      quarter: { size: '7px',  gap: '3px'   },
-      month:   { size: '11px', gap: '4px'   },
-    };
 
     /* ===== Render ===== */
     function render() {
-      const { total, elapsed, label } = getRange();
-      const remaining = Math.max(0, total - elapsed - 1);
-      const pct = total > 0 ? Math.round((elapsed / total) * 100) : 0;
+      const { start, total, elapsed, label } = getRange();
+      const cols = COL_OPTIONS[mode][colIdx[mode]];
 
-      document.getElementById('periodLabel').textContent = label;
-      document.getElementById('periodPct').textContent = `${pct}%`;
-      document.getElementById('elapsedDays').textContent = elapsed;
-      document.getElementById('remainingDays').textContent = remaining;
-      document.getElementById('totalDays').textContent = total;
-
-      // Dot grid
-      const cfg  = DOT_CFG[mode];
-      const grid = document.getElementById('dotGrid');
-      grid.style.setProperty('--dot-size', cfg.size);
-      grid.style.setProperty('--dot-gap', cfg.gap);
+      document.getElementById('modeTitle').textContent = label;
+      document.getElementById('dotGrid').style.setProperty('--cols', cols);
 
       const frag = document.createDocumentFragment();
       for (let i = 0; i < total; i++) {
+        const d    = new Date(start.getTime() + i * 86400000);
+        const key  = dateKey(d);
+        const isHol = showHolidays && HOLIDAYS.has(key);
+        const isPast = i < elapsed;
+
         const dot = document.createElement('div');
-        dot.className = i < elapsed ? 'dot filled' : i === elapsed ? 'dot today' : 'dot';
+        if (isHol) {
+          dot.className = isPast ? 'dot holiday-past' : 'dot holiday-future';
+        } else {
+          dot.className = isPast ? 'dot' : 'dot future';
+        }
         frag.appendChild(dot);
       }
+
+      const grid = document.getElementById('dotGrid');
       grid.innerHTML = '';
       grid.appendChild(frag);
 
-      renderHolidays();
+      updateUI();
     }
 
-    function renderHolidays() {
-      const section = document.getElementById('holidaySection');
-      if (!showHolidays) { section.classList.add('hidden'); return; }
-      section.classList.remove('hidden');
+    function updateUI() {
+      const cols = COL_OPTIONS[mode][colIdx[mode]];
 
-      const now = today();
-      const upcoming = HOLIDAYS
-        .map(h => ({ ...h, d: parseDate(h.date) }))
-        .filter(h => h.d >= now)
-        .slice(0, 4);
+      // Mode button
+      document.getElementById('modeBtnLabel').textContent = mode === 'year' ? '1년통' : '분기';
 
-      const list = document.getElementById('holidayList');
-      list.innerHTML = '';
+      // Holiday button
+      const eyeSVG = mode === 'year' ? '' : ''; // same icon, label changes
+      document.getElementById('holidayBtnLabel').textContent = `휴일: ${showHolidays ? '표시' : '숨김'}`;
+      document.getElementById('holidayLegend').style.display = showHolidays ? '' : 'none';
 
-      if (upcoming.length === 0) {
-        const el = document.createElement('div');
-        el.className = 'holiday-item';
-        el.innerHTML = '<span class="holiday-name" style="color:var(--muted-foreground)">등록된 공휴일이 없습니다</span>';
-        list.appendChild(el);
-        return;
+      // Eye icon: slash when hidden
+      const eyePath = document.getElementById('eyeIcon');
+      if (!showHolidays) {
+        eyePath.innerHTML = `
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>`;
+      } else {
+        eyePath.innerHTML = `
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>`;
       }
 
-      upcoming.forEach(({ name, date, d }) => {
-        const diff = diffDays(now, d);
-        const [, m, day] = date.split('-').map(Number);
-        const item = document.createElement('div');
-        item.className = 'holiday-item';
-        item.innerHTML = `
-          <span class="holiday-name">${name}</span>
-          <div class="holiday-meta">
-            <span class="holiday-date">${m}월 ${day}일</span>
-            <span class="holiday-dday${diff === 0 ? ' dday' : ''}">${diff === 0 ? 'D-Day' : `D-${diff}`}</span>
-          </div>`;
-        list.appendChild(item);
-      });
+      // Columns button
+      document.getElementById('colBtnLabel').textContent = `${cols}열`;
     }
 
-    /* ===== Segment control ===== */
-    document.getElementById('segControl').addEventListener('click', e => {
-      const btn = e.target.closest('.seg-btn');
-      if (!btn || btn.dataset.mode === mode) return;
-      mode = btn.dataset.mode;
-      try { localStorage.setItem(KEY_MODE, mode); } catch (e) {}
-      document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    /* ===== Animated transition ===== */
+    function animate(fn) {
       const grid = document.getElementById('dotGrid');
       grid.classList.add('fading');
-      setTimeout(() => { render(); grid.classList.remove('fading'); }, 150);
+      setTimeout(() => { if (fn) fn(); render(); grid.classList.remove('fading'); }, 150);
+    }
+
+    /* ===== Panel buttons ===== */
+    document.getElementById('modeBtn').addEventListener('click', () => {
+      mode = mode === 'year' ? 'quarter' : 'year';
+      try { localStorage.setItem(KEY_MODE, mode); } catch (e) {}
+      animate();
     });
 
-    /* ===== Holiday toggle ===== */
-    document.getElementById('holidayToggleBtn').addEventListener('click', () => {
+    document.getElementById('holidayBtn').addEventListener('click', () => {
       showHolidays = !showHolidays;
       try { localStorage.setItem(KEY_HOLIDAYS, String(showHolidays)); } catch (e) {}
-      renderHolidays();
+      animate();
     });
 
-    /* ===== Resize reset ===== */
-    document.getElementById('resizeResetBtn').addEventListener('click', () => {
-      const card = document.getElementById('card');
-      card.style.width = '360px';
-      card.style.height = '';
-      try { localStorage.removeItem(KEY_SIZE); } catch (e) {}
-      render();
+    document.getElementById('colBtn').addEventListener('click', () => {
+      colIdx[mode] = (colIdx[mode] + 1) % COL_OPTIONS[mode].length;
+      try { localStorage.setItem(KEY_COLS, JSON.stringify(colIdx)); } catch (e) {}
+      animate();
     });
 
     /* ===== Drag to move ===== */
     (function initDrag() {
       const wrapper = document.getElementById('widget');
       const card    = document.getElementById('card');
-      const BLOCKED = '.control-btn,.resize-handle,button,[contenteditable],a,input,.seg-btn';
+      const BLOCKED = '.resize-handle,button,[contenteditable],a,input';
       let dragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
 
       card.addEventListener('mousedown', e => {
         if (e.target.closest(BLOCKED)) return;
         dragging = true;
         const rect = wrapper.getBoundingClientRect();
-        origLeft = rect.left;
-        origTop  = rect.top;
-        startX   = e.clientX;
-        startY   = e.clientY;
+        origLeft = rect.left; origTop = rect.top;
+        startX = e.clientX;   startY  = e.clientY;
         card.classList.add('dragging');
         e.preventDefault();
       });
@@ -606,19 +449,16 @@
     /* ===== Resize handles ===== */
     (function initResize() {
       const card = document.getElementById('card');
-      const MIN_W = 280, MAX_W = 580, MIN_H = 180;
+      const MIN_W = 200, MAX_W = 480, MIN_H = 160;
       let resizing = false, dir = '', startW = 0, startH = 0, startX = 0, startY = 0;
 
       document.querySelectorAll('.resize-handle').forEach(h => {
         h.addEventListener('mousedown', e => {
           resizing = true;
           dir    = h.dataset.direction;
-          startW = card.offsetWidth;
-          startH = card.offsetHeight;
-          startX = e.clientX;
-          startY = e.clientY;
-          e.preventDefault();
-          e.stopPropagation();
+          startW = card.offsetWidth; startH = card.offsetHeight;
+          startX = e.clientX;        startY = e.clientY;
+          e.preventDefault(); e.stopPropagation();
         });
       });
 
@@ -646,7 +486,6 @@
     })();
 
     /* ===== Init ===== */
-    document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
     render();
   </script>
 </body>
