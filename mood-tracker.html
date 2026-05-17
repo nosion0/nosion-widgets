@@ -11,7 +11,7 @@
        ============================================ */
     :root {
       --background: hsl(0 0% 100%);
-      --foreground: hsl(220 13% 18%);
+      --foreground: hsl(220 10% 55%);
       --card: hsl(0 0% 100%);
       --border: hsl(220 9% 84%);
       --muted: hsl(210 20% 96%);
@@ -76,10 +76,6 @@
 
     .card.dragging .header {
       cursor: grabbing;
-    }
-
-    .widget-wrapper.moved {
-      transition: none;
     }
 
     .card .header {
@@ -616,8 +612,8 @@
       <div class="reset-confirm" id="resetConfirm">
         <p>이번 주 기록을 초기화할까요?</p>
         <div class="actions">
-          <button id="cancelReset">취소</button>
-          <button class="danger" id="confirmReset">초기화</button>
+          <button id="cancelReset" type="button">취소</button>
+          <button class="danger" id="confirmReset" type="button">초기화</button>
         </div>
       </div>
 
@@ -630,7 +626,7 @@
     <div class="controls">
       <button class="control-btn" id="resizeResetBtn"
               data-tooltip="크기 초기화" title="크기 초기화"
-              aria-label="카드 크기 초기화">
+              type="button" aria-label="카드 크기 초기화">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="15 3 21 3 21 9"/>
           <polyline points="9 21 3 21 3 15"/>
@@ -640,7 +636,7 @@
       </button>
       <button class="control-btn" id="resetBtn"
               data-tooltip="이번 주 초기화" title="이번 주 초기화"
-              aria-label="이번 주 초기화">
+              type="button" aria-label="이번 주 초기화">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
           <path d="M3 3v5h5"/>
@@ -779,7 +775,12 @@
       for (let l = 0; l < LEVELS_COUNT; l++) {
         const dot = dotRefs[l][d];
         if (!dot) continue;
-        dot.classList.toggle('on', state.data[d] === l);
+        const selected = state.data[d] === l;
+        dot.classList.toggle('on', selected);
+        // 스크린리더용 aria-label도 현재 상태로 동기화
+        dot.setAttribute('aria-label',
+          `${MOOD_LABELS[l]} ${DAYS_KO[d]}요일 ${selected ? '선택됨' : '미선택'}`
+        );
       }
     }
 
@@ -1107,10 +1108,8 @@
 
     function isDraggableTarget(target) {
       if (!target.closest) return false;
-      // 상단 헤더 영역에서만 드래그 허용
-      if (!target.closest('.header')) return false;
-      // 헤더 내부 인터랙티브 요소는 제외
-      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]'];
+      // 카드 빈 영역 전체에서 드래그 허용 (인터랙티브 요소만 제외)
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input'];
       for (const sel of blocked) {
         if (target.closest(sel)) return false;
       }

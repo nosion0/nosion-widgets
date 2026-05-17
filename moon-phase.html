@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오늘의 달</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    /* ============================================
+       노시언 위젯 시그니처 디자인 토큰
+       ============================================ */
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 10% 55%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      /* 달 — 모노톤 회색 스펙트럼 */
+      --moon-light: hsl(220 10% 90%);   /* 빛 비치는 면 (옅은 그레이) */
+      --moon-shade: hsl(220 8% 72%);    /* 빛 면 안쪽 그림자 (미묘한 깊이) */
+      --moon-dark: hsl(220 10% 42%);    /* 어두운 면 (미디엄 그레이) */
+      --moon-edge: hsl(220 9% 80%);     /* terminator 가장자리 */
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+                   system-ui, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      word-break: keep-all;
+    }
+
+    body {
+      padding: 1rem;
+      box-sizing: border-box;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .widget-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      position: relative;
+      width: fit-content;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.25rem 2rem 1.5rem;  /* 위쪽 더 여유롭게 */
+      width: 360px;
+      position: relative;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    /* 드래그 영역 — 헤더가 없어진 대신 카드 빈 영역에서 (인터랙티브 요소 제외) */
+    .card.dragging { cursor: grabbing; }
+
+    /* === 달 시각화 (카드의 주인공) === */
+    .moon-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      padding-bottom: 1.75rem;
+      flex-shrink: 0;
+    }
+
+    .moon-svg {
+      width: 150px;
+      height: 150px;
+      display: block;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 14px hsl(220 10% 55% / 0.13));
+    }
+
+    .moon-svg .moon-dark {
+      fill: url(#moonDarkGrad);
+    }
+
+    .moon-svg .moon-light {
+      fill: url(#moonLightGrad);
+      transition: d 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .moon-svg .moon-outline {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 0.4;
+      opacity: 0.55;
+    }
+
+    /* 위상 이름 + 메타 정보 (달 바로 아래, 중앙 정렬) */
+    .phase-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      user-select: none;
+    }
+
+    .phase-name {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: hsl(220 10% 55%);  /* 더 연한 회색 — info value들과 통일 */
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .phase-meta {
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.005em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .phase-meta .dot {
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.5;
+    }
+
+    /* === 부드러운 구분선 === */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      opacity: 0.5;
+      margin: 0 -0.25rem;
+      flex-shrink: 0;
+    }
+
+    /* === 정보 영역 (차분하게) === */
+    .info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+      padding: 1.25rem 0 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .info-label {
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      letter-spacing: -0.005em;
+    }
+
+    .info-value {
+      font-size: 0.8125rem;
+      color: hsl(220 10% 55%);  /* phase-name과 통일된 연한 회색 */
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.005em;
+      font-weight: 500;
+    }
+
+    .info-value .value-sep {
+      color: var(--muted-foreground);
+      opacity: 0.5;
+      margin: 0 0.375rem;
+      font-weight: 400;
+    }
+
+    /* === 푸터 === */
+    .footer {
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+      opacity: 0.5;
+      letter-spacing: 0.03em;
+      padding-top: 0.875rem;
+      text-align: center;
+      user-select: none;
+      flex-shrink: 0;
+      position: relative; /* 드롭다운 앵커 */
+    }
+
+    .footer:hover {
+      opacity: 0.7;
+    }
+
+    /* 도시 선택 버튼 */
+    .city-selector {
+      font: inherit;
+      letter-spacing: inherit;
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0 2px;
+      border-radius: 3px;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .city-selector:hover {
+      color: var(--foreground);
+      background: var(--muted);
+    }
+
+    .city-selector.open {
+      color: var(--foreground);
+    }
+
+    .city-sep {
+      margin: 0 0.25rem;
+      opacity: 0.6;
+    }
+
+    /* 드롭다운 메뉴 — 푸터 위쪽으로 떠오름 */
+    .city-dropdown {
+      position: absolute;
+      bottom: calc(100% - 0.25rem);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.3125rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      min-width: 144px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+    }
+
+    .city-dropdown.show {
+      opacity: 1;
+      pointer-events: auto;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .city-option {
+      font-family: inherit;
+      font-size: 0.75rem;
+      letter-spacing: -0.005em;
+      color: var(--muted-foreground);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.375rem 0.625rem;
+      border-radius: 0.25rem;
+      text-align: center;
+      transition: background var(--transition), color var(--transition);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .city-option:hover {
+      background: var(--muted);
+      color: var(--foreground);
+    }
+
+    .city-option.selected {
+      color: var(--foreground);
+      font-weight: 500;
+      background: var(--muted);
+    }
+
+    /* 우측 컨트롤 */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      opacity: 0.25;
+      transition: opacity var(--transition);
+      padding-top: 0.25rem;
+    }
+
+    .widget-wrapper:hover .controls {
+      opacity: 1;
+    }
+
+    .control-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: rgba(115, 115, 115, 0.5);
+      cursor: pointer;
+      transition: color var(--transition);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .control-btn:hover:not(:disabled) {
+      color: var(--foreground);
+    }
+
+    .control-btn svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 2;
+    }
+
+    .control-btn[data-tooltip]::before,
+    .control-btn[data-tooltip]::after {
+      position: absolute;
+      right: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease 0s;
+      z-index: 50;
+    }
+
+    .control-btn[data-tooltip]::before {
+      content: attr(data-tooltip);
+      background: var(--card);
+      color: var(--foreground);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 0.3125rem 0.625rem;
+      font-size: 0.6875rem;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+      font-family: inherit;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .control-btn[data-tooltip]::after {
+      content: '';
+      right: calc(100% + 3px);
+      width: 5px;
+      height: 5px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transform: translateY(-50%) rotate(-45deg);
+    }
+
+    .control-btn[data-tooltip]:hover::before,
+    .control-btn[data-tooltip]:hover::after {
+      opacity: 1;
+      transition-delay: 0.4s;
+    }
+
+    /* 4방향 리사이즈 핸들 */
+    .resize-handle {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      z-index: 20;
+    }
+
+    .resize-handle .bar {
+      background: var(--border);
+      transition: opacity var(--transition), background var(--transition),
+                  width 0.15s ease, height 0.15s ease;
+      border-radius: 999px;
+      opacity: 0;
+    }
+
+    .widget-wrapper:hover .resize-handle .bar {
+      opacity: 1;
+    }
+
+    .resize-handle:hover .bar {
+      background: var(--muted-foreground);
+    }
+
+    .handle-top {
+      top: 0; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px; height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-top .bar { width: 36px; height: 1px; }
+    .handle-top:hover .bar { height: 3px; }
+
+    .handle-bottom {
+      bottom: 0; left: 50%;
+      transform: translate(-50%, 50%);
+      width: 36px; height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-bottom .bar { width: 36px; height: 1px; }
+    .handle-bottom:hover .bar { height: 3px; }
+
+    .handle-left {
+      left: 0; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px; height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-left .bar { width: 1px; height: 36px; }
+    .handle-left:hover .bar { width: 3px; }
+
+    .handle-right {
+      right: 0; top: 50%;
+      transform: translate(50%, -50%);
+      width: 16px; height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-right .bar { width: 1px; height: 36px; }
+    .handle-right:hover .bar { width: 3px; }
+  </style>
+</head>
+<body>
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
+
+      <!-- 달 시각화 + 위상 이름 (카드의 주인공) -->
+      <div class="moon-display">
+        <svg class="moon-svg" viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <!-- 어두운 면: 가장자리로 갈수록 살짝 더 어두워짐 -->
+            <radialGradient id="moonDarkGrad" cx="50%" cy="45%" r="55%">
+              <stop offset="0%" stop-color="hsl(220 10% 50%)"/>
+              <stop offset="70%" stop-color="hsl(220 10% 42%)"/>
+              <stop offset="100%" stop-color="hsl(220 12% 36%)"/>
+            </radialGradient>
+            <!-- 빛 비치는 면: 미묘한 입체감 (위쪽 살짝 밝음) -->
+            <radialGradient id="moonLightGrad" cx="42%" cy="38%" r="70%">
+              <stop offset="0%" stop-color="hsl(220 8% 94%)"/>
+              <stop offset="65%" stop-color="hsl(220 10% 88%)"/>
+              <stop offset="100%" stop-color="hsl(220 9% 78%)"/>
+            </radialGradient>
+          </defs>
+          <circle class="moon-dark" cx="50" cy="50" r="48"/>
+          <path class="moon-light" id="moonLight" d=""/>
+          <circle class="moon-outline" cx="50" cy="50" r="48"/>
+        </svg>
+
+        <!-- 위상 이름 (큰 글씨) + 메타 한 줄 -->
+        <div class="phase-display">
+          <div class="phase-name" id="phaseName">—</div>
+          <div class="phase-meta">
+            <span><span id="illumNum">—</span>% 보임</span>
+            <span class="dot"></span>
+            <span><span id="ageNum">—</span>일째</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 부드러운 구분선 -->
+      <div class="divider"></div>
+
+      <!-- 정보 영역 (차분하게) -->
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="info-label" id="nextPhaseLabel">다음 보름달</span>
+          <span class="info-value" id="nextPhaseValue">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">월출 · 월몰</span>
+          <span class="info-value">
+            <span id="moonRise">—</span>
+            <span class="value-sep">·</span>
+            <span id="moonSet">—</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- 푸터: 도시 선택 + 날짜 (또는 데모 모드 안내) -->
+      <div class="footer">
+        <!-- 일반 모드 -->
+        <span id="cityWrap">
+          <button class="city-selector" id="citySelector" type="button" aria-haspopup="true" aria-expanded="false">서울</button>
+          <span class="city-sep">·</span>
+          <span id="footerDate">—</span>
+        </span>
+        <!-- 데모 모드 -->
+        <span id="demoText" style="display:none">—</span>
+        <!-- 도시 선택 드롭다운 -->
+        <div class="city-dropdown" id="cityDropdown" role="menu"></div>
+      </div>
+
+      <!-- 리사이즈 핸들 -->
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+    <!-- 우측 컨트롤 -->
+    <div class="controls">
+      <button class="control-btn" id="resizeResetBtn"
+              data-tooltip="크기 초기화" title="크기 초기화"
+              type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================
+       달 위상 계산 (Conway 알고리즘 기반)
+       ============================================ */
+    const SYNODIC_MONTH = 29.530588853; // 평균 삭망월(일)
+    // 기준 신월: 2000-01-06 18:14 UTC (Julian Date 2451550.1)
+    const REFERENCE_NEW_MOON_JD = 2451550.1;
+
+    function toJulianDate(date) {
+      return date.valueOf() / 86400000 + 2440587.5;
+    }
+
+    /**
+     * 현재 시점의 달 나이(0~29.53일) 계산
+     * 0/29.53 = 신월, 7.4 = 상현달, 14.77 = 보름달, 22.1 = 하현달
+     */
+    function getMoonAge(date = new Date()) {
+      const jd = toJulianDate(date);
+      const phase = ((jd - REFERENCE_NEW_MOON_JD) / SYNODIC_MONTH);
+      let age = (phase - Math.floor(phase)) * SYNODIC_MONTH;
+      if (age < 0) age += SYNODIC_MONTH;
+      return age;
+    }
+
+    /**
+     * 달의 가시광 비율 (0~1)
+     * 신월=0, 보름달=1 (실제로는 sin² 형태로 변함)
+     */
+    function getIllumination(age) {
+      // 위상각 (라디안) — 0이 신월, π가 보름달
+      const phaseAngle = (age / SYNODIC_MONTH) * 2 * Math.PI;
+      // 가시광 비율 = (1 - cos(phaseAngle)) / 2
+      return (1 - Math.cos(phaseAngle)) / 2;
+    }
+
+    /**
+     * 달의 위상 한글 이름
+     * 한국 천문학에서 통용되는 7가지 분류 (+ 신월·보름달 명확화)
+     */
+    function getPhaseName(age) {
+      if (age < 1.0) return '신월(그믐달)';
+      if (age < 6.5) return '초승달';
+      if (age < 8.0) return '상현달';
+      if (age < 13.5) return '차오르는 달';
+      if (age < 16.0) return '보름달';
+      if (age < 21.5) return '기우는 달';
+      if (age < 23.0) return '하현달';
+      if (age < 28.5) return '그믐달';
+      return '신월(그믐달)';
+    }
+
+    /**
+     * 다음 주요 위상(보름달 또는 신월)까지 남은 일수
+     * 가장 가까운 것을 자동 선택
+     */
+    function getNextMajorPhase(age) {
+      const NEW_MOON_AGE = 0;
+      const FULL_MOON_AGE = SYNODIC_MONTH / 2; // 14.765
+      const daysToFull = (FULL_MOON_AGE - age + SYNODIC_MONTH) % SYNODIC_MONTH;
+      const daysToNew = (SYNODIC_MONTH - age) % SYNODIC_MONTH;
+      if (daysToFull < daysToNew) {
+        return { name: '다음 보름달', days: daysToFull };
+      } else {
+        return { name: '다음 신월', days: daysToNew };
+      }
+    }
+
+    /* ============================================
+       월출/월몰 계산 — SunCalc 알고리즘 발췌
+       https://github.com/mourner/suncalc (MIT License)
+       Meeus 'Astronomical Algorithms' 기반
+       ============================================ */
+    const rad = Math.PI / 180;
+    const earthObliquity = rad * 23.4397;
+
+    function toJulianAstro(date) { return date.valueOf() / 86400000 - 0.5 + 2440588; }
+    function toDaysSinceJ2000(date) { return toJulianAstro(date) - 2451545; }
+
+    function rightAscension(l, b) {
+      return Math.atan2(
+        Math.sin(l) * Math.cos(earthObliquity) - Math.tan(b) * Math.sin(earthObliquity),
+        Math.cos(l)
+      );
+    }
+    function declination(l, b) {
+      return Math.asin(
+        Math.sin(b) * Math.cos(earthObliquity) +
+        Math.cos(b) * Math.sin(earthObliquity) * Math.sin(l)
+      );
+    }
+    function altitude(H, phi, dec) {
+      return Math.asin(
+        Math.sin(phi) * Math.sin(dec) +
+        Math.cos(phi) * Math.cos(dec) * Math.cos(H)
+      );
+    }
+    function siderealTime(d, lw) { return rad * (280.16 + 360.9856235 * d) - lw; }
+    function astroRefraction(h) {
+      if (h < 0) h = 0;
+      return 0.0002967 / Math.tan(h + 0.00312536 / (h + 0.08901179));
+    }
+
+    function moonCoords(d) {
+      // 평균 황경 + 평균 근점 이각 + 평균 거리
+      const L = rad * (218.316 + 13.176396 * d); // 황경
+      const M = rad * (134.963 + 13.064993 * d); // 평균 근점 이각
+      const F = rad * (93.272 + 13.229350 * d);  // 평균 거리
+
+      const l = L + rad * 6.289 * Math.sin(M);    // 황경 보정
+      const b = rad * 5.128 * Math.sin(F);         // 황위
+      return {
+        ra: rightAscension(l, b),
+        dec: declination(l, b)
+      };
+    }
+
+    function getMoonPosition(date, lat, lng) {
+      const lw = rad * -lng;
+      const phi = rad * lat;
+      const d = toDaysSinceJ2000(date);
+      const c = moonCoords(d);
+      const H = siderealTime(d, lw) - c.ra;
+      let h = altitude(H, phi, c.dec);
+      h = h + astroRefraction(h);
+      return { altitude: h };
+    }
+
+    function hoursLater(date, h) {
+      return new Date(date.valueOf() + h * 3600000);
+    }
+
+    /**
+     * 특정 날짜의 월출/월몰 시각 계산
+     * 반환: { rise: Date|null, set: Date|null, alwaysUp: boolean, alwaysDown: boolean }
+     */
+    function getMoonTimes(date, lat, lng) {
+      const t = new Date(date);
+      t.setHours(0, 0, 0, 0);
+
+      const hc = 0.133 * rad; // 달의 시반경 + 굴절 보정
+      let h0 = getMoonPosition(t, lat, lng).altitude - hc;
+      let rise = null, set = null;
+      let a, b, xe, ye, d, roots, x1, x2, dx;
+
+      for (let i = 1; i <= 24; i += 2) {
+        const h1 = getMoonPosition(hoursLater(t, i), lat, lng).altitude - hc;
+        const h2 = getMoonPosition(hoursLater(t, i + 1), lat, lng).altitude - hc;
+        a = (h0 + h2) / 2 - h1;
+        b = (h2 - h0) / 2;
+        xe = -b / (2 * a);
+        ye = (a * xe + b) * xe + h1;
+        d = b * b - 4 * a * h1;
+        roots = 0;
+        x1 = 0; x2 = 0;
+        if (d >= 0) {
+          dx = Math.sqrt(d) / (Math.abs(a) * 2);
+          x1 = xe - dx;
+          x2 = xe + dx;
+          if (Math.abs(x1) <= 1) roots++;
+          if (Math.abs(x2) <= 1) roots++;
+          if (x1 < -1) x1 = x2;
+        }
+        if (roots === 1) {
+          if (h0 < 0) rise = i + x1;
+          else set = i + x1;
+        } else if (roots === 2) {
+          rise = i + (ye < 0 ? x2 : x1);
+          set = i + (ye < 0 ? x1 : x2);
+        }
+        if (rise !== null && set !== null) break;
+        h0 = h2;
+      }
+
+      const result = { rise: null, set: null, alwaysUp: false, alwaysDown: false };
+      if (rise !== null) result.rise = hoursLater(t, rise);
+      if (set !== null) result.set = hoursLater(t, set);
+      if (rise === null && set === null) {
+        if (ye > 0) result.alwaysUp = true;
+        else result.alwaysDown = true;
+      }
+      return result;
+    }
+
+    /* ============================================
+       달 SVG 그리기 (위상에 따른 빛 비치는 면 path)
+       ============================================ */
+    /**
+     * SVG path로 달의 빛 비치는 부분을 그림
+     * @param {number} phase 0~1, 0=신월, 0.5=보름달
+     * @param {number} r 달 반지름 (viewBox 좌표)
+     * @param {number} cx 중심 x
+     * @param {number} cy 중심 y
+     */
+    function buildMoonLightPath(phase, r, cx, cy) {
+      // 신월 — 빛 거의 없음
+      if (phase < 0.01 || phase > 0.99) return '';
+
+      const isWaxing = phase < 0.5;
+      // 빛 비치는 면적 비율과 무관하게, terminator(낮/밤 경계선) 모양 결정
+      // cos(2π·phase)의 절댓값 = inner ellipse의 가로 반경 비율
+      const f = Math.cos(2 * Math.PI * phase); // -1 (보름) ~ 1 (신월)
+      const rx = Math.abs(f) * r;              // inner ellipse 가로 반경
+
+      // 외곽 반원: 빛 비치는 쪽
+      // waxing(0~0.5): 오른쪽 반원 (sweep=1 = 시계방향)
+      // waning(0.5~1): 왼쪽 반원 (sweep=0 = 반시계방향)
+      const outerSweep = isWaxing ? 1 : 0;
+
+      // 내부 곡선(terminator):
+      // 빛이 50% 미만(초승/그믐)이면 안쪽으로 휘어짐
+      // 빛이 50% 초과(차오르는/기우는)면 바깥쪽으로 휘어짐
+      const isCrescent = (phase < 0.25 || phase > 0.75);
+      let innerSweep;
+      if (isCrescent) {
+        innerSweep = isWaxing ? 0 : 1; // 안쪽으로
+      } else {
+        innerSweep = isWaxing ? 1 : 0; // 바깥쪽으로
+      }
+
+      const top = `${cx},${cy - r}`;
+      const bottom = `${cx},${cy + r}`;
+
+      return `M ${top} ` +
+             `A ${r},${r} 0 0 ${outerSweep} ${bottom} ` +
+             `A ${rx},${r} 0 0 ${innerSweep} ${top} Z`;
+    }
+
+    /* ============================================
+       메인 — 상태 갱신 및 표시
+       ============================================ */
+    // 한국 주요 도시 (위/경도)
+    const CITIES = [
+      { name: '서울', lat: 37.5665, lng: 126.9780 },
+      { name: '부산', lat: 35.1796, lng: 129.0756 },
+      { name: '인천', lat: 37.4563, lng: 126.7052 },
+      { name: '대구', lat: 35.8714, lng: 128.6014 },
+      { name: '대전', lat: 36.3504, lng: 127.3845 },
+      { name: '광주', lat: 35.1595, lng: 126.8526 },
+      { name: '울산', lat: 35.5384, lng: 129.3114 },
+      { name: '제주', lat: 33.4996, lng: 126.5312 }
+    ];
+    const CITY_KEY = 'nosion-moon-phase-city-v1';
+
+    // 저장된 도시 복원 (없으면 서울 기본)
+    let currentCity = CITIES[0];
+    try {
+      const saved = localStorage.getItem(CITY_KEY);
+      if (saved) {
+        const found = CITIES.find(c => c.name === saved);
+        if (found) currentCity = found;
+      }
+    } catch (e) {}
+
+    function saveCity() {
+      try { localStorage.setItem(CITY_KEY, currentCity.name); } catch (e) {}
+    }
+
+    const phaseNameEl = document.getElementById('phaseName');
+    const ageNumEl = document.getElementById('ageNum');
+    const illumNumEl = document.getElementById('illumNum');
+    const moonLightEl = document.getElementById('moonLight');
+    const nextPhaseLabelEl = document.getElementById('nextPhaseLabel');
+    const nextPhaseValueEl = document.getElementById('nextPhaseValue');
+    const moonRiseEl = document.getElementById('moonRise');
+    const moonSetEl = document.getElementById('moonSet');
+    const cityWrapEl = document.getElementById('cityWrap');
+    const citySelectorEl = document.getElementById('citySelector');
+    const cityDropdownEl = document.getElementById('cityDropdown');
+    const footerDateEl = document.getElementById('footerDate');
+    const demoTextEl = document.getElementById('demoText');
+
+    function formatTime(date) {
+      if (!date) return '—';
+      const h = String(date.getHours()).padStart(2, '0');
+      const m = String(date.getMinutes()).padStart(2, '0');
+      return `${h}:${m}`;
+    }
+
+    function formatDays(days) {
+      // 0.5일 단위로 반올림해 정수 일수로 표시
+      const d = Math.round(days);
+      if (d <= 0) return '오늘';
+      if (d === 1) return 'D-1';
+      return `D-${d}`;
+    }
+
+    function formatDate(date) {
+      // "5/17 (일)" 형식
+      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+      const m = date.getMonth() + 1;
+      const d = date.getDate();
+      const w = dayNames[date.getDay()];
+      return `${m}/${d} (${w})`;
+    }
+
+    /**
+     * 오늘 하루를 대표하는 시각 = 정오 (12:00 KST)
+     * 달 위상은 하루 동안 거의 변하지 않으므로,
+     * 새벽에 봐도 한낮에 봐도 "오늘 밤 뜰 달"이 일관되게 표시됨
+     */
+    function getTodayNoon() {
+      const noon = new Date();
+      noon.setHours(12, 0, 0, 0);
+      return noon;
+    }
+
+    /**
+     * 데모 모드 — URL 파라미터로 위상 강제 표시
+     * 예: ?demo=full, ?demo=new, ?demo=first, ?demo=last, ?demo=0.35
+     */
+    const DEMO_PRESETS = {
+      'new':     0.00,   // 신월
+      'waxing':  0.15,   // 차오르는 초승
+      'first':   0.25,   // 상현달
+      'gibbous': 0.40,   // 차오르는 달
+      'full':    0.50,   // 보름달
+      'waning':  0.60,   // 기우는 달
+      'last':    0.75,   // 하현달
+      'crescent': 0.90   // 그믐 직전
+    };
+    function getDemoPhase() {
+      const params = new URLSearchParams(window.location.search);
+      const d = params.get('demo');
+      if (!d) return null;
+      if (DEMO_PRESETS[d] !== undefined) return DEMO_PRESETS[d];
+      const n = parseFloat(d);
+      if (!isNaN(n) && n >= 0 && n <= 1) return n;
+      return null;
+    }
+
+    function update() {
+      const today = new Date();
+      const todayNoon = getTodayNoon();
+
+      // 데모 모드면 강제 위상, 아니면 오늘 정오 기준 실제 위상
+      const demoPhase = getDemoPhase();
+      const age = demoPhase !== null
+        ? demoPhase * SYNODIC_MONTH
+        : getMoonAge(todayNoon);
+      const phase = age / SYNODIC_MONTH;            // 0~1
+      const illumination = getIllumination(age);    // 0~1
+
+      // 헤더 — 위상 이름, 달 나이
+      phaseNameEl.textContent = getPhaseName(age);
+      ageNumEl.textContent = age.toFixed(1);
+
+      // 달 시각화
+      moonLightEl.setAttribute('d', buildMoonLightPath(phase, 48, 50, 50));
+
+      // 가시광 비율
+      illumNumEl.textContent = Math.round(illumination * 100);
+
+      // 다음 주요 위상
+      const next = getNextMajorPhase(age);
+      nextPhaseLabelEl.textContent = next.name;
+      nextPhaseValueEl.textContent = formatDays(next.days);
+
+      // 월출/월몰 — 선택된 도시 기준
+      const times = getMoonTimes(today, currentCity.lat, currentCity.lng);
+      if (times.alwaysUp) {
+        moonRiseEl.textContent = '하루 종일';
+        moonSetEl.textContent = '안 짐';
+      } else if (times.alwaysDown) {
+        moonRiseEl.textContent = '안 뜸';
+        moonSetEl.textContent = '하루 종일 짐';
+      } else {
+        moonRiseEl.textContent = times.rise ? formatTime(times.rise) : '—';
+        moonSetEl.textContent = times.set ? formatTime(times.set) : '—';
+      }
+
+      // 푸터 — 데모 모드 / 일반 모드 분리
+      if (demoPhase !== null) {
+        cityWrapEl.style.display = 'none';
+        demoTextEl.style.display = '';
+        demoTextEl.textContent = `데모 · 위상 ${Math.round(demoPhase * 100)}%`;
+      } else {
+        cityWrapEl.style.display = '';
+        demoTextEl.style.display = 'none';
+        citySelectorEl.textContent = currentCity.name;
+        footerDateEl.textContent = formatDate(today);
+      }
+    }
+
+    /* ----- 도시 선택 드롭다운 ----- */
+    function buildCityDropdown() {
+      cityDropdownEl.innerHTML = '';
+      CITIES.forEach(city => {
+        const btn = document.createElement('button');
+        btn.className = 'city-option';
+        btn.type = 'button';
+        btn.textContent = city.name;
+        btn.setAttribute('role', 'menuitem');
+        if (city.name === currentCity.name) btn.classList.add('selected');
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          currentCity = city;
+          saveCity();
+          closeCityDropdown();
+          buildCityDropdown(); // selected 마크 갱신
+          update();            // 위치 변경 → 월출/월몰 다시 계산
+        });
+        cityDropdownEl.appendChild(btn);
+      });
+    }
+
+    function openCityDropdown() {
+      cityDropdownEl.classList.add('show');
+      citySelectorEl.classList.add('open');
+      citySelectorEl.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeCityDropdown() {
+      cityDropdownEl.classList.remove('show');
+      citySelectorEl.classList.remove('open');
+      citySelectorEl.setAttribute('aria-expanded', 'false');
+    }
+
+    citySelectorEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (cityDropdownEl.classList.contains('show')) {
+        closeCityDropdown();
+      } else {
+        openCityDropdown();
+      }
+    });
+
+    // 외부 클릭 또는 ESC 키로 닫기
+    document.addEventListener('click', (e) => {
+      if (!cityDropdownEl.contains(e.target) && e.target !== citySelectorEl) {
+        closeCityDropdown();
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeCityDropdown();
+    });
+
+    buildCityDropdown();
+    update();
+    // 자정 넘어가면 "오늘"이 바뀌므로 매 시간 체크 (날짜 변경 감지용)
+    setInterval(update, 3600000);
+
+    /* ============================================
+       4방향 리사이즈
+       ============================================ */
+    const SIZE_KEY = 'nosion-moon-phase-size-v1';
+    const MIN_WIDTH = 300;
+    const MAX_WIDTH = 600;
+    const MIN_HEIGHT = 380;
+    const MAX_HEIGHT = 700;
+
+    const cardEl = document.getElementById('card');
+
+    let cardWidth = 360;
+    let cardHeight = null;
+
+    try {
+      const savedSize = localStorage.getItem(SIZE_KEY);
+      if (savedSize) {
+        const s = JSON.parse(savedSize);
+        if (typeof s.width === 'number') {
+          cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width));
+        }
+        if (typeof s.height === 'number' && s.height > 0) {
+          cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height));
+        }
+      }
+    } catch (e) {}
+
+    function applyCardSize() {
+      cardEl.style.width = cardWidth + 'px';
+      if (cardHeight !== null) {
+        cardEl.style.height = cardHeight + 'px';
+      } else {
+        cardEl.style.height = '';
+      }
+    }
+
+    function saveSize() {
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify({
+          width: cardWidth,
+          height: cardHeight
+        }));
+      } catch (e) {}
+    }
+
+    let resizeDrag = null;
+
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = {
+        direction,
+        startX: x, startY: y,
+        startWidth: rect.width,
+        startHeight: rect.height
+      };
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor =
+        (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX;
+      const dy = y - resizeDrag.startY;
+      const dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeDrag.startWidth + delta));
+      } else if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeDrag.startHeight + delta));
+      }
+      applyCardSize();
+    }
+
+    function endResize() {
+      if (resizeDrag) {
+        saveSize();
+        resizeDrag = null;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      }
+    }
+
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+      const direction = handle.dataset.direction;
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startResize(direction, e.clientX, e.clientY);
+      });
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        startResize(direction, t.clientX, t.clientY);
+      }, { passive: false });
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (resizeDrag) { e.preventDefault(); moveResize(e.clientX, e.clientY); }
+    });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('mouseleave', endResize);
+    document.addEventListener('touchmove', (e) => {
+      if (resizeDrag) { const t = e.touches[0]; moveResize(t.clientX, t.clientY); }
+    }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+
+    applyCardSize();
+
+    /* ============================================
+       위치 이동 (헤더 드래그)
+       ============================================ */
+    const POS_KEY = 'nosion-moon-phase-pos-v1';
+    const widgetEl = document.getElementById('widget');
+
+    let offsetX = 0;
+    let offsetY = 0;
+    let moveDrag = null;
+
+    try {
+      const savedPos = localStorage.getItem(POS_KEY);
+      if (savedPos) {
+        const p = JSON.parse(savedPos);
+        if (typeof p.x === 'number') offsetX = p.x;
+        if (typeof p.y === 'number') offsetY = p.y;
+      }
+    } catch (e) {}
+
+    function applyPosition() {
+      widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+
+    function savePosition() {
+      try {
+        localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY }));
+      } catch (e) {}
+    }
+
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      // 헤더가 없어졌으므로 카드 빈 영역 전체에서 드래그 가능
+      // (인터랙티브 요소는 제외)
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input'];
+      for (const sel of blocked) {
+        if (target.closest(sel)) return false;
+      }
+      return true;
+    }
+
+    function startMove(x, y) {
+      moveDrag = {
+        startX: x, startY: y,
+        startOffsetX: offsetX,
+        startOffsetY: offsetY
+      };
+      document.body.style.userSelect = 'none';
+      cardEl.classList.add('dragging');
+    }
+
+    function doMove(x, y) {
+      if (!moveDrag) return;
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
+      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
+      applyPosition();
+    }
+
+    function endMove() {
+      if (moveDrag) {
+        savePosition();
+        moveDrag = null;
+        document.body.style.userSelect = '';
+        cardEl.classList.remove('dragging');
+      }
+    }
+
+    applyPosition();
+
+    cardEl.addEventListener('mousedown', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      e.preventDefault();
+      startMove(e.clientX, e.clientY);
+    });
+    cardEl.addEventListener('touchstart', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      const t = e.touches[0];
+      startMove(t.clientX, t.clientY);
+    }, { passive: true });
+
+    document.addEventListener('mousemove', (e) => {
+      if (moveDrag) { e.preventDefault(); doMove(e.clientX, e.clientY); }
+    });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('mouseleave', endMove);
+    document.addEventListener('touchmove', (e) => {
+      if (moveDrag) { const t = e.touches[0]; doMove(t.clientX, t.clientY); }
+    }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    // 크기 초기화 버튼 — 크기와 위치 모두 원복
+    const DEFAULT_WIDTH = 360;
+    const resizeResetBtn = document.getElementById('resizeResetBtn');
+    resizeResetBtn.addEventListener('click', () => {
+      cardWidth = DEFAULT_WIDTH;
+      cardHeight = null;
+      applyCardSize();
+      saveSize();
+
+      offsetX = 0;
+      offsetY = 0;
+      applyPosition();
+      savePosition();
+    });
+  </script>
+</body>
+</html>

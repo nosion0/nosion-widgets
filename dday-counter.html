@@ -1,50 +1,94 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>D-Day Counter — nosion</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" as="style" onload="this.rel='stylesheet'"
-    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D-Day Counter</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ============================================
+       노시언 위젯 시그니처 디자인 토큰
+       ============================================ */
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 10% 55%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+                   system-ui, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      word-break: keep-all;
+    }
 
     body {
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #ffffff;
+      padding: 1rem;
+      box-sizing: border-box;
       min-height: 100vh;
       display: flex;
-      align-items: center;
       justify-content: center;
-      padding: 16px;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .widget-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      position: relative;
+      width: fit-content;
     }
 
     .card {
-      background: #ffffff;
-      border: 1px solid #e5e5e5;
-      border-radius: 24px;
-      padding: 40px 36px 36px;
-      width: 100%;
-      max-width: 400px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 2rem 1.5rem;
+      width: 360px;
+      position: relative;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
       text-align: center;
     }
 
-    /* ── 상태: 표시 모드 ── */
-    .display-mode .label {
-      font-size: 13px;
+    .card.dragging { cursor: grabbing; }
+
+    /* ── 표시 모드 ── */
+    .display-mode { display: none; flex-direction: column; }
+    .display-mode.show { display: flex; }
+
+    .label {
+      font-size: 0.6875rem;
       font-weight: 500;
-      color: #9ca3af;
-      letter-spacing: 0.06em;
+      color: var(--muted-foreground);
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 8px;
+      margin-bottom: 0.5rem;
     }
 
-    .display-mode .event-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 32px;
+    .event-title {
+      font-size: 1.125rem;
+      font-weight: 500;
+      color: hsl(220 10% 42%);
+      margin-bottom: 1.75rem;
+      letter-spacing: -0.015em;
       line-height: 1.3;
     }
 
@@ -52,357 +96,771 @@
       display: flex;
       align-items: baseline;
       justify-content: center;
-      gap: 4px;
-      margin-bottom: 8px;
+      gap: 0.25rem;
+      margin-bottom: 0.5rem;
     }
 
     .dday-prefix {
-      font-size: 28px;
-      font-weight: 800;
-      color: #1a1a1a;
+      font-size: 1.75rem;
+      font-weight: 500;
+      color: var(--foreground);
       letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
     }
 
     .dday-number {
-      font-size: 88px;
-      font-weight: 800;
-      color: #1a1a1a;
+      font-size: 4.5rem;
+      font-weight: 500;
+      color: var(--foreground);
       letter-spacing: -0.04em;
       line-height: 1;
+      font-variant-numeric: tabular-nums;
     }
 
     .dday-number.today {
-      font-size: 64px;
+      font-size: 3rem;
+      letter-spacing: -0.025em;
     }
 
     .dday-sub {
-      font-size: 13px;
-      color: #9ca3af;
-      font-weight: 400;
-      margin-bottom: 28px;
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.005em;
     }
 
     .divider {
-      width: 100%;
       height: 1px;
-      background: #f3f4f6;
-      margin: 0 0 20px;
+      background: var(--border);
+      opacity: 0.5;
+      margin: 0 -0.25rem 1.125rem;
     }
 
     .target-date-display {
-      font-size: 13px;
-      color: #9ca3af;
-      font-weight: 400;
-      margin-bottom: 20px;
+      font-size: 0.8125rem;
+      color: hsl(220 10% 55%);
+      margin-bottom: 1.125rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.005em;
     }
 
     .edit-btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 20px;
-      border: 1px solid #e5e5e5;
+      gap: 0.375rem;
+      align-self: center;
+      padding: 0.4375rem 1rem;
+      border: 1px solid var(--border);
       border-radius: 999px;
       background: transparent;
-      color: #9ca3af;
-      font-size: 12px;
+      color: var(--muted-foreground);
+      font-size: 0.75rem;
       font-weight: 500;
       font-family: inherit;
+      letter-spacing: -0.005em;
       cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      transition: background var(--transition), color var(--transition);
     }
     .edit-btn:hover {
-      background: #f9fafb;
-      color: #4b5563;
+      background: var(--muted);
+      color: var(--foreground);
     }
 
-    .edit-btn svg {
-      flex-shrink: 0;
-    }
+    /* ── 설정 모드 ── */
+    .setup-mode { display: none; flex-direction: column; text-align: left; }
+    .setup-mode.show { display: flex; }
 
-    /* ── 상태: 설정 모드 ── */
-    .setup-mode {
-      display: none;
-    }
-    .setup-mode .setup-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 24px;
+    .setup-title {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 1.25rem;
+      letter-spacing: -0.015em;
+      text-align: center;
     }
 
     .field {
-      text-align: left;
-      margin-bottom: 16px;
+      margin-bottom: 0.875rem;
     }
     .field label {
       display: block;
-      font-size: 11px;
-      font-weight: 600;
-      color: #9ca3af;
-      letter-spacing: 0.06em;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 0.375rem;
     }
     .field input {
       width: 100%;
-      padding: 10px 14px;
-      border: 1px solid #e5e5e5;
-      border-radius: 12px;
-      font-size: 14px;
+      padding: 0.5625rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
       font-family: inherit;
-      color: #1a1a1a;
-      background: #ffffff;
+      color: var(--foreground);
+      background: var(--card);
       outline: none;
-      transition: border-color 0.15s;
+      transition: border-color var(--transition);
+      letter-spacing: -0.005em;
     }
     .field input:focus {
-      border-color: #1a1a1a;
+      border-color: var(--foreground);
     }
     .field input::placeholder {
-      color: #d1d5db;
+      color: var(--muted-foreground);
+      opacity: 0.5;
     }
 
     .btn-row {
       display: flex;
-      gap: 8px;
-      margin-top: 24px;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
     }
 
     .btn-cancel {
       flex: 1;
-      padding: 10px;
-      border: 1px solid #e5e5e5;
+      padding: 0.5625rem;
+      border: 1px solid var(--border);
       border-radius: 999px;
       background: transparent;
-      color: #9ca3af;
-      font-size: 13px;
+      color: var(--muted-foreground);
+      font-size: 0.8125rem;
       font-weight: 500;
       font-family: inherit;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background var(--transition), color var(--transition);
     }
-    .btn-cancel:hover { background: #f9fafb; }
+    .btn-cancel:hover {
+      background: var(--muted);
+      color: var(--foreground);
+    }
 
     .btn-save {
       flex: 2;
-      padding: 10px;
-      border: 1px solid #1a1a1a;
+      padding: 0.5625rem;
+      border: 1px solid var(--foreground);
       border-radius: 999px;
-      background: #1a1a1a;
-      color: #ffffff;
-      font-size: 13px;
-      font-weight: 600;
+      background: var(--foreground);
+      color: var(--card);
+      font-size: 0.8125rem;
+      font-weight: 500;
       font-family: inherit;
       cursor: pointer;
-      transition: opacity 0.15s;
+      transition: opacity var(--transition);
     }
-    .btn-save:hover { opacity: 0.8; }
+    .btn-save:hover { opacity: 0.85; }
 
     /* ── 첫 실행 모드 ── */
     .first-run {
       display: none;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 0.5rem;
+      padding: 0.75rem 0;
     }
+    .first-run.show { display: flex; }
+
     .first-run .icon {
-      font-size: 36px;
-      margin-bottom: 8px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.625rem;
+      color: var(--muted-foreground);
     }
-    .first-run p {
-      font-size: 15px;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 4px;
+
+    .first-run .icon svg {
+      width: 20px;
+      height: 20px;
     }
-    .first-run span {
-      font-size: 13px;
-      color: #9ca3af;
-      margin-bottom: 20px;
+
+    .first-run .title-text {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.015em;
     }
+
+    .first-run .sub-text {
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      margin-bottom: 1.25rem;
+      letter-spacing: -0.005em;
+    }
+
     .first-run .btn-start {
-      padding: 10px 28px;
-      border: 1px solid #1a1a1a;
+      padding: 0.5625rem 1.5rem;
+      border: 1px solid var(--foreground);
       border-radius: 999px;
-      background: #1a1a1a;
-      color: #ffffff;
-      font-size: 13px;
-      font-weight: 600;
+      background: var(--foreground);
+      color: var(--card);
+      font-size: 0.8125rem;
+      font-weight: 500;
       font-family: inherit;
       cursor: pointer;
-      transition: opacity 0.15s;
+      transition: opacity var(--transition);
     }
-    .first-run .btn-start:hover { opacity: 0.8; }
+    .first-run .btn-start:hover { opacity: 0.85; }
+
+    /* === 우측 컨트롤 (노시언 시그니처) === */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      opacity: 0.25;
+      transition: opacity var(--transition);
+      padding-top: 0.25rem;
+    }
+
+    .widget-wrapper:hover .controls { opacity: 1; }
+
+    .control-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: rgba(115, 115, 115, 0.5);
+      cursor: pointer;
+      transition: color var(--transition);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .control-btn:hover:not(:disabled) {
+      color: var(--foreground);
+    }
+
+    .control-btn svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 2;
+    }
+
+    .control-btn[data-tooltip]::before,
+    .control-btn[data-tooltip]::after {
+      position: absolute;
+      right: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease 0s;
+      z-index: 50;
+    }
+
+    .control-btn[data-tooltip]::before {
+      content: attr(data-tooltip);
+      background: var(--card);
+      color: var(--foreground);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 0.3125rem 0.625rem;
+      font-size: 0.6875rem;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+      font-family: inherit;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .control-btn[data-tooltip]::after {
+      content: '';
+      right: calc(100% + 3px);
+      width: 5px;
+      height: 5px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transform: translateY(-50%) rotate(-45deg);
+    }
+
+    .control-btn[data-tooltip]:hover::before,
+    .control-btn[data-tooltip]:hover::after {
+      opacity: 1;
+      transition-delay: 0.4s;
+    }
+
+    /* === 4방향 리사이즈 핸들 === */
+    .resize-handle {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      z-index: 20;
+    }
+
+    .resize-handle .bar {
+      background: var(--border);
+      transition: opacity var(--transition), background var(--transition),
+                  width 0.15s ease, height 0.15s ease;
+      border-radius: 999px;
+      opacity: 0;
+    }
+
+    .widget-wrapper:hover .resize-handle .bar { opacity: 1; }
+    .resize-handle:hover .bar { background: var(--muted-foreground); }
+
+    .handle-top {
+      top: 0; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px; height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-top .bar { width: 36px; height: 1px; }
+    .handle-top:hover .bar { height: 3px; }
+
+    .handle-bottom {
+      bottom: 0; left: 50%;
+      transform: translate(-50%, 50%);
+      width: 36px; height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-bottom .bar { width: 36px; height: 1px; }
+    .handle-bottom:hover .bar { height: 3px; }
+
+    .handle-left {
+      left: 0; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px; height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-left .bar { width: 1px; height: 36px; }
+    .handle-left:hover .bar { width: 3px; }
+
+    .handle-right {
+      right: 0; top: 50%;
+      transform: translate(50%, -50%);
+      width: 16px; height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-right .bar { width: 1px; height: 36px; }
+    .handle-right:hover .bar { width: 3px; }
   </style>
 </head>
 <body>
-<div class="card" id="card">
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
 
-  <!-- 표시 모드 -->
-  <div class="display-mode" id="displayMode">
-    <div class="label">D-Day</div>
-    <div class="event-title" id="eventTitle">목표일</div>
+      <!-- 표시 모드 -->
+      <div class="display-mode" id="displayMode">
+        <div class="label">D-Day</div>
+        <div class="event-title" id="eventTitle">목표일</div>
 
-    <div class="dday-wrap">
-      <span class="dday-prefix" id="ddayPrefix">D-</span>
-      <span class="dday-number" id="ddayNumber">0</span>
+        <div class="dday-wrap">
+          <span class="dday-prefix" id="ddayPrefix">D-</span>
+          <span class="dday-number" id="ddayNumber">0</span>
+        </div>
+        <div class="dday-sub" id="ddaySub">남은 날</div>
+
+        <div class="divider"></div>
+        <div class="target-date-display" id="targetDateDisplay"></div>
+
+        <button class="edit-btn" id="openSetupBtn" type="button">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z"/>
+          </svg>
+          날짜 변경
+        </button>
+      </div>
+
+      <!-- 첫 실행 -->
+      <div class="first-run" id="firstRun">
+        <div class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <div class="title-text">D-Day 카운터</div>
+        <div class="sub-text">목표일을 설정해보세요</div>
+        <button class="btn-start" id="firstStartBtn" type="button">시작하기</button>
+      </div>
+
+      <!-- 설정 모드 -->
+      <div class="setup-mode" id="setupMode">
+        <div class="setup-title">날짜 설정</div>
+        <div class="field">
+          <label for="inputTitle">이벤트 이름</label>
+          <input type="text" id="inputTitle" placeholder="예: 수능 D-Day, 런칭일, 기념일" maxlength="30" />
+        </div>
+        <div class="field">
+          <label for="inputDate">목표 날짜</label>
+          <input type="date" id="inputDate" />
+        </div>
+        <div class="btn-row">
+          <button class="btn-cancel" id="cancelSetupBtn" type="button">취소</button>
+          <button class="btn-save" id="saveSetupBtn" type="button">저장</button>
+        </div>
+      </div>
+
+      <!-- 4방향 리사이즈 핸들 -->
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
     </div>
-    <div class="dday-sub" id="ddaySub">남은 날</div>
 
-    <div class="divider"></div>
-    <div class="target-date-display" id="targetDateDisplay"></div>
-
-    <button class="edit-btn" onclick="openSetup()">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z"/>
-      </svg>
-      날짜 변경
-    </button>
+    <!-- 우측 컨트롤 -->
+    <div class="controls">
+      <button class="control-btn" id="resizeResetBtn"
+              data-tooltip="크기 초기화" title="크기 초기화"
+              type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+    </div>
   </div>
 
-  <!-- 첫 실행 -->
-  <div class="first-run" id="firstRun">
-    <div class="icon">🗓</div>
-    <p>D-Day 카운터</p>
-    <span>목표일을 설정해보세요</span>
-    <button class="btn-start" onclick="openSetup()">시작하기</button>
-  </div>
+  <script>
+    /* ============================================
+       D-Day Counter — 로직
+       ============================================ */
+    const STORAGE_KEY = 'nosion-dday-counter-v1';
 
-  <!-- 설정 모드 -->
-  <div class="setup-mode" id="setupMode">
-    <div class="setup-title">날짜 설정</div>
-    <div class="field">
-      <label>이벤트 이름</label>
-      <input type="text" id="inputTitle" placeholder="예: 수능 D-Day, 런칭일, 기념일" maxlength="30" />
-    </div>
-    <div class="field">
-      <label>목표 날짜</label>
-      <input type="date" id="inputDate" />
-    </div>
-    <div class="btn-row">
-      <button class="btn-cancel" onclick="cancelSetup()">취소</button>
-      <button class="btn-save" onclick="saveSetup()">저장</button>
-    </div>
-  </div>
+    const displayModeEl = document.getElementById('displayMode');
+    const firstRunEl = document.getElementById('firstRun');
+    const setupModeEl = document.getElementById('setupMode');
+    const eventTitleEl = document.getElementById('eventTitle');
+    const ddayPrefixEl = document.getElementById('ddayPrefix');
+    const ddayNumberEl = document.getElementById('ddayNumber');
+    const ddaySubEl = document.getElementById('ddaySub');
+    const targetDateDisplayEl = document.getElementById('targetDateDisplay');
+    const inputTitleEl = document.getElementById('inputTitle');
+    const inputDateEl = document.getElementById('inputDate');
 
-</div>
-
-<script>
-  const STORAGE_KEY = 'nosion_dday_v1';
-
-  function loadData() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; }
-    catch { return null; }
-  }
-
-  function saveData(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
-
-  function calcDday(targetDateStr) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(targetDateStr);
-    target.setHours(0, 0, 0, 0);
-    return Math.round((target - today) / (1000 * 60 * 60 * 24));
-  }
-
-  function formatDate(dateStr) {
-    const d = new Date(dateStr);
-    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
-  }
-
-  function renderDisplay(data) {
-    document.getElementById('firstRun').style.display = 'none';
-    document.getElementById('setupMode').style.display = 'none';
-    document.getElementById('displayMode').style.display = 'block';
-
-    const diff = calcDday(data.date);
-    const numEl = document.getElementById('ddayNumber');
-    const prefixEl = document.getElementById('ddayPrefix');
-    const subEl = document.getElementById('ddaySub');
-
-    document.getElementById('eventTitle').textContent = data.title || '목표일';
-    document.getElementById('targetDateDisplay').textContent = formatDate(data.date);
-
-    if (diff === 0) {
-      prefixEl.textContent = '';
-      numEl.textContent = 'D-Day';
-      numEl.classList.add('today');
-      subEl.textContent = '오늘이 그날입니다 🎉';
-    } else if (diff > 0) {
-      prefixEl.textContent = 'D-';
-      numEl.textContent = diff;
-      numEl.classList.remove('today');
-      subEl.textContent = `앞으로 ${diff}일 남았습니다`;
-    } else {
-      prefixEl.textContent = 'D+';
-      numEl.textContent = Math.abs(diff);
-      numEl.classList.remove('today');
-      subEl.textContent = `${Math.abs(diff)}일 전이었습니다`;
+    function loadData() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; }
+      catch (e) { return null; }
     }
-  }
 
-  function renderFirst() {
-    document.getElementById('displayMode').style.display = 'none';
-    document.getElementById('setupMode').style.display = 'none';
-    document.getElementById('firstRun').style.display = 'flex';
-  }
-
-  function openSetup() {
-    const data = loadData();
-    document.getElementById('displayMode').style.display = 'none';
-    document.getElementById('firstRun').style.display = 'none';
-    document.getElementById('setupMode').style.display = 'block';
-    if (data) {
-      document.getElementById('inputTitle').value = data.title || '';
-      document.getElementById('inputDate').value = data.date || '';
-    } else {
-      document.getElementById('inputTitle').value = '';
-      // default: 30 days from now
-      const d = new Date();
-      d.setDate(d.getDate() + 30);
-      document.getElementById('inputDate').value = d.toISOString().slice(0, 10);
+    function saveData(data) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+      catch (e) {}
     }
-  }
 
-  function cancelSetup() {
-    const data = loadData();
-    if (data) renderDisplay(data);
-    else renderFirst();
-  }
+    /**
+     * "YYYY-MM-DD" 문자열을 로컬 자정 Date 객체로 변환
+     * (new Date("YYYY-MM-DD")는 UTC 자정으로 파싱되어 KST 같은 양수 TZ는 정상이지만
+     *  UTC 음수 TZ에서는 하루 어긋남 — 로컬 파싱으로 일관성 보장)
+     */
+    function parseLocalDate(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
 
-  function saveSetup() {
-    const title = document.getElementById('inputTitle').value.trim() || '목표일';
-    const date = document.getElementById('inputDate').value;
-    if (!date) { alert('날짜를 선택해주세요.'); return; }
-    const data = { title, date };
-    saveData(data);
-    renderDisplay(data);
-  }
+    function calcDday(targetDateStr) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const target = parseLocalDate(targetDateStr);
+      target.setHours(0, 0, 0, 0);
+      return Math.round((target - today) / (1000 * 60 * 60 * 24));
+    }
 
-  // 매 자정 갱신
-  function scheduleNextDay() {
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    const ms = tomorrow - now;
-    setTimeout(() => {
+    function formatDate(dateStr) {
+      const d = parseLocalDate(dateStr);
+      return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+    }
+
+    function showOnly(modeEl) {
+      [displayModeEl, firstRunEl, setupModeEl].forEach(el => {
+        el.classList.toggle('show', el === modeEl);
+      });
+    }
+
+    function renderDisplay(data) {
+      showOnly(displayModeEl);
+      const diff = calcDday(data.date);
+      eventTitleEl.textContent = data.title || '목표일';
+      targetDateDisplayEl.textContent = formatDate(data.date);
+
+      if (diff === 0) {
+        ddayPrefixEl.textContent = '';
+        ddayNumberEl.textContent = 'D-Day';
+        ddayNumberEl.classList.add('today');
+        ddaySubEl.textContent = '오늘이 그날입니다';
+      } else if (diff > 0) {
+        ddayPrefixEl.textContent = 'D-';
+        ddayNumberEl.textContent = diff;
+        ddayNumberEl.classList.remove('today');
+        ddaySubEl.textContent = `앞으로 ${diff}일 남았습니다`;
+      } else {
+        ddayPrefixEl.textContent = 'D+';
+        ddayNumberEl.textContent = Math.abs(diff);
+        ddayNumberEl.classList.remove('today');
+        ddaySubEl.textContent = `${Math.abs(diff)}일 전이었습니다`;
+      }
+    }
+
+    function renderFirst() { showOnly(firstRunEl); }
+
+    function openSetup() {
+      const data = loadData();
+      showOnly(setupModeEl);
+      if (data) {
+        inputTitleEl.value = data.title || '';
+        inputDateEl.value = data.date || '';
+      } else {
+        inputTitleEl.value = '';
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        inputDateEl.value = d.toISOString().slice(0, 10);
+      }
+      setTimeout(() => inputTitleEl.focus(), 0);
+    }
+
+    function cancelSetup() {
       const data = loadData();
       if (data) renderDisplay(data);
-      scheduleNextDay();
-    }, ms);
-  }
+      else renderFirst();
+    }
 
-  // 초기화
-  (function init() {
-    const data = loadData();
-    if (data) renderDisplay(data);
-    else renderFirst();
-    scheduleNextDay();
-  })();
-</script>
+    function saveSetup() {
+      const title = inputTitleEl.value.trim() || '목표일';
+      const date = inputDateEl.value;
+      if (!date) {
+        inputDateEl.focus();
+        return;
+      }
+      const data = { title, date };
+      saveData(data);
+      renderDisplay(data);
+    }
+
+    document.getElementById('openSetupBtn').addEventListener('click', (e) => { e.stopPropagation(); openSetup(); });
+    document.getElementById('firstStartBtn').addEventListener('click', (e) => { e.stopPropagation(); openSetup(); });
+    document.getElementById('cancelSetupBtn').addEventListener('click', (e) => { e.stopPropagation(); cancelSetup(); });
+    document.getElementById('saveSetupBtn').addEventListener('click', (e) => { e.stopPropagation(); saveSetup(); });
+
+    // 매 자정 갱신
+    function scheduleNextDay() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      const ms = tomorrow - now;
+      setTimeout(() => {
+        const data = loadData();
+        if (data && displayModeEl.classList.contains('show')) renderDisplay(data);
+        scheduleNextDay();
+      }, ms);
+    }
+
+    (function init() {
+      const data = loadData();
+      if (data) renderDisplay(data);
+      else renderFirst();
+      scheduleNextDay();
+    })();
+
+    /* ============================================
+       4방향 리사이즈 (노시언 공통 패턴)
+       ============================================ */
+    const SIZE_KEY = 'nosion-dday-counter-size-v1';
+    const MIN_WIDTH = 300;
+    const MAX_WIDTH = 600;
+    const MIN_HEIGHT = 320;
+    const MAX_HEIGHT = 600;
+
+    const cardEl = document.getElementById('card');
+    let cardWidth = 360;
+    let cardHeight = null;
+
+    try {
+      const savedSize = localStorage.getItem(SIZE_KEY);
+      if (savedSize) {
+        const s = JSON.parse(savedSize);
+        if (typeof s.width === 'number') {
+          cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width));
+        }
+        if (typeof s.height === 'number' && s.height > 0) {
+          cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height));
+        }
+      }
+    } catch (e) {}
+
+    function applyCardSize() {
+      cardEl.style.width = cardWidth + 'px';
+      if (cardHeight !== null) {
+        cardEl.style.height = cardHeight + 'px';
+      } else {
+        cardEl.style.height = '';
+      }
+    }
+    function saveSize() {
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify({
+          width: cardWidth, height: cardHeight
+        }));
+      } catch (e) {}
+    }
+
+    let resizeDrag = null;
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = {
+        direction, startX: x, startY: y,
+        startWidth: rect.width, startHeight: rect.height
+      };
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor =
+        (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX;
+      const dy = y - resizeDrag.startY;
+      const dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeDrag.startWidth + delta));
+      } else if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeDrag.startHeight + delta));
+      }
+      applyCardSize();
+    }
+    function endResize() {
+      if (resizeDrag) {
+        saveSize();
+        resizeDrag = null;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      }
+    }
+
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+      const direction = handle.dataset.direction;
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startResize(direction, e.clientX, e.clientY);
+      });
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        startResize(direction, t.clientX, t.clientY);
+      }, { passive: false });
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (resizeDrag) { e.preventDefault(); moveResize(e.clientX, e.clientY); }
+    });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('mouseleave', endResize);
+    document.addEventListener('touchmove', (e) => {
+      if (resizeDrag) { const t = e.touches[0]; moveResize(t.clientX, t.clientY); }
+    }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+
+    applyCardSize();
+
+    /* ============================================
+       위치 이동 (카드 빈 영역 드래그, 인터랙티브 제외)
+       ============================================ */
+    const POS_KEY = 'nosion-dday-counter-pos-v1';
+    const widgetEl = document.getElementById('widget');
+
+    let offsetX = 0, offsetY = 0;
+    let moveDrag = null;
+
+    try {
+      const savedPos = localStorage.getItem(POS_KEY);
+      if (savedPos) {
+        const p = JSON.parse(savedPos);
+        if (typeof p.x === 'number') offsetX = p.x;
+        if (typeof p.y === 'number') offsetY = p.y;
+      }
+    } catch (e) {}
+
+    function applyPosition() {
+      widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+    function savePosition() {
+      try {
+        localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY }));
+      } catch (e) {}
+    }
+
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input', 'label'];
+      for (const sel of blocked) {
+        if (target.closest(sel)) return false;
+      }
+      return true;
+    }
+
+    function startMove(x, y) {
+      moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY };
+      document.body.style.userSelect = 'none';
+      cardEl.classList.add('dragging');
+    }
+    function doMove(x, y) {
+      if (!moveDrag) return;
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
+      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
+      applyPosition();
+    }
+    function endMove() {
+      if (moveDrag) {
+        savePosition();
+        moveDrag = null;
+        document.body.style.userSelect = '';
+        cardEl.classList.remove('dragging');
+      }
+    }
+
+    applyPosition();
+
+    cardEl.addEventListener('mousedown', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      e.preventDefault();
+      startMove(e.clientX, e.clientY);
+    });
+    cardEl.addEventListener('touchstart', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      const t = e.touches[0];
+      startMove(t.clientX, t.clientY);
+    }, { passive: true });
+
+    document.addEventListener('mousemove', (e) => {
+      if (moveDrag) { e.preventDefault(); doMove(e.clientX, e.clientY); }
+    });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('mouseleave', endMove);
+    document.addEventListener('touchmove', (e) => {
+      if (moveDrag) { const t = e.touches[0]; doMove(t.clientX, t.clientY); }
+    }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    // 크기 초기화
+    const DEFAULT_WIDTH = 360;
+    document.getElementById('resizeResetBtn').addEventListener('click', () => {
+      cardWidth = DEFAULT_WIDTH;
+      cardHeight = null;
+      applyCardSize();
+      saveSize();
+      offsetX = 0; offsetY = 0;
+      applyPosition();
+      savePosition();
+    });
+  </script>
 </body>
 </html>

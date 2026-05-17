@@ -1,403 +1,853 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pomodoro Timer</title>
-<style>
-  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Timer</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    /* ============================================
+       노시언 위젯 시그니처 디자인 토큰
+       ============================================ */
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 10% 55%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
+    }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 16px;
-  }
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+                   system-ui, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      word-break: keep-all;
+    }
 
-  .card {
-    background: #ffffff;
-    border: 1px solid #e5e5e5;
-    border-radius: 24px;
-    padding: 40px 48px;
-    width: 100%;
-    max-width: 420px;
-    text-align: center;
-  }
+    body {
+      padding: 1rem;
+      box-sizing: border-box;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
 
-  /* 모드 탭 */
-  .mode-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    margin-bottom: 32px;
-  }
+    .widget-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      position: relative;
+      width: fit-content;
+    }
 
-  .tab {
-    font-family: 'Pretendard', -apple-system, sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    color: #9ca3af;
-    background: transparent;
-    border: 1px solid #e5e5e5;
-    border-radius: 100px;
-    padding: 5px 14px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-    letter-spacing: 0.02em;
-  }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem 1.75rem 1.5rem;
+      width: 360px;
+      position: relative;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+      text-align: center;
+    }
 
-  .tab:hover { background: #f9fafb; color: #4b5563; }
-  .tab.active {
-    background: #1a1a1a;
-    border-color: #1a1a1a;
-    color: #ffffff;
-  }
+    .card.dragging { cursor: grabbing; }
 
-  /* 세션 도트 */
-  .session-dots {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    margin-bottom: 28px;
-  }
+    /* === 모드 탭 === */
+    .mode-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 0.375rem;
+      margin-bottom: 1.5rem;
+    }
 
-  .dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #e5e7eb;
-    transition: background 0.2s;
-  }
+    .tab {
+      font-family: inherit;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.025em;
+      color: var(--muted-foreground);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.3125rem 0.75rem;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition),
+                  border-color var(--transition);
+    }
 
-  .dot.done { background: #1a1a1a; }
-  .dot.current { background: #4b5563; }
+    .tab:hover {
+      background: var(--muted);
+      color: var(--foreground);
+    }
 
-  /* 타이머 링 */
-  .ring-wrapper {
-    position: relative;
-    width: 180px;
-    height: 180px;
-    margin: 0 auto 28px;
-  }
+    .tab.active {
+      background: var(--foreground);
+      border-color: var(--foreground);
+      color: var(--card);
+    }
 
-  .ring-svg {
-    width: 180px;
-    height: 180px;
-    transform: rotate(-90deg);
-  }
+    /* === 세션 도트 === */
+    .session-dots {
+      display: flex;
+      justify-content: center;
+      gap: 0.375rem;
+      margin-bottom: 1.5rem;
+      min-height: 8px;
+    }
 
-  .ring-bg {
-    fill: none;
-    stroke: #f3f4f6;
-    stroke-width: 4;
-  }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: hsl(220 10% 88%);
+      transition: background var(--transition);
+    }
 
-  .ring-progress {
-    fill: none;
-    stroke: #1a1a1a;
-    stroke-width: 4;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.5s linear;
-  }
+    .dot.done { background: var(--foreground); }
+    .dot.current { background: var(--muted-foreground); }
 
-  .ring-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-  }
+    /* === 링 타이머 === */
+    .ring-wrapper {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 1.5rem;
+      flex-shrink: 0;
+    }
 
-  .time-display {
-    font-size: 48px;
-    font-weight: 800;
-    color: #1a1a1a;
-    letter-spacing: -2px;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-  }
+    .ring-svg {
+      width: 180px;
+      height: 180px;
+      transform: rotate(-90deg);
+    }
 
-  .mode-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: #9ca3af;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin-top: 4px;
-  }
+    .ring-bg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 3;
+      opacity: 0.55;
+    }
 
-  /* 컨트롤 버튼 */
-  .controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
+    .ring-progress {
+      fill: none;
+      stroke: var(--foreground);
+      stroke-width: 3;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s linear;
+    }
 
-  .btn-main {
-    font-family: 'Pretendard', -apple-system, sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    color: #ffffff;
-    background: #1a1a1a;
-    border: none;
-    border-radius: 100px;
-    padding: 12px 36px;
-    cursor: pointer;
-    letter-spacing: 0.02em;
-    transition: opacity 0.15s;
-  }
+    .ring-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      user-select: none;
+    }
 
-  .btn-main:hover { opacity: 0.8; }
+    .time-display {
+      font-size: 2.5rem;
+      font-weight: 500;
+      color: var(--foreground);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
 
-  .btn-icon {
-    font-family: 'Pretendard', -apple-system, sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    color: #9ca3af;
-    background: transparent;
-    border: 1px solid #e5e5e5;
-    border-radius: 100px;
-    padding: 8px 16px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-  }
+    .mode-label {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.375rem;
+    }
 
-  .btn-icon:hover { background: #f9fafb; color: #4b5563; }
+    /* === 타이머 컨트롤 버튼 (노시언 .controls와 이름 충돌 회피: timer-controls) === */
+    .timer-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.625rem;
+      margin-bottom: 1.25rem;
+    }
 
-  /* 구분선 */
-  .divider {
-    width: 100%;
-    height: 1px;
-    background: #f3f4f6;
-    margin: 0 0 20px;
-  }
+    .btn-main {
+      font-family: inherit;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      letter-spacing: 0.005em;
+      color: var(--card);
+      background: var(--foreground);
+      border: 1px solid var(--foreground);
+      border-radius: 999px;
+      padding: 0.5rem 1.625rem;
+      cursor: pointer;
+      transition: opacity var(--transition);
+    }
 
-  /* 오늘 통계 */
-  .stats {
-    display: flex;
-    justify-content: center;
-    gap: 32px;
-  }
+    .btn-main:hover { opacity: 0.85; }
 
-  .stat-item { text-align: center; }
+    .btn-secondary {
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.005em;
+      color: var(--muted-foreground);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.4375rem 0.875rem;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
 
-  .stat-value {
-    font-size: 22px;
-    font-weight: 800;
-    color: #1a1a1a;
-    letter-spacing: -0.5px;
-    line-height: 1;
-  }
+    .btn-secondary:hover {
+      background: var(--muted);
+      color: var(--foreground);
+    }
 
-  .stat-label {
-    font-size: 11px;
-    font-weight: 400;
-    color: #9ca3af;
-    margin-top: 4px;
-    letter-spacing: 0.03em;
-  }
+    /* === 구분선 === */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      opacity: 0.5;
+      margin: 0 -0.25rem 1.125rem;
+      flex-shrink: 0;
+    }
 
-  @media (max-width: 360px) {
-    .card { padding: 32px 24px; }
-    .time-display { font-size: 40px; }
-    .ring-wrapper { width: 160px; height: 160px; }
-    .ring-svg { width: 160px; height: 160px; }
-  }
-</style>
+    /* === 통계 === */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 2.25rem;
+    }
+
+    .stat-item { text-align: center; }
+
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: hsl(220 10% 42%);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-label {
+      font-size: 0.6875rem;
+      font-weight: 400;
+      color: var(--muted-foreground);
+      opacity: 0.7;
+      margin-top: 0.25rem;
+      letter-spacing: 0.03em;
+    }
+
+    /* === 우측 컨트롤 (노시언 시그니처) === */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      opacity: 0.25;
+      transition: opacity var(--transition);
+      padding-top: 0.25rem;
+    }
+
+    .widget-wrapper:hover .controls { opacity: 1; }
+
+    .control-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: rgba(115, 115, 115, 0.5);
+      cursor: pointer;
+      transition: color var(--transition);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .control-btn:hover:not(:disabled) {
+      color: var(--foreground);
+    }
+
+    .control-btn svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 2;
+    }
+
+    .control-btn[data-tooltip]::before,
+    .control-btn[data-tooltip]::after {
+      position: absolute;
+      right: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease 0s;
+      z-index: 50;
+    }
+
+    .control-btn[data-tooltip]::before {
+      content: attr(data-tooltip);
+      background: var(--card);
+      color: var(--foreground);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 0.3125rem 0.625rem;
+      font-size: 0.6875rem;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+      font-family: inherit;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .control-btn[data-tooltip]::after {
+      content: '';
+      right: calc(100% + 3px);
+      width: 5px;
+      height: 5px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transform: translateY(-50%) rotate(-45deg);
+    }
+
+    .control-btn[data-tooltip]:hover::before,
+    .control-btn[data-tooltip]:hover::after {
+      opacity: 1;
+      transition-delay: 0.4s;
+    }
+
+    /* === 4방향 리사이즈 핸들 === */
+    .resize-handle {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      z-index: 20;
+    }
+
+    .resize-handle .bar {
+      background: var(--border);
+      transition: opacity var(--transition), background var(--transition),
+                  width 0.15s ease, height 0.15s ease;
+      border-radius: 999px;
+      opacity: 0;
+    }
+
+    .widget-wrapper:hover .resize-handle .bar { opacity: 1; }
+    .resize-handle:hover .bar { background: var(--muted-foreground); }
+
+    .handle-top {
+      top: 0; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px; height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-top .bar { width: 36px; height: 1px; }
+    .handle-top:hover .bar { height: 3px; }
+
+    .handle-bottom {
+      bottom: 0; left: 50%;
+      transform: translate(-50%, 50%);
+      width: 36px; height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-bottom .bar { width: 36px; height: 1px; }
+    .handle-bottom:hover .bar { height: 3px; }
+
+    .handle-left {
+      left: 0; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px; height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-left .bar { width: 1px; height: 36px; }
+    .handle-left:hover .bar { width: 3px; }
+
+    .handle-right {
+      right: 0; top: 50%;
+      transform: translate(50%, -50%);
+      width: 16px; height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-right .bar { width: 1px; height: 36px; }
+    .handle-right:hover .bar { width: 3px; }
+  </style>
 </head>
 <body>
-<div class="card">
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
 
-  <!-- 모드 탭 -->
-  <div class="mode-tabs">
-    <button class="tab active" id="tab-focus" onclick="setMode('focus')">집중</button>
-    <button class="tab" id="tab-short" onclick="setMode('short')">짧은 휴식</button>
-    <button class="tab" id="tab-long" onclick="setMode('long')">긴 휴식</button>
-  </div>
+      <!-- 모드 탭 -->
+      <div class="mode-tabs">
+        <button class="tab active" id="tab-focus" type="button">집중</button>
+        <button class="tab" id="tab-short" type="button">짧은 휴식</button>
+        <button class="tab" id="tab-long" type="button">긴 휴식</button>
+      </div>
 
-  <!-- 세션 도트 -->
-  <div class="session-dots" id="session-dots"></div>
+      <!-- 세션 도트 -->
+      <div class="session-dots" id="session-dots"></div>
 
-  <!-- 링 타이머 -->
-  <div class="ring-wrapper">
-    <svg class="ring-svg" viewBox="0 0 180 180">
-      <circle class="ring-bg" cx="90" cy="90" r="82"/>
-      <circle class="ring-progress" id="ring" cx="90" cy="90" r="82"
-        stroke-dasharray="515.2"
-        stroke-dashoffset="0"/>
-    </svg>
-    <div class="ring-center">
-      <div class="time-display" id="time-display">25:00</div>
-      <div class="mode-label" id="mode-label">FOCUS</div>
+      <!-- 링 타이머 -->
+      <div class="ring-wrapper">
+        <svg class="ring-svg" viewBox="0 0 180 180">
+          <circle class="ring-bg" cx="90" cy="90" r="82"/>
+          <circle class="ring-progress" id="ring" cx="90" cy="90" r="82"
+            stroke-dasharray="515.2" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ring-center">
+          <div class="time-display" id="time-display">25:00</div>
+          <div class="mode-label" id="mode-label">FOCUS</div>
+        </div>
+      </div>
+
+      <!-- 컨트롤 버튼 -->
+      <div class="timer-controls">
+        <button class="btn-secondary" id="btn-reset" type="button">초기화</button>
+        <button class="btn-main" id="btn-start" type="button">시작</button>
+        <button class="btn-secondary" id="btn-skip" type="button">건너뛰기</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 통계 -->
+      <div class="stats">
+        <div class="stat-item">
+          <div class="stat-value" id="stat-sessions">0</div>
+          <div class="stat-label">완료 세션</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-focus">0</div>
+          <div class="stat-label">집중 분</div>
+        </div>
+      </div>
+
+      <!-- 4방향 리사이즈 핸들 -->
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+    <!-- 우측 컨트롤 -->
+    <div class="controls">
+      <button class="control-btn" id="resizeResetBtn"
+              data-tooltip="크기 초기화" title="크기 초기화"
+              type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
     </div>
   </div>
 
-  <!-- 컨트롤 -->
-  <div class="controls">
-    <button class="btn-icon" onclick="resetTimer()">초기화</button>
-    <button class="btn-main" id="btn-start" onclick="toggleTimer()">시작</button>
-    <button class="btn-icon" onclick="skipTimer()">건너뛰기</button>
-  </div>
+  <script>
+    /* ============================================
+       Pomodoro Timer — 로직
+       ============================================ */
+    const MODES = {
+      focus: { label: 'FOCUS',       duration: 25 * 60, mins: 25 },
+      short: { label: 'SHORT BREAK', duration: 5 * 60,  mins: 5 },
+      long:  { label: 'LONG BREAK',  duration: 15 * 60, mins: 15 }
+    };
+    const CIRCUMFERENCE = 2 * Math.PI * 82; // ~515.2
+    const STATS_KEY = 'nosion-pomodoro-timer-stats-v1';
 
-  <div class="divider"></div>
+    let mode = 'focus';
+    let totalSecs = MODES.focus.duration;
+    let remainSecs = totalSecs;
+    let running = false;
+    let intervalId = null;
 
-  <!-- 통계 -->
-  <div class="stats">
-    <div class="stat-item">
-      <div class="stat-value" id="stat-sessions">0</div>
-      <div class="stat-label">완료 세션</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value" id="stat-focus">0</div>
-      <div class="stat-label">집중 분</div>
-    </div>
-  </div>
+    // 오늘 통계 (날짜 변경 시 자동 리셋)
+    let focusDone = 0;
+    let focusMins = 0;
+    let todayKey = new Date().toDateString();
+    try {
+      const saved = JSON.parse(localStorage.getItem(STATS_KEY) || '{}');
+      if (saved.date === todayKey) {
+        focusDone = saved.focusDone || 0;
+        focusMins = saved.focusMins || 0;
+      }
+    } catch (e) {}
 
-</div>
-
-<script>
-  const MODES = {
-    focus: { label: 'FOCUS',      duration: 25 * 60 },
-    short: { label: 'SHORT BREAK', duration: 5 * 60  },
-    long:  { label: 'LONG BREAK',  duration: 15 * 60 }
-  };
-
-  const CIRCUMFERENCE = 2 * Math.PI * 82; // ~515.2
-
-  let mode = 'focus';
-  let totalSecs = MODES.focus.duration;
-  let remainSecs = totalSecs;
-  let running = false;
-  let intervalId = null;
-
-  // 세션 추적 (집중 4회마다 긴 휴식)
-  let focusDone = parseInt(localStorage.getItem('pomo_focus') || '0');
-  let focusMins = parseInt(localStorage.getItem('pomo_mins') || '0');
-  let todayKey = new Date().toDateString();
-  if (localStorage.getItem('pomo_date') !== todayKey) {
-    focusDone = 0; focusMins = 0;
-    localStorage.setItem('pomo_date', todayKey);
-  }
-
-  function pad(n) { return String(n).padStart(2, '0'); }
-
-  function updateDisplay() {
-    const m = Math.floor(remainSecs / 60);
-    const s = remainSecs % 60;
-    document.getElementById('time-display').textContent = `${pad(m)}:${pad(s)}`;
-
-    // 링 진행
-    const progress = remainSecs / totalSecs;
-    const offset = CIRCUMFERENCE * (1 - progress);
-    document.getElementById('ring').style.strokeDashoffset = offset;
-
-    // 통계
-    document.getElementById('stat-sessions').textContent = focusDone;
-    document.getElementById('stat-focus').textContent = focusMins;
-
-    // 도트 (최대 4개)
-    const dots = document.getElementById('session-dots');
-    dots.innerHTML = '';
-    const cycle = focusDone % 4;
-    for (let i = 0; i < 4; i++) {
-      const dot = document.createElement('div');
-      dot.className = 'dot';
-      if (i < cycle) dot.classList.add('done');
-      else if (i === cycle && mode === 'focus') dot.classList.add('current');
-      dots.appendChild(dot);
+    function saveStats() {
+      try {
+        localStorage.setItem(STATS_KEY, JSON.stringify({
+          date: todayKey, focusDone, focusMins
+        }));
+      } catch (e) {}
     }
-  }
 
-  function setMode(m) {
-    if (running) return;
-    mode = m;
-    totalSecs = MODES[m].duration;
-    remainSecs = totalSecs;
+    const timeDisplayEl = document.getElementById('time-display');
+    const modeLabelEl = document.getElementById('mode-label');
+    const ringEl = document.getElementById('ring');
+    const statSessionsEl = document.getElementById('stat-sessions');
+    const statFocusEl = document.getElementById('stat-focus');
+    const sessionDotsEl = document.getElementById('session-dots');
+    const btnStartEl = document.getElementById('btn-start');
+    const tabFocusEl = document.getElementById('tab-focus');
+    const tabShortEl = document.getElementById('tab-short');
+    const tabLongEl = document.getElementById('tab-long');
 
-    document.getElementById('tab-focus').classList.toggle('active', m === 'focus');
-    document.getElementById('tab-short').classList.toggle('active', m === 'short');
-    document.getElementById('tab-long').classList.toggle('active', m === 'long');
-    document.getElementById('mode-label').textContent = MODES[m].label;
-    document.getElementById('btn-start').textContent = '시작';
+    function pad(n) { return String(n).padStart(2, '0'); }
 
-    updateDisplay();
-  }
+    function updateDisplay() {
+      const m = Math.floor(remainSecs / 60);
+      const s = remainSecs % 60;
+      timeDisplayEl.textContent = `${pad(m)}:${pad(s)}`;
 
-  function toggleTimer() {
-    if (running) {
+      // 링 진행 (남은 시간 = 채워진 비율)
+      const progress = remainSecs / totalSecs;
+      ringEl.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+
+      // 통계
+      statSessionsEl.textContent = focusDone;
+      statFocusEl.textContent = focusMins;
+
+      // 도트 (4세션 사이클)
+      sessionDotsEl.innerHTML = '';
+      const cycle = focusDone % 4;
+      for (let i = 0; i < 4; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        if (i < cycle) dot.classList.add('done');
+        else if (i === cycle && mode === 'focus') dot.classList.add('current');
+        sessionDotsEl.appendChild(dot);
+      }
+    }
+
+    function setMode(m) {
+      if (running) return;
+      mode = m;
+      totalSecs = MODES[m].duration;
+      remainSecs = totalSecs;
+
+      tabFocusEl.classList.toggle('active', m === 'focus');
+      tabShortEl.classList.toggle('active', m === 'short');
+      tabLongEl.classList.toggle('active', m === 'long');
+      modeLabelEl.textContent = MODES[m].label;
+      btnStartEl.textContent = '시작';
+
+      updateDisplay();
+    }
+
+    function toggleTimer() {
+      if (running) {
+        clearInterval(intervalId);
+        running = false;
+        btnStartEl.textContent = '계속';
+      } else {
+        running = true;
+        btnStartEl.textContent = '일시정지';
+        intervalId = setInterval(() => {
+          remainSecs--;
+          updateDisplay();
+          if (remainSecs <= 0) {
+            clearInterval(intervalId);
+            running = false;
+            onComplete();
+          }
+        }, 1000);
+      }
+    }
+
+    /**
+     * 타이머가 자연 완료되었을 때 호출
+     * (사용자가 끝까지 둔 경우 — 세션 카운트 증가)
+     */
+    function onComplete() {
+      const completedMode = mode;  // setMode 호출 전에 캡처 (알림 텍스트 정확성)
+
+      if (completedMode === 'focus') {
+        focusDone++;
+        focusMins += MODES.focus.mins;
+        saveStats();
+        // 4세션마다 긴 휴식, 나머지는 짧은 휴식
+        if (focusDone % 4 === 0) setMode('long');
+        else setMode('short');
+      } else {
+        setMode('focus');
+      }
+
+      // 알림 — 완료된 모드를 기준으로 텍스트 결정
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification('타이머 완료', {
+          body: completedMode === 'focus'
+            ? '집중 시간이 끝났습니다. 휴식하세요.'
+            : '휴식이 끝났습니다. 다시 집중할 시간입니다.',
+          silent: false
+        });
+      }
+    }
+
+    function resetTimer() {
       clearInterval(intervalId);
       running = false;
-      document.getElementById('btn-start').textContent = '계속';
-    } else {
-      running = true;
-      document.getElementById('btn-start').textContent = '일시정지';
-      intervalId = setInterval(() => {
-        remainSecs--;
-        updateDisplay();
-        if (remainSecs <= 0) {
-          clearInterval(intervalId);
-          running = false;
-          onComplete();
-        }
-      }, 1000);
+      remainSecs = totalSecs;
+      btnStartEl.textContent = '시작';
+      updateDisplay();
     }
-  }
 
-  function onComplete() {
-    if (mode === 'focus') {
-      focusDone++;
-      focusMins += 25;
-      localStorage.setItem('pomo_focus', focusDone);
-      localStorage.setItem('pomo_mins', focusMins);
+    /**
+     * 건너뛰기 — 다음 모드로 진행하되 세션 카운트는 증가시키지 않음
+     * (사용자가 의도적으로 건너뛴 것이므로 완료된 세션이 아님)
+     */
+    function skipTimer() {
+      clearInterval(intervalId);
+      running = false;
 
-      // 4회 완료 시 긴 휴식 자동 전환
-      if (focusDone % 4 === 0) {
-        setMode('long');
+      // 다음 모드 결정 — onComplete의 사이클 로직만 재현
+      if (mode === 'focus') {
+        // 다음 카운트 가정 시점 기준으로 휴식 종류 결정 (실제 카운트는 증가 X)
+        const nextFocusDone = focusDone + 1;
+        if (nextFocusDone % 4 === 0) setMode('long');
+        else setMode('short');
       } else {
-        setMode('short');
+        setMode('focus');
       }
-    } else {
-      setMode('focus');
     }
 
-    // 알림 (허용된 경우)
-    if (Notification && Notification.permission === 'granted') {
-      new Notification('⏰ 타이머 완료!', {
-        body: mode === 'focus' ? '집중 시간이 끝났습니다. 휴식하세요!' : '휴식이 끝났습니다. 집중할 시간!',
-        silent: false
-      });
-    }
-  }
+    tabFocusEl.addEventListener('click', (e) => { e.stopPropagation(); setMode('focus'); });
+    tabShortEl.addEventListener('click', (e) => { e.stopPropagation(); setMode('short'); });
+    tabLongEl.addEventListener('click', (e) => { e.stopPropagation(); setMode('long'); });
+    btnStartEl.addEventListener('click', (e) => { e.stopPropagation(); toggleTimer(); });
+    document.getElementById('btn-reset').addEventListener('click', (e) => { e.stopPropagation(); resetTimer(); });
+    document.getElementById('btn-skip').addEventListener('click', (e) => { e.stopPropagation(); skipTimer(); });
 
-  function resetTimer() {
-    clearInterval(intervalId);
-    running = false;
-    remainSecs = totalSecs;
-    document.getElementById('btn-start').textContent = '시작';
+    // 알림 권한 요청 (첫 사용자 인터랙션 시점에 한 번)
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      btnStartEl.addEventListener('click', () => {
+        if (Notification.permission === 'default') Notification.requestPermission();
+      }, { once: true });
+    }
+
+    modeLabelEl.textContent = MODES[mode].label;
     updateDisplay();
-  }
 
-  function skipTimer() {
-    clearInterval(intervalId);
-    running = false;
-    onComplete();
-  }
+    /* ============================================
+       4방향 리사이즈 (노시언 공통 패턴)
+       ============================================ */
+    const SIZE_KEY = 'nosion-pomodoro-timer-size-v1';
+    const MIN_WIDTH = 300;
+    const MAX_WIDTH = 600;
+    const MIN_HEIGHT = 420;
+    const MAX_HEIGHT = 700;
 
-  // 알림 권한 요청
-  if (Notification && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
+    const cardEl = document.getElementById('card');
+    let cardWidth = 360;
+    let cardHeight = null;
 
-  // 초기화
-  document.getElementById('mode-label').textContent = MODES[mode].label;
-  updateDisplay();
-</script>
+    try {
+      const savedSize = localStorage.getItem(SIZE_KEY);
+      if (savedSize) {
+        const s = JSON.parse(savedSize);
+        if (typeof s.width === 'number') {
+          cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width));
+        }
+        if (typeof s.height === 'number' && s.height > 0) {
+          cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height));
+        }
+      }
+    } catch (e) {}
+
+    function applyCardSize() {
+      cardEl.style.width = cardWidth + 'px';
+      if (cardHeight !== null) {
+        cardEl.style.height = cardHeight + 'px';
+      } else {
+        cardEl.style.height = '';
+      }
+    }
+    function saveSize() {
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify({
+          width: cardWidth, height: cardHeight
+        }));
+      } catch (e) {}
+    }
+
+    let resizeDrag = null;
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = {
+        direction, startX: x, startY: y,
+        startWidth: rect.width, startHeight: rect.height
+      };
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor =
+        (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX;
+      const dy = y - resizeDrag.startY;
+      const dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeDrag.startWidth + delta));
+      } else if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeDrag.startHeight + delta));
+      }
+      applyCardSize();
+    }
+    function endResize() {
+      if (resizeDrag) {
+        saveSize();
+        resizeDrag = null;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      }
+    }
+
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+      const direction = handle.dataset.direction;
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startResize(direction, e.clientX, e.clientY);
+      });
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        startResize(direction, t.clientX, t.clientY);
+      }, { passive: false });
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (resizeDrag) { e.preventDefault(); moveResize(e.clientX, e.clientY); }
+    });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('mouseleave', endResize);
+    document.addEventListener('touchmove', (e) => {
+      if (resizeDrag) { const t = e.touches[0]; moveResize(t.clientX, t.clientY); }
+    }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+
+    applyCardSize();
+
+    /* ============================================
+       위치 이동 (카드 빈 영역 드래그, 인터랙티브 제외)
+       ============================================ */
+    const POS_KEY = 'nosion-pomodoro-timer-pos-v1';
+    const widgetEl = document.getElementById('widget');
+
+    let offsetX = 0, offsetY = 0;
+    let moveDrag = null;
+
+    try {
+      const savedPos = localStorage.getItem(POS_KEY);
+      if (savedPos) {
+        const p = JSON.parse(savedPos);
+        if (typeof p.x === 'number') offsetX = p.x;
+        if (typeof p.y === 'number') offsetY = p.y;
+      }
+    } catch (e) {}
+
+    function applyPosition() {
+      widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+    function savePosition() {
+      try {
+        localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY }));
+      } catch (e) {}
+    }
+
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input', '.tab', '.btn-main', '.btn-secondary'];
+      for (const sel of blocked) {
+        if (target.closest(sel)) return false;
+      }
+      return true;
+    }
+
+    function startMove(x, y) {
+      moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY };
+      document.body.style.userSelect = 'none';
+      cardEl.classList.add('dragging');
+    }
+    function doMove(x, y) {
+      if (!moveDrag) return;
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
+      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
+      applyPosition();
+    }
+    function endMove() {
+      if (moveDrag) {
+        savePosition();
+        moveDrag = null;
+        document.body.style.userSelect = '';
+        cardEl.classList.remove('dragging');
+      }
+    }
+
+    applyPosition();
+
+    cardEl.addEventListener('mousedown', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      e.preventDefault();
+      startMove(e.clientX, e.clientY);
+    });
+    cardEl.addEventListener('touchstart', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      const t = e.touches[0];
+      startMove(t.clientX, t.clientY);
+    }, { passive: true });
+
+    document.addEventListener('mousemove', (e) => {
+      if (moveDrag) { e.preventDefault(); doMove(e.clientX, e.clientY); }
+    });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('mouseleave', endMove);
+    document.addEventListener('touchmove', (e) => {
+      if (moveDrag) { const t = e.touches[0]; doMove(t.clientX, t.clientY); }
+    }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    // 크기 초기화
+    const DEFAULT_WIDTH = 360;
+    document.getElementById('resizeResetBtn').addEventListener('click', () => {
+      cardWidth = DEFAULT_WIDTH;
+      cardHeight = null;
+      applyCardSize();
+      saveSize();
+      offsetX = 0; offsetY = 0;
+      applyPosition();
+      savePosition();
+    });
+  </script>
 </body>
 </html>

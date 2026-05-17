@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>랜덤 점심 추첨기</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    /* ============================================
+       노시언 위젯 시그니처 디자인 토큰
+       ============================================ */
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 10% 55%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+                   system-ui, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      word-break: keep-all;
+    }
+
+    body {
+      padding: 1rem;
+      box-sizing: border-box;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .widget-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      position: relative;
+      width: fit-content;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.75rem 1.25rem;
+      width: 360px;
+      position: relative;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    /* 드래그 영역은 헤더로 한정 */
+    .card .header {
+      cursor: grab;
+      flex-shrink: 0;
+    }
+
+    .card.dragging .header {
+      cursor: grabbing;
+    }
+
+    /* 헤더: 제목만, 좌측 정렬 */
+    .header {
+      display: flex;
+      align-items: center;
+      padding-bottom: 0.75rem;
+    }
+
+    .title {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--foreground);
+      letter-spacing: -0.01em;
+      user-select: none;
+    }
+
+    /* 구분선 */
+    .divider-top,
+    .divider-bottom {
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    /* 본문 (결과 + 버튼) */
+    .picker-body {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 1.75rem 0 1.5rem;
+      min-height: 0;
+      position: relative;
+    }
+
+    /* 가상의 수직 원통 위에서 좌→우로 흘러가는 휠 효과 */
+    .result-display {
+      position: relative;
+      width: 100%;
+      height: 2.3rem;
+      font-size: 2rem;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      user-select: none;
+      max-width: 100%;
+      word-break: keep-all;
+      /* 3D 원근감 (좌우 회전 잘 보이도록 살짝 깊게) */
+      perspective: 700px;
+      perspective-origin: center;
+      overflow: hidden;
+    }
+
+    .result-item {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--foreground);
+      /* 원통 표면 효과 — 회전축을 텍스트 뒤쪽으로 보내 진짜 원통 면처럼 휘어짐 */
+      transform-origin: center center -80px;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      will-change: transform, opacity;
+    }
+
+    .result-item.placeholder {
+      color: var(--muted-foreground);
+      opacity: 0.45;
+    }
+
+    /* 최종 선정 시 터지는 폭죽 레이어 — picker-body 전체 오버레이 */
+    .confetti-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: visible;
+      z-index: 5;
+    }
+
+    .confetti-particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      will-change: transform, opacity;
+      transform-origin: center;
+    }
+
+    /* 변주용 — 작은 사각형 (실제 confetti 종이 조각 느낌) */
+    .confetti-particle.square {
+      border-radius: 1px;
+    }
+
+    .pick-button {
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      padding: 0.5rem 1.5rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--foreground);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition),
+                  border-color var(--transition), opacity var(--transition);
+      user-select: none;
+    }
+
+    .pick-button:hover:not(:disabled) {
+      background: var(--muted);
+    }
+
+    .pick-button:active:not(:disabled) {
+      background: var(--border);
+    }
+
+    .pick-button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* 하단 편집 영역 */
+    .edit-section {
+      flex-shrink: 0;
+      padding-top: 0.75rem;
+    }
+
+    .edit-chip {
+      font-family: inherit;
+      font-size: 0.75rem;
+      letter-spacing: 0.005em;
+      color: var(--muted-foreground);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0;
+      transition: color var(--transition);
+      user-select: none;
+    }
+
+    .edit-chip:hover {
+      color: var(--foreground);
+    }
+
+    .edit-panel {
+      display: none;
+      flex-direction: column;
+      padding-top: 0.625rem;
+    }
+
+    .edit-panel.show {
+      display: flex;
+    }
+
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      max-height: 200px;
+      overflow-y: auto;
+      /* 스크롤바 숨김 (노시언 시그니처) */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .menu-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.375rem 0;
+    }
+
+    .menu-text {
+      flex: 1;
+      font-size: 0.8125rem;
+      color: var(--foreground);
+      letter-spacing: -0.005em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .delete-btn {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted-foreground);
+      opacity: 0.25;
+      transition: opacity var(--transition), color var(--transition);
+      flex-shrink: 0;
+      border-radius: 4px;
+      padding: 0;
+    }
+
+    .menu-item:hover .delete-btn {
+      opacity: 1;
+    }
+
+    .delete-btn:hover {
+      color: var(--foreground);
+    }
+
+    .delete-btn svg {
+      width: 12px;
+      height: 12px;
+      stroke-width: 2;
+    }
+
+    .menu-add {
+      border-top: 1px solid var(--border);
+      margin-top: 0.5rem;
+      padding-top: 0.375rem;
+    }
+
+    .menu-add input {
+      width: 100%;
+      font-family: inherit;
+      font-size: 0.8125rem;
+      background: none;
+      border: none;
+      outline: none;
+      padding: 0.375rem 0;
+      color: var(--foreground);
+      letter-spacing: -0.005em;
+    }
+
+    .menu-add input::placeholder {
+      color: var(--muted-foreground);
+      opacity: 0.5;
+    }
+
+    .menu-add.disabled input {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* 우측 컨트롤 */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      opacity: 0.25;
+      transition: opacity var(--transition);
+      padding-top: 0.25rem;
+    }
+
+    .widget-wrapper:hover .controls {
+      opacity: 1;
+    }
+
+    .control-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: rgba(115, 115, 115, 0.5);
+      cursor: pointer;
+      transition: color var(--transition);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .control-btn:hover:not(:disabled) {
+      color: var(--foreground);
+    }
+
+    .control-btn svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 2;
+    }
+
+    .control-btn[data-tooltip]::before,
+    .control-btn[data-tooltip]::after {
+      position: absolute;
+      right: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease 0s;
+      z-index: 50;
+    }
+
+    .control-btn[data-tooltip]::before {
+      content: attr(data-tooltip);
+      background: var(--card);
+      color: var(--foreground);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 0.3125rem 0.625rem;
+      font-size: 0.6875rem;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+      font-family: inherit;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .control-btn[data-tooltip]::after {
+      content: '';
+      right: calc(100% + 3px);
+      width: 5px;
+      height: 5px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transform: translateY(-50%) rotate(-45deg);
+    }
+
+    .control-btn[data-tooltip]:hover::before,
+    .control-btn[data-tooltip]:hover::after {
+      opacity: 1;
+      transition-delay: 0.4s;
+    }
+
+    /* 4방향 리사이즈 핸들 */
+    .resize-handle {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      z-index: 20;
+    }
+
+    .resize-handle .bar {
+      background: var(--border);
+      transition: opacity var(--transition), background var(--transition),
+                  width 0.15s ease, height 0.15s ease;
+      border-radius: 999px;
+      opacity: 0;
+    }
+
+    .widget-wrapper:hover .resize-handle .bar {
+      opacity: 1;
+    }
+
+    .resize-handle:hover .bar {
+      background: var(--muted-foreground);
+    }
+
+    .handle-top {
+      top: 0;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px;
+      height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-top .bar { width: 36px; height: 1px; }
+    .handle-top:hover .bar { height: 3px; }
+
+    .handle-bottom {
+      bottom: 0;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      width: 36px;
+      height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-bottom .bar { width: 36px; height: 1px; }
+    .handle-bottom:hover .bar { height: 3px; }
+
+    .handle-left {
+      left: 0;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px;
+      height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-left .bar { width: 1px; height: 36px; }
+    .handle-left:hover .bar { width: 3px; }
+
+    .handle-right {
+      right: 0;
+      top: 50%;
+      transform: translate(50%, -50%);
+      width: 16px;
+      height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-right .bar { width: 1px; height: 36px; }
+    .handle-right:hover .bar { width: 3px; }
+  </style>
+</head>
+<body>
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
+
+      <!-- 헤더 -->
+      <div class="header">
+        <div class="title">랜덤 점심 추첨기</div>
+      </div>
+
+      <div class="divider-top"></div>
+
+      <!-- 본문 -->
+      <div class="picker-body">
+        <div class="result-display" id="resultDisplay">
+          <div class="result-item placeholder">?</div>
+        </div>
+        <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+        <button class="pick-button" id="pickButton" type="button">돌려보기</button>
+      </div>
+
+      <div class="divider-bottom"></div>
+
+      <!-- 편집 영역 -->
+      <div class="edit-section">
+        <button class="edit-chip" id="editChip" type="button">메뉴 8개 · 편집 ▾</button>
+        <div class="edit-panel" id="editPanel">
+          <div class="menu-list" id="menuList"></div>
+          <div class="menu-add" id="menuAdd">
+            <input type="text" id="menuAddInput" placeholder="+ 메뉴 추가" maxlength="12" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 4방향 리사이즈 핸들 -->
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+    <!-- 우측 컨트롤 (크기 초기화만) -->
+    <div class="controls">
+      <button class="control-btn" id="resizeResetBtn"
+              data-tooltip="크기 초기화" title="크기 초기화"
+              type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================
+       랜덤 점심 추첨기 - 로직
+       ============================================ */
+    const STORAGE_KEY = 'nosion-lunch-picker-v1';
+    const DEFAULT_MENUS = ['김치찌개', '된장찌개', '비빔밥', '김밥', '라면', '짜장면', '돈까스', '칼국수'];
+    const MAX_MENU_COUNT = 30;
+    const MENU_NAME_MAX_LENGTH = 12;
+
+    // 페이드 사이클 (감속)
+    const ANIM_TOTAL_MS = 1500;
+    const ANIM_START_INTERVAL_MS = 50;
+    const ANIM_END_INTERVAL_MS = 300;
+
+    const defaultState = () => ({
+      menus: [...DEFAULT_MENUS],
+      lastPick: null
+    });
+
+    let state = defaultState();
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.menus)) {
+          state.menus = parsed.menus
+            .filter(m => typeof m === 'string' && m.trim().length > 0)
+            .map(m => m.trim().slice(0, MENU_NAME_MAX_LENGTH))
+            .slice(0, MAX_MENU_COUNT);
+        }
+        if (typeof parsed.lastPick === 'string' && state.menus.includes(parsed.lastPick)) {
+          state.lastPick = parsed.lastPick;
+        }
+      }
+    } catch (e) {
+      console.error('localStorage load error:', e);
+    }
+
+    function save() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    const resultDisplay = document.getElementById('resultDisplay');
+    const confettiLayer = document.getElementById('confettiLayer');
+    const pickButton = document.getElementById('pickButton');
+    const editChip = document.getElementById('editChip');
+    const editPanel = document.getElementById('editPanel');
+    const menuListEl = document.getElementById('menuList');
+    const menuAddInput = document.getElementById('menuAddInput');
+    const menuAddSection = document.getElementById('menuAdd');
+
+    /* ----- 추첨 로직 ----- */
+    function pickRandom() {
+      if (state.menus.length === 0) return null;
+      if (state.menus.length === 1) return state.menus[0];
+      const candidates = state.menus.filter(m => m !== state.lastPick);
+      const pool = candidates.length > 0 ? candidates : state.menus;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    /* ----- 회전 휠 애니메이션 ----- */
+    let animationTimer = null;
+    let animationActive = false;
+
+    function clearAnimation() {
+      if (animationTimer) {
+        clearTimeout(animationTimer);
+        animationTimer = null;
+      }
+      animationActive = false;
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    /**
+     * 결과 표시: 새 항목을 좌측에서 회전해 들임, 이전 항목은 우측으로 회전해 사라짐
+     * 가상의 수직 원통 표면에 메뉴가 적혀있어 좌→우로 흘러가는 느낌
+     * Web Animations API 사용 — CSS transition/animation보다 빠른 tick에서 신뢰성 높음
+     */
+    const ENTER_EASE = 'cubic-bezier(0.2, 0.75, 0.3, 1)';
+    const EXIT_EASE = 'cubic-bezier(0.4, 0, 0.7, 1)';
+    const SETTLE_EASE = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+    const ENTER_MS = 260;
+    const EXIT_MS = 240;
+    const SETTLE_MS = 450;
+
+    /* ----- 폭죽 효과 (흑백 스펙트럼) ----- */
+    // foreground(가장 진함) → border(옅음) 사이 6단계 명도
+    const CONFETTI_SHADES = [
+      'hsl(220, 13%, 15%)',  // foreground
+      'hsl(220, 13%, 28%)',
+      'hsl(215, 14%, 45%)',
+      'hsl(215, 14%, 60%)',
+      'hsl(220, 10%, 75%)',
+      'hsl(220, 9%, 85%)'    // border
+    ];
+    const CONFETTI_COUNT = 16;
+
+    function spawnConfetti() {
+      if (!confettiLayer) return;
+
+      // result-display 중심점을 confettiLayer 좌표계로 변환
+      const layerRect = confettiLayer.getBoundingClientRect();
+      const targetRect = resultDisplay.getBoundingClientRect();
+      const originX = targetRect.left - layerRect.left + targetRect.width / 2;
+      const originY = targetRect.top - layerRect.top + targetRect.height / 2;
+
+      const angleStep = (Math.PI * 2) / CONFETTI_COUNT;
+
+      for (let i = 0; i < CONFETTI_COUNT; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-particle';
+        // 35% 확률로 사각형 (종이조각 느낌 변주)
+        if (Math.random() < 0.35) p.classList.add('square');
+
+        // 흑백 명도 — 진한 입자는 더 작게, 옅은 입자는 더 크게 (자연스러운 깊이감)
+        const shadeIdx = Math.floor(Math.random() * CONFETTI_SHADES.length);
+        p.style.background = CONFETTI_SHADES[shadeIdx];
+
+        // 크기 변주 — 4~9px
+        const size = 4 + Math.random() * 5;
+        const w = p.classList.contains('square') ? size * 0.8 : size;
+        const h = p.classList.contains('square') ? size * 1.2 : size;
+        p.style.width = w + 'px';
+        p.style.height = h + 'px';
+
+        // 시작 위치 = result-display 중심
+        p.style.left = (originX - w / 2) + 'px';
+        p.style.top = (originY - h / 2) + 'px';
+
+        confettiLayer.appendChild(p);
+
+        // 방향: 360도 균등 + 약간의 랜덤성
+        const angle = angleStep * i + (Math.random() - 0.5) * 0.5;
+        // 거리: 50~110px
+        const distance = 55 + Math.random() * 55;
+        const dx = Math.cos(angle) * distance;
+        // 위쪽 방향은 더 멀리, 중력으로 끝에 약간 떨어지는 효과
+        const dyInitial = Math.sin(angle) * distance - 8;
+        const dyFinal = dyInitial + 28 + Math.random() * 22;
+        // 회전 — 사각형이면 더 두드러짐
+        const rotation = (Math.random() - 0.5) * 540;
+        const duration = 700 + Math.random() * 350;
+
+        p.animate(
+          [
+            { transform: 'translate(0, 0) scale(0.4) rotate(0deg)',
+              opacity: 1, offset: 0 },
+            { transform: `translate(${dx * 0.65}px, ${dyInitial * 0.65}px) scale(1) rotate(${rotation * 0.45}deg)`,
+              opacity: 1, offset: 0.35 },
+            { transform: `translate(${dx}px, ${dyFinal}px) scale(0.7) rotate(${rotation}deg)`,
+              opacity: 0, offset: 1 }
+          ],
+          {
+            duration,
+            easing: 'cubic-bezier(0.15, 0.6, 0.3, 1)',
+            fill: 'forwards'
+          }
+        ).onfinish = () => p.remove();
+      }
+    }
+
+    function showResultItem(text, opts = {}) {
+      const { isPlaceholder = false, isFinal = false } = opts;
+
+      // 현재 표시 중인 항목들 → 우측으로 회전해 사라짐
+      resultDisplay.querySelectorAll('.result-item:not(.exiting)').forEach(el => {
+        el.classList.add('exiting');
+        // 현재 보이는 상태(rotateY 0, opacity 1)에서 우측 회전 후 사라짐
+        // 단, 진입 애니메이션이 진행 중이면 그 위치에서 자연스럽게 이어지도록
+        const anim = el.animate(
+          [
+            { transform: 'rotateY(0deg)', opacity: 1 },
+            { transform: 'rotateY(70deg)', opacity: 0 }
+          ],
+          { duration: EXIT_MS, easing: EXIT_EASE, fill: 'forwards' }
+        );
+        anim.onfinish = () => el.remove();
+      });
+
+      // 새 항목 생성
+      const item = document.createElement('div');
+      item.className = 'result-item';
+      if (isPlaceholder) item.classList.add('placeholder');
+      item.textContent = text;
+      // 초기 위치 설정 (애니메이션 시작 전 깜빡임 방지)
+      item.style.transform = 'rotateY(-70deg)';
+      item.style.opacity = '0';
+      resultDisplay.appendChild(item);
+
+      // 좌측에서 정면으로 회전해 들어옴
+      if (isFinal) {
+        // 최종 결과 — 살짝 튕기는 강조 효과
+        item.animate(
+          [
+            { transform: 'rotateY(-28deg) scale(0.92)', opacity: 0.6, offset: 0 },
+            { transform: 'rotateY(4deg) scale(1.04)',   opacity: 1,   offset: 0.55 },
+            { transform: 'rotateY(0deg) scale(1)',      opacity: 1,   offset: 1 }
+          ],
+          { duration: SETTLE_MS, easing: SETTLE_EASE, fill: 'forwards' }
+        );
+        // 결과 텍스트가 정면에 도착할 즈음 폭죽 발사
+        setTimeout(spawnConfetti, 120);
+      } else {
+        item.animate(
+          [
+            { transform: 'rotateY(-70deg)', opacity: 0 },
+            { transform: 'rotateY(0deg)',   opacity: 1 }
+          ],
+          { duration: ENTER_MS, easing: ENTER_EASE, fill: 'forwards' }
+        );
+      }
+
+      return item;
+    }
+
+    function runPickAnimation() {
+      // 진행 중 재클릭 → 즉시 새 추첨 재시작
+      clearAnimation();
+      if (state.menus.length === 0) return;
+
+      const finalPick = pickRandom();
+      if (!finalPick) return;
+
+      animationActive = true;
+      const startTime = performance.now();
+      let lastShown = state.lastPick || null;
+
+      function tick() {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / ANIM_TOTAL_MS, 1);
+
+        if (progress >= 1) {
+          // 최종 결과 — 강조 애니메이션과 함께
+          showResultItem(finalPick, { isFinal: true });
+          state.lastPick = finalPick;
+          save();
+          animationActive = false;
+          animationTimer = null;
+          return;
+        }
+
+        // 중간 메뉴 표시 (직전과 다른 걸로)
+        let next;
+        if (state.menus.length === 1) {
+          next = state.menus[0];
+        } else {
+          let safety = 0;
+          do {
+            next = state.menus[Math.floor(Math.random() * state.menus.length)];
+            safety++;
+          } while (next === lastShown && safety < 5);
+        }
+        lastShown = next;
+        showResultItem(next);
+
+        // 감속: 50ms → 300ms
+        const eased = easeOutCubic(progress);
+        const interval = ANIM_START_INTERVAL_MS + (ANIM_END_INTERVAL_MS - ANIM_START_INTERVAL_MS) * eased;
+        animationTimer = setTimeout(tick, interval);
+      }
+
+      tick();
+    }
+
+    /* ----- 편집 패널 ----- */
+    function renderMenuList() {
+      menuListEl.innerHTML = '';
+      state.menus.forEach((menu, idx) => {
+        const item = document.createElement('div');
+        item.className = 'menu-item';
+
+        const text = document.createElement('span');
+        text.className = 'menu-text';
+        text.textContent = menu;
+        item.appendChild(text);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'delete-btn';
+        delBtn.setAttribute('aria-label', menu + ' 삭제');
+        delBtn.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state.menus.splice(idx, 1);
+          // 삭제된 메뉴가 마지막 결과면 lastPick도 제거
+          if (state.lastPick === menu) state.lastPick = null;
+          save();
+          renderMenuList();
+          updateEditChip();
+          updatePickButtonState();
+        });
+        item.appendChild(delBtn);
+
+        menuListEl.appendChild(item);
+      });
+    }
+
+    function updateEditChip() {
+      const count = state.menus.length;
+      const isOpen = editPanel.classList.contains('show');
+      const arrow = isOpen ? '▴' : '▾';
+      const verb = isOpen ? '접기' : '편집';
+      editChip.textContent = `메뉴 ${count}개 · ${verb} ${arrow}`;
+    }
+
+    function updatePickButtonState() {
+      const empty = state.menus.length === 0;
+      pickButton.disabled = empty;
+      if (empty) {
+        clearAnimation();
+        // lastPick 무효화 후 placeholder로 회전
+        state.lastPick = null;
+        showResultItem('?', { isPlaceholder: true });
+      }
+      // 메뉴 한도 도달 시 입력 비활성화
+      const full = state.menus.length >= MAX_MENU_COUNT;
+      menuAddInput.disabled = full;
+      menuAddSection.classList.toggle('disabled', full);
+      menuAddInput.placeholder = full ? `최대 ${MAX_MENU_COUNT}개까지` : '+ 메뉴 추가';
+    }
+
+    editChip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      editPanel.classList.toggle('show');
+      updateEditChip();
+    });
+
+    menuAddInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const value = menuAddInput.value.trim().slice(0, MENU_NAME_MAX_LENGTH);
+        if (!value) return;
+        if (state.menus.length >= MAX_MENU_COUNT) return;
+        if (state.menus.includes(value)) {
+          // 중복은 무시 + 입력 클리어
+          menuAddInput.value = '';
+          return;
+        }
+        state.menus.push(value);
+        save();
+        menuAddInput.value = '';
+        renderMenuList();
+        updateEditChip();
+        updatePickButtonState();
+        // 스크롤 맨 아래로
+        menuListEl.scrollTop = menuListEl.scrollHeight;
+      } else if (e.key === 'Escape') {
+        menuAddInput.value = '';
+        menuAddInput.blur();
+      }
+    });
+
+    pickButton.addEventListener('click', () => {
+      if (state.menus.length === 0) return;
+      runPickAnimation();
+    });
+
+    /* ----- 초기화 ----- */
+    function initDisplay() {
+      // 초기 항목은 HTML에 이미 있으므로 직접 교체 (애니메이션 없이)
+      const initial = resultDisplay.querySelector('.result-item');
+      if (!initial) return;
+      if (state.lastPick) {
+        initial.textContent = state.lastPick;
+        initial.classList.remove('placeholder');
+      } else {
+        initial.textContent = '?';
+        initial.classList.add('placeholder');
+      }
+    }
+
+    renderMenuList();
+    updateEditChip();
+    updatePickButtonState();
+    initDisplay();
+
+    /* ============================================
+       4방향 리사이즈
+       ============================================ */
+    const SIZE_KEY = 'nosion-lunch-picker-size-v1';
+    const MIN_WIDTH = 300;
+    const MAX_WIDTH = 600;
+    const MIN_HEIGHT = 240;
+    const MAX_HEIGHT = 700;
+
+    const cardEl = document.getElementById('card');
+
+    let cardWidth = 360;
+    let cardHeight = null;
+
+    try {
+      const savedSize = localStorage.getItem(SIZE_KEY);
+      if (savedSize) {
+        const s = JSON.parse(savedSize);
+        if (typeof s.width === 'number') {
+          cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width));
+        }
+        if (typeof s.height === 'number' && s.height > 0) {
+          cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height));
+        }
+      }
+    } catch (e) {}
+
+    function applyCardSize() {
+      cardEl.style.width = cardWidth + 'px';
+      if (cardHeight !== null) {
+        cardEl.style.height = cardHeight + 'px';
+      } else {
+        cardEl.style.height = '';
+      }
+    }
+
+    function saveSize() {
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify({
+          width: cardWidth,
+          height: cardHeight
+        }));
+      } catch (e) {}
+    }
+
+    let resizeDrag = null;
+
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = {
+        direction,
+        startX: x,
+        startY: y,
+        startWidth: rect.width,
+        startHeight: rect.height
+      };
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor =
+        (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX;
+      const dy = y - resizeDrag.startY;
+      const dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeDrag.startWidth + delta));
+      } else if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeDrag.startHeight + delta));
+      }
+      applyCardSize();
+    }
+
+    function endResize() {
+      if (resizeDrag) {
+        saveSize();
+        resizeDrag = null;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      }
+    }
+
+    const handles = document.querySelectorAll('.resize-handle');
+    handles.forEach(handle => {
+      let direction = handle.dataset.direction || '';
+      if (!direction) {
+        if (handle.classList.contains('handle-top')) direction = 'top';
+        else if (handle.classList.contains('handle-bottom')) direction = 'bottom';
+        else if (handle.classList.contains('handle-left')) direction = 'left';
+        else if (handle.classList.contains('handle-right')) direction = 'right';
+      }
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startResize(direction, e.clientX, e.clientY);
+      });
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        startResize(direction, t.clientX, t.clientY);
+      }, { passive: false });
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (resizeDrag) {
+        e.preventDefault();
+        moveResize(e.clientX, e.clientY);
+      }
+    });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('mouseleave', endResize);
+    document.addEventListener('touchmove', (e) => {
+      if (resizeDrag) {
+        const t = e.touches[0];
+        moveResize(t.clientX, t.clientY);
+      }
+    }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+
+    applyCardSize();
+
+    /* ============================================
+       위치 이동 (헤더 영역에서만 드래그)
+       ============================================ */
+    const POS_KEY = 'nosion-lunch-picker-pos-v1';
+    const widgetEl = document.getElementById('widget');
+
+    let offsetX = 0;
+    let offsetY = 0;
+    let moveDrag = null;
+
+    try {
+      const savedPos = localStorage.getItem(POS_KEY);
+      if (savedPos) {
+        const p = JSON.parse(savedPos);
+        if (typeof p.x === 'number') offsetX = p.x;
+        if (typeof p.y === 'number') offsetY = p.y;
+      }
+    } catch (e) {}
+
+    function applyPosition() {
+      widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+
+    function savePosition() {
+      try {
+        localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY }));
+      } catch (e) {}
+    }
+
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      // 상단 헤더 영역에서만 드래그 허용
+      if (!target.closest('.header')) return false;
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]'];
+      for (const sel of blocked) {
+        if (target.closest(sel)) return false;
+      }
+      return true;
+    }
+
+    function startMove(x, y) {
+      moveDrag = {
+        startX: x,
+        startY: y,
+        startOffsetX: offsetX,
+        startOffsetY: offsetY
+      };
+      document.body.style.userSelect = 'none';
+      cardEl.classList.add('dragging');
+    }
+
+    function doMove(x, y) {
+      if (!moveDrag) return;
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
+      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
+      applyPosition();
+    }
+
+    function endMove() {
+      if (moveDrag) {
+        savePosition();
+        moveDrag = null;
+        document.body.style.userSelect = '';
+        cardEl.classList.remove('dragging');
+      }
+    }
+
+    applyPosition();
+
+    cardEl.addEventListener('mousedown', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      e.preventDefault();
+      startMove(e.clientX, e.clientY);
+    });
+
+    cardEl.addEventListener('touchstart', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      const t = e.touches[0];
+      startMove(t.clientX, t.clientY);
+    }, { passive: true });
+
+    document.addEventListener('mousemove', (e) => {
+      if (moveDrag) {
+        e.preventDefault();
+        doMove(e.clientX, e.clientY);
+      }
+    });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('mouseleave', endMove);
+    document.addEventListener('touchmove', (e) => {
+      if (moveDrag) {
+        const t = e.touches[0];
+        doMove(t.clientX, t.clientY);
+      }
+    }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    // 크기 초기화 버튼 — 크기와 위치 모두 원복
+    const DEFAULT_WIDTH = 360;
+    const resizeResetBtn = document.getElementById('resizeResetBtn');
+    resizeResetBtn.addEventListener('click', () => {
+      cardWidth = DEFAULT_WIDTH;
+      cardHeight = null;
+      applyCardSize();
+      saveSize();
+
+      offsetX = 0;
+      offsetY = 0;
+      applyPosition();
+      savePosition();
+    });
+  </script>
+</body>
+</html>

@@ -1,242 +1,678 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Clock</title>
-<style>
-  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  body {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 16px;
-  }
-
-  .card {
-    background: #ffffff;
-    border: 1px solid #e5e5e5;
-    border-radius: 24px;
-    padding: 40px 48px;
-    width: 100%;
-    max-width: 480px;
-    text-align: center;
-  }
-
-  .time-wrapper {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 2px;
-    margin-bottom: 8px;
-  }
-
-  .time-display {
-    font-size: 80px;
-    font-weight: 800;
-    color: #1a1a1a;
-    letter-spacing: -3px;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .seconds {
-    font-size: 36px;
-    font-weight: 700;
-    color: #9ca3af;
-    letter-spacing: -1px;
-    line-height: 1;
-    margin-left: 4px;
-    font-variant-numeric: tabular-nums;
-    margin-bottom: 4px;
-  }
-
-  .period {
-    font-size: 16px;
-    font-weight: 600;
-    color: #9ca3af;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-
-  .divider {
-    width: 100%;
-    height: 1px;
-    background: #f3f4f6;
-    margin: 20px 0;
-  }
-
-  .date-display {
-    font-size: 15px;
-    font-weight: 400;
-    color: #9ca3af;
-    letter-spacing: 0.02em;
-  }
-
-  .day-display {
-    font-size: 13px;
-    font-weight: 400;
-    color: #d1d5db;
-    margin-top: 4px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  /* 포맷 토글 버튼 */
-  .controls {
-    margin-top: 24px;
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .btn {
-    font-family: 'Pretendard', -apple-system, sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    color: #9ca3af;
-    background: transparent;
-    border: 1px solid #e5e5e5;
-    border-radius: 100px;
-    padding: 5px 14px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    letter-spacing: 0.02em;
-  }
-
-  .btn:hover {
-    background: #f9fafb;
-    color: #4b5563;
-  }
-
-  .btn.active {
-    background: #1a1a1a;
-    border-color: #1a1a1a;
-    color: #ffffff;
-  }
-
-  /* 초 숨김 상태 */
-  .seconds.hidden {
-    display: none;
-  }
-
-  /* 세로형 레이아웃 (tall) */
-  @media (max-width: 360px) {
-    .time-display {
-      font-size: 60px;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Clock</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    /* ============================================
+       노시언 위젯 시그니처 디자인 토큰
+       ============================================ */
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 10% 55%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
     }
-    .seconds {
-      font-size: 28px;
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+                   system-ui, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      word-break: keep-all;
     }
+
+    body {
+      padding: 1rem;
+      box-sizing: border-box;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .widget-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      position: relative;
+      width: fit-content;
+    }
+
     .card {
-      padding: 32px 28px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.25rem 2rem 1.75rem;
+      width: 360px;
+      position: relative;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
     }
-  }
-</style>
+
+    .card.dragging { cursor: grabbing; }
+
+    /* === 시간 표시 영역 === */
+    .clock-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      user-select: none;
+    }
+
+    .period {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1;
+      min-height: 0.875rem;  /* 24H 모드에서도 자리 유지 */
+    }
+
+    .period.hidden {
+      visibility: hidden;
+    }
+
+    .time-wrapper {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 0.25rem;
+    }
+
+    .time-display {
+      font-size: 3.75rem;             /* 60px — 더 차분하게 */
+      font-weight: 500;
+      color: var(--foreground);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .seconds {
+      font-size: 1.625rem;            /* 26px */
+      font-weight: 500;
+      color: hsl(220 10% 65%);         /* 옅은 회색 */
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-left: 0.125rem;
+      font-variant-numeric: tabular-nums;
+      transition: opacity var(--transition);
+    }
+
+    .seconds.hidden {
+      display: none;
+    }
+
+    /* === 구분선 === */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      opacity: 0.5;
+      margin: 1.5rem 0 1.25rem;
+      flex-shrink: 0;
+    }
+
+    /* === 날짜 영역 === */
+    .date-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.375rem;
+      user-select: none;
+    }
+
+    .date-text {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: hsl(220 10% 42%);
+      letter-spacing: -0.005em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .day-text {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      opacity: 0.7;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* === 포맷 토글 (노시언 톤) === */
+    .format-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 0.375rem;
+      margin-top: 1.5rem;
+      opacity: 0.35;
+      transition: opacity var(--transition);
+    }
+
+    .widget-wrapper:hover .format-toggle {
+      opacity: 1;
+    }
+
+    .toggle-btn {
+      font-family: inherit;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.025em;
+      color: var(--muted-foreground);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.25rem 0.625rem;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition),
+                  border-color var(--transition);
+    }
+
+    .toggle-btn:hover {
+      background: var(--muted);
+      color: var(--foreground);
+    }
+
+    .toggle-btn.active {
+      background: var(--foreground);
+      border-color: var(--foreground);
+      color: var(--card);
+    }
+
+    /* === 우측 컨트롤 === */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      opacity: 0.25;
+      transition: opacity var(--transition);
+      padding-top: 0.25rem;
+    }
+
+    .widget-wrapper:hover .controls {
+      opacity: 1;
+    }
+
+    .control-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: rgba(115, 115, 115, 0.5);
+      cursor: pointer;
+      transition: color var(--transition);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .control-btn:hover:not(:disabled) {
+      color: var(--foreground);
+    }
+
+    .control-btn svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 2;
+    }
+
+    .control-btn[data-tooltip]::before,
+    .control-btn[data-tooltip]::after {
+      position: absolute;
+      right: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease 0s;
+      z-index: 50;
+    }
+
+    .control-btn[data-tooltip]::before {
+      content: attr(data-tooltip);
+      background: var(--card);
+      color: var(--foreground);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 0.3125rem 0.625rem;
+      font-size: 0.6875rem;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      white-space: nowrap;
+      font-family: inherit;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .control-btn[data-tooltip]::after {
+      content: '';
+      right: calc(100% + 3px);
+      width: 5px;
+      height: 5px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transform: translateY(-50%) rotate(-45deg);
+    }
+
+    .control-btn[data-tooltip]:hover::before,
+    .control-btn[data-tooltip]:hover::after {
+      opacity: 1;
+      transition-delay: 0.4s;
+    }
+
+    /* === 4방향 리사이즈 핸들 === */
+    .resize-handle {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      z-index: 20;
+    }
+
+    .resize-handle .bar {
+      background: var(--border);
+      transition: opacity var(--transition), background var(--transition),
+                  width 0.15s ease, height 0.15s ease;
+      border-radius: 999px;
+      opacity: 0;
+    }
+
+    .widget-wrapper:hover .resize-handle .bar { opacity: 1; }
+    .resize-handle:hover .bar { background: var(--muted-foreground); }
+
+    .handle-top {
+      top: 0; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px; height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-top .bar { width: 36px; height: 1px; }
+    .handle-top:hover .bar { height: 3px; }
+
+    .handle-bottom {
+      bottom: 0; left: 50%;
+      transform: translate(-50%, 50%);
+      width: 36px; height: 16px;
+      cursor: ns-resize;
+    }
+    .handle-bottom .bar { width: 36px; height: 1px; }
+    .handle-bottom:hover .bar { height: 3px; }
+
+    .handle-left {
+      left: 0; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px; height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-left .bar { width: 1px; height: 36px; }
+    .handle-left:hover .bar { width: 3px; }
+
+    .handle-right {
+      right: 0; top: 50%;
+      transform: translate(50%, -50%);
+      width: 16px; height: 36px;
+      cursor: ew-resize;
+    }
+    .handle-right .bar { width: 1px; height: 36px; }
+    .handle-right:hover .bar { width: 3px; }
+  </style>
 </head>
 <body>
-<div class="card">
-  <div class="period" id="period">AM</div>
-  <div class="time-wrapper">
-    <div class="time-display" id="time">12:00</div>
-    <div class="seconds" id="seconds">00</div>
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
+
+      <!-- 시간 표시 -->
+      <div class="clock-display">
+        <div class="period" id="period">AM</div>
+        <div class="time-wrapper">
+          <div class="time-display" id="time">12:00</div>
+          <div class="seconds" id="seconds">00</div>
+        </div>
+      </div>
+
+      <!-- 구분선 -->
+      <div class="divider"></div>
+
+      <!-- 날짜 -->
+      <div class="date-display">
+        <div class="date-text" id="date">—</div>
+        <div class="day-text" id="day">—</div>
+      </div>
+
+      <!-- 포맷 토글 -->
+      <div class="format-toggle">
+        <button class="toggle-btn active" id="btn-12" type="button">12H</button>
+        <button class="toggle-btn" id="btn-24" type="button">24H</button>
+        <button class="toggle-btn active" id="btn-sec" type="button">초</button>
+      </div>
+
+      <!-- 4방향 리사이즈 핸들 -->
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+    <!-- 우측 컨트롤 -->
+    <div class="controls">
+      <button class="control-btn" id="resizeResetBtn"
+              data-tooltip="크기 초기화" title="크기 초기화"
+              type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+    </div>
   </div>
 
-  <div class="divider"></div>
+  <script>
+    /* ============================================
+       Live Clock — 로직
+       ============================================ */
+    const FORMAT_KEY = 'nosion-live-clock-format-v1';
+    const SECONDS_KEY = 'nosion-live-clock-seconds-v1';
 
-  <div class="date-display" id="date">2026년 4월 3일</div>
-  <div class="day-display" id="day">FRIDAY</div>
+    const DAYS_EN = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
-  <div class="controls">
-    <button class="btn active" id="btn-12" onclick="setFormat(12)">12H</button>
-    <button class="btn" id="btn-24" onclick="setFormat(24)">24H</button>
-    <button class="btn active" id="btn-sec" onclick="toggleSeconds()">초</button>
-  </div>
-</div>
+    let format = 12;
+    let showSeconds = true;
 
-<script>
-  let format = 12;
-  let showSeconds = true;
+    try {
+      const sf = localStorage.getItem(FORMAT_KEY);
+      if (sf === '12' || sf === '24') format = parseInt(sf);
+      const ss = localStorage.getItem(SECONDS_KEY);
+      if (ss === '0') showSeconds = false;
+    } catch (e) {}
 
-  const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
-  const DAYS_EN = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const periodEl = document.getElementById('period');
+    const timeEl = document.getElementById('time');
+    const secondsEl = document.getElementById('seconds');
+    const dateEl = document.getElementById('date');
+    const dayEl = document.getElementById('day');
+    const btn12 = document.getElementById('btn-12');
+    const btn24 = document.getElementById('btn-24');
+    const btnSec = document.getElementById('btn-sec');
 
-  function pad(n) {
-    return String(n).padStart(2, '0');
-  }
+    function pad(n) { return String(n).padStart(2, '0'); }
 
-  function tick() {
-    const now = new Date();
-    const h24 = now.getHours();
-    const m = now.getMinutes();
-    const s = now.getSeconds();
+    function tick() {
+      const now = new Date();
+      const h24 = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
 
-    // 시간
-    if (format === 12) {
-      const h12 = h24 % 12 || 12;
-      document.getElementById('time').textContent = `${h12}:${pad(m)}`;
-      document.getElementById('period').textContent = h24 < 12 ? 'AM' : 'PM';
-      document.getElementById('period').style.visibility = 'visible';
-    } else {
-      document.getElementById('time').textContent = `${pad(h24)}:${pad(m)}`;
-      document.getElementById('period').style.visibility = 'hidden';
+      if (format === 12) {
+        const h12 = h24 % 12 || 12;
+        timeEl.textContent = `${h12}:${pad(m)}`;
+        periodEl.textContent = h24 < 12 ? 'AM' : 'PM';
+        periodEl.classList.remove('hidden');
+      } else {
+        timeEl.textContent = `${pad(h24)}:${pad(m)}`;
+        periodEl.classList.add('hidden');
+      }
+
+      secondsEl.textContent = pad(s);
+
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const date = now.getDate();
+      dateEl.textContent = `${year}년 ${month}월 ${date}일`;
+      dayEl.textContent = DAYS_EN[now.getDay()];
     }
 
-    // 초
-    document.getElementById('seconds').textContent = pad(s);
+    function applyFormatUI() {
+      btn12.classList.toggle('active', format === 12);
+      btn24.classList.toggle('active', format === 24);
+    }
 
-    // 날짜
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-    const date = now.getDate();
-    const dayIdx = now.getDay();
+    function applySecondsUI() {
+      secondsEl.classList.toggle('hidden', !showSeconds);
+      btnSec.classList.toggle('active', showSeconds);
+    }
 
-    document.getElementById('date').textContent = `${year}년 ${month}월 ${date}일`;
-    document.getElementById('day').textContent = DAYS_EN[dayIdx];
-  }
+    function setFormat(f) {
+      format = f;
+      applyFormatUI();
+      try { localStorage.setItem(FORMAT_KEY, String(f)); } catch (e) {}
+      tick();
+    }
 
-  function setFormat(f) {
-    format = f;
-    document.getElementById('btn-12').classList.toggle('active', f === 12);
-    document.getElementById('btn-24').classList.toggle('active', f === 24);
-    localStorage.setItem('clock_format', f);
+    function toggleSeconds() {
+      showSeconds = !showSeconds;
+      applySecondsUI();
+      try { localStorage.setItem(SECONDS_KEY, showSeconds ? '1' : '0'); } catch (e) {}
+    }
+
+    btn12.addEventListener('click', (e) => { e.stopPropagation(); setFormat(12); });
+    btn24.addEventListener('click', (e) => { e.stopPropagation(); setFormat(24); });
+    btnSec.addEventListener('click', (e) => { e.stopPropagation(); toggleSeconds(); });
+
+    applyFormatUI();
+    applySecondsUI();
     tick();
-  }
+    setInterval(tick, 1000);
 
-  function toggleSeconds() {
-    showSeconds = !showSeconds;
-    document.getElementById('seconds').classList.toggle('hidden', !showSeconds);
-    document.getElementById('btn-sec').classList.toggle('active', showSeconds);
-    localStorage.setItem('clock_seconds', showSeconds ? '1' : '0');
-  }
+    /* ============================================
+       4방향 리사이즈 (노시언 공통 패턴)
+       ============================================ */
+    const SIZE_KEY = 'nosion-live-clock-size-v1';
+    const MIN_WIDTH = 280;
+    const MAX_WIDTH = 600;
+    const MIN_HEIGHT = 220;
+    const MAX_HEIGHT = 600;
 
-  // 설정 복원
-  const savedFormat = localStorage.getItem('clock_format');
-  const savedSeconds = localStorage.getItem('clock_seconds');
-  if (savedFormat) {
-    format = parseInt(savedFormat);
-    document.getElementById('btn-12').classList.toggle('active', format === 12);
-    document.getElementById('btn-24').classList.toggle('active', format === 24);
-  }
-  if (savedSeconds === '0') {
-    showSeconds = false;
-    document.getElementById('seconds').classList.add('hidden');
-    document.getElementById('btn-sec').classList.remove('active');
-  }
+    const cardEl = document.getElementById('card');
+    let cardWidth = 360;
+    let cardHeight = null;
 
-  tick();
-  setInterval(tick, 1000);
-</script>
+    try {
+      const savedSize = localStorage.getItem(SIZE_KEY);
+      if (savedSize) {
+        const s = JSON.parse(savedSize);
+        if (typeof s.width === 'number') {
+          cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width));
+        }
+        if (typeof s.height === 'number' && s.height > 0) {
+          cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height));
+        }
+      }
+    } catch (e) {}
+
+    function applyCardSize() {
+      cardEl.style.width = cardWidth + 'px';
+      if (cardHeight !== null) {
+        cardEl.style.height = cardHeight + 'px';
+      } else {
+        cardEl.style.height = '';
+      }
+    }
+
+    function saveSize() {
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify({
+          width: cardWidth, height: cardHeight
+        }));
+      } catch (e) {}
+    }
+
+    let resizeDrag = null;
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = {
+        direction, startX: x, startY: y,
+        startWidth: rect.width, startHeight: rect.height
+      };
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor =
+        (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX;
+      const dy = y - resizeDrag.startY;
+      const dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeDrag.startWidth + delta));
+      } else if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeDrag.startHeight + delta));
+      }
+      applyCardSize();
+    }
+    function endResize() {
+      if (resizeDrag) {
+        saveSize();
+        resizeDrag = null;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      }
+    }
+
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+      const direction = handle.dataset.direction;
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startResize(direction, e.clientX, e.clientY);
+      });
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        startResize(direction, t.clientX, t.clientY);
+      }, { passive: false });
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (resizeDrag) { e.preventDefault(); moveResize(e.clientX, e.clientY); }
+    });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('mouseleave', endResize);
+    document.addEventListener('touchmove', (e) => {
+      if (resizeDrag) { const t = e.touches[0]; moveResize(t.clientX, t.clientY); }
+    }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+
+    applyCardSize();
+
+    /* ============================================
+       위치 이동 (카드 빈 영역 드래그, 인터랙티브 제외)
+       ============================================ */
+    const POS_KEY = 'nosion-live-clock-pos-v1';
+    const widgetEl = document.getElementById('widget');
+
+    let offsetX = 0, offsetY = 0;
+    let moveDrag = null;
+
+    try {
+      const savedPos = localStorage.getItem(POS_KEY);
+      if (savedPos) {
+        const p = JSON.parse(savedPos);
+        if (typeof p.x === 'number') offsetX = p.x;
+        if (typeof p.y === 'number') offsetY = p.y;
+      }
+    } catch (e) {}
+
+    function applyPosition() {
+      widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    }
+
+    function savePosition() {
+      try {
+        localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY }));
+      } catch (e) {}
+    }
+
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input'];
+      for (const sel of blocked) {
+        if (target.closest(sel)) return false;
+      }
+      return true;
+    }
+
+    function startMove(x, y) {
+      moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY };
+      document.body.style.userSelect = 'none';
+      cardEl.classList.add('dragging');
+    }
+    function doMove(x, y) {
+      if (!moveDrag) return;
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
+      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
+      applyPosition();
+    }
+    function endMove() {
+      if (moveDrag) {
+        savePosition();
+        moveDrag = null;
+        document.body.style.userSelect = '';
+        cardEl.classList.remove('dragging');
+      }
+    }
+
+    applyPosition();
+
+    cardEl.addEventListener('mousedown', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      e.preventDefault();
+      startMove(e.clientX, e.clientY);
+    });
+    cardEl.addEventListener('touchstart', (e) => {
+      if (!isDraggableTarget(e.target)) return;
+      const t = e.touches[0];
+      startMove(t.clientX, t.clientY);
+    }, { passive: true });
+
+    document.addEventListener('mousemove', (e) => {
+      if (moveDrag) { e.preventDefault(); doMove(e.clientX, e.clientY); }
+    });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('mouseleave', endMove);
+    document.addEventListener('touchmove', (e) => {
+      if (moveDrag) { const t = e.touches[0]; doMove(t.clientX, t.clientY); }
+    }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    // 크기 초기화 — 크기 + 위치 모두 원복
+    const DEFAULT_WIDTH = 360;
+    document.getElementById('resizeResetBtn').addEventListener('click', () => {
+      cardWidth = DEFAULT_WIDTH;
+      cardHeight = null;
+      applyCardSize();
+      saveSize();
+      offsetX = 0; offsetY = 0;
+      applyPosition();
+      savePosition();
+    });
+  </script>
 </body>
 </html>
