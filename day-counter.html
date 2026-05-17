@@ -7,16 +7,26 @@
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
+    :root {
+      --foreground:       hsl(220 13% 18%);
+      --muted-foreground: hsl(215 14% 50%);
+      --border:           hsl(220 9% 76%);
+      --muted:            hsl(210 20% 96%);
+      --radius:           0.5rem;
+      --day-passed:  hsl(220 13% 15%);
+      --day-today:   hsl(220 13% 15%);
+      --day-future:  hsl(220 10% 88%);
+      --day-weekend: hsl(220 10% 70%);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
                    system-ui, 'Segoe UI', sans-serif;
       background: hsl(0 0% 100%);
-      color: hsl(220 10% 55%);
-      margin: 0;
+      color: var(--foreground);
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
       word-break: keep-all;
     }
 
@@ -26,14 +36,13 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      overflow: hidden;
     }
 
     /* ===== Widget wrapper ===== */
     .widget-wrapper {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 1rem;
       position: relative;
       width: fit-content;
     }
@@ -42,10 +51,11 @@
     .left-panel {
       display: flex;
       flex-direction: column;
-      gap: 0.375rem;
+      align-items: center;
+      gap: 0.5rem;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.3s ease;
       flex-shrink: 0;
     }
 
@@ -58,76 +68,73 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      border: 1px solid hsl(220 9% 86%);
-      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       background: hsl(0 0% 100%);
-      padding: 0.4rem 0.7rem;
-      font-size: 0.75rem;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
       font-family: inherit;
-      color: hsl(215 14% 50%);
+      color: var(--foreground);
       cursor: pointer;
       white-space: nowrap;
-      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-      text-align: left;
+      transition: background 0.15s ease;
+      height: 2rem;
     }
 
-    .panel-btn:hover {
-      background: hsl(210 20% 96%);
-    }
+    .panel-btn:hover { background: var(--muted); }
 
-    .panel-btn.cols-active {
-      border-color: hsl(145 45% 48%);
-      color: hsl(145 45% 38%);
-    }
+    .panel-btn.muted-bg { background: var(--muted); }
 
     .panel-btn svg {
-      width: 12px;
-      height: 12px;
+      width: 16px;
+      height: 16px;
       flex-shrink: 0;
       stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     /* Legend */
     .legend {
       display: flex;
       flex-direction: column;
-      gap: 0.3rem;
-      padding: 0.375rem 0.25rem 0;
+      gap: 0.5rem;
+      padding: 0.5rem 0.25rem 0;
     }
 
     .legend-item {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
-      font-size: 0.6875rem;
-      color: hsl(215 14% 50%);
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
     }
 
     .legend-dot {
-      width: 8px;
-      height: 8px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
       flex-shrink: 0;
     }
 
-    .legend-dot.past    { background: hsl(220 15% 16%); }
-    .legend-dot.future  { background: hsl(220 9% 87%); }
-    .legend-dot.holiday { background: hsl(215 12% 65%); }
+    .legend-dot.passed  { background: var(--day-passed); }
+    .legend-dot.future  { background: var(--day-future); }
+    .legend-dot.weekend { background: var(--day-weekend); }
 
     /* ===== Card ===== */
     .card {
       background: hsl(0 0% 100%);
-      border: 1px solid hsl(220 9% 88%);
-      border-radius: 0.875rem;
-      padding: 1.5rem 1.25rem 1.25rem;
-      width: 280px;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 2rem;
+      width: 300px;
       position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1.25rem;
-      overflow: hidden;
-      box-shadow: none;
+      gap: 1.5rem;
+      overflow: auto;
       cursor: grab;
     }
 
@@ -137,31 +144,66 @@
     .mode-title {
       font-size: 1.5rem;
       font-weight: 600;
-      color: hsl(220 15% 16%);
+      color: var(--foreground);
       letter-spacing: -0.02em;
       user-select: none;
+    }
+
+    /* ===== Dot container ===== */
+    #dotContainer {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     /* ===== Dot grid ===== */
     .dot-grid {
       display: grid;
-      grid-template-columns: repeat(var(--cols, 7), 1fr);
-      gap: 2.5px;
+      grid-template-columns: repeat(var(--cols, 7), minmax(0, 1fr));
+      gap: 8px;
       width: 100%;
+      justify-items: center;
       transition: opacity 0.15s ease;
     }
 
-    .dot-grid.fading { opacity: 0; }
-
+    /* ===== Dot ===== */
     .dot {
-      aspect-ratio: 1;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      background: hsl(220 15% 16%);
+      background: var(--day-passed);
+      transition: transform 0.2s;
+      cursor: default;
+      flex-shrink: 0;
     }
 
-    .dot.future        { background: hsl(220 9% 87%); }
-    .dot.holiday-past  { background: hsl(215 12% 65%); }
-    .dot.holiday-future{ background: hsl(215 10% 78%); }
+    .dot:hover       { transform: scale(1.25); }
+    .dot.today       { background: var(--day-today); }
+    .dot.future      { background: var(--day-future); }
+    .dot.weekend     { background: var(--day-weekend); }
+    .dot.future.weekend { background: var(--day-weekend); }
+
+    /* ===== Year view ===== */
+    .year-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      width: 100%;
+    }
+
+    .quarter-section {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .quarter-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--foreground);
+    }
 
     /* ===== Resize handles ===== */
     .resize-handle {
@@ -171,21 +213,23 @@
       align-items: center;
       justify-content: center;
     }
-    .handle-top, .handle-bottom { left: 0; right: 0; height: 12px; cursor: ns-resize; }
+
+    .handle-top, .handle-bottom { left: 0; right: 0; height: 16px; cursor: ns-resize; }
     .handle-top    { top: 0; }
     .handle-bottom { bottom: 0; }
-    .handle-left, .handle-right { top: 0; bottom: 0; width: 12px; cursor: ew-resize; }
+    .handle-left, .handle-right { top: 0; bottom: 0; width: 16px; cursor: ew-resize; }
     .handle-left  { left: 0; }
     .handle-right { right: 0; }
 
     .resize-handle .bar {
       border-radius: 99px;
-      background: hsl(220 9% 84%);
+      background: var(--border);
       opacity: 0;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.15s ease;
     }
-    .handle-top .bar, .handle-bottom .bar { width: 32px; height: 3px; }
-    .handle-left .bar, .handle-right .bar { width: 3px; height: 32px; }
+
+    .handle-top .bar, .handle-bottom .bar { width: 36px; height: 3px; }
+    .handle-left .bar, .handle-right .bar { width: 3px; height: 36px; }
     .resize-handle:hover .bar { opacity: 1; }
   </style>
 </head>
@@ -195,7 +239,7 @@
     <!-- Left hover panel -->
     <div class="left-panel" id="leftPanel">
       <button class="panel-btn" id="modeBtn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" stroke-width="1.75">
           <rect x="3" y="4" width="18" height="18" rx="2"/>
           <line x1="16" y1="2" x2="16" y2="6"/>
           <line x1="8" y1="2" x2="8" y2="6"/>
@@ -204,31 +248,33 @@
         <span id="modeBtnLabel">분기</span>
       </button>
 
-      <button class="panel-btn" id="holidayBtn" type="button">
-        <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <button class="panel-btn" id="weekendBtn" type="button">
+        <svg id="eyeIcon" viewBox="0 0 24 24" stroke-width="1.75">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
           <circle cx="12" cy="12" r="3"/>
         </svg>
-        <span id="holidayBtnLabel">휴일: 표시</span>
+        <span id="weekendBtnLabel">휴일: 표시</span>
       </button>
 
-      <button class="panel-btn cols-active" id="colBtn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+      <button class="panel-btn" id="colBtn" type="button">
+        <svg viewBox="0 0 24 24" stroke-width="1.75">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
         </svg>
         <span id="colBtnLabel">7열</span>
       </button>
 
-      <div class="legend" id="legend">
+      <div class="legend">
         <div class="legend-item">
-          <span class="legend-dot past"></span>지난 날
+          <span class="legend-dot passed"></span>지난 날
         </div>
         <div class="legend-item">
           <span class="legend-dot future"></span>미래
         </div>
-        <div class="legend-item" id="holidayLegend">
-          <span class="legend-dot holiday"></span>휴일
+        <div class="legend-item" id="weekendLegend">
+          <span class="legend-dot weekend"></span>휴일
         </div>
       </div>
     </div>
@@ -236,7 +282,7 @@
     <!-- Main card -->
     <div class="card" id="card">
       <div class="mode-title" id="modeTitle">2분기</div>
-      <div class="dot-grid" id="dotGrid"></div>
+      <div id="dotContainer"></div>
 
       <div class="resize-handle handle-top"    data-direction="top">   <div class="bar"></div></div>
       <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
@@ -258,168 +304,192 @@
       '2026-10-03','2026-10-09','2026-12-25',
     ]);
 
-    /* ===== localStorage keys ===== */
-    const KEY_MODE     = 'nosion-day-counter-mode-v1';
-    const KEY_HOLIDAYS = 'nosion-day-counter-holidays-v1';
-    const KEY_COLS     = 'nosion-day-counter-cols-v1';
-    const KEY_SIZE     = 'nosion-day-counter-size-v1';
-    const KEY_POS      = 'nosion-day-counter-pos-v1';
+    function isWeekend(date) { const d = date.getDay(); return d === 0 || d === 6; }
 
-    /* ===== Column options per mode ===== */
-    const COL_OPTIONS = {
-      year:    [15, 20, 25],
-      quarter: [7, 10, 13],
-    };
+    /* ===== Keys ===== */
+    const K_MODE     = 'nosion-dc-mode-v2';
+    const K_WEEKENDS = 'nosion-dc-weekends-v2';
+    const K_COLS     = 'nosion-dc-cols-v2';
+    const K_SIZE     = 'nosion-dc-size-v2';
+    const K_POS      = 'nosion-dc-pos-v2';
+
+    const COL_OPTIONS  = [5, 7, 10, 15];
+    const VIEW_MODES   = ['month', 'quarter', 'year', 'continuous'];
+    const VIEW_LABELS  = { month: '한달', quarter: '분기', year: '연도', continuous: '1년통' };
+    const MONTH_NAMES  = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
     /* ===== State ===== */
     let mode = 'quarter';
-    let showHolidays = true;
-    let colIdx = { year: 0, quarter: 0 };
+    let showWeekends = true;
+    let colIdx = 1;
 
     try {
-      const m = localStorage.getItem(KEY_MODE);
-      if (m === 'year' || m === 'quarter') mode = m;
-      const h = localStorage.getItem(KEY_HOLIDAYS);
-      if (h !== null) showHolidays = h === 'true';
-      const c = JSON.parse(localStorage.getItem(KEY_COLS) || 'null');
-      if (c) colIdx = { ...colIdx, ...c };
+      const m = localStorage.getItem(K_MODE);
+      if (VIEW_MODES.includes(m)) mode = m;
+      const w = localStorage.getItem(K_WEEKENDS);
+      if (w !== null) showWeekends = w === 'true';
+      const c = parseInt(localStorage.getItem(K_COLS) || '');
+      if (c >= 0 && c < COL_OPTIONS.length) colIdx = c;
     } catch (e) {}
 
-    /* ===== Date utilities ===== */
-    function today() {
+    /* ===== Date helpers ===== */
+    function todayDate() {
       const d = new Date();
       return new Date(d.getFullYear(), d.getMonth(), d.getDate());
     }
 
     function dateKey(d) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
-    function diffDays(a, b) { return Math.round((b - a) / 86400000); }
+    function monthDays(y, m) {
+      const days = [], total = new Date(y, m + 1, 0).getDate();
+      for (let i = 1; i <= total; i++) days.push(new Date(y, m, i));
+      return days;
+    }
 
-    function getRange() {
-      const now = today();
-      const y = now.getFullYear();
-      const mo = now.getMonth();
+    function quarterDays(y, q) {
+      const sm = (q - 1) * 3, days = [];
+      for (let m = sm; m < sm + 3; m++) days.push(...monthDays(y, m));
+      return days;
+    }
 
-      if (mode === 'year') {
-        const start = new Date(y, 0, 1);
-        const end   = new Date(y, 11, 31);
-        const total   = diffDays(start, end) + 1;
-        const elapsed = diffDays(start, now);
-        return { start, total, elapsed, label: '1년' };
-      }
+    function yearDays(y) {
+      const days = [];
+      for (let m = 0; m < 12; m++) days.push(...monthDays(y, m));
+      return days;
+    }
 
-      // quarter
-      const q     = Math.floor(mo / 3);
-      const start = new Date(y, q * 3, 1);
-      const end   = new Date(y, q * 3 + 3, 0);
-      const total   = diffDays(start, end) + 1;
-      const elapsed = diffDays(start, now);
-      return { start, total, elapsed, label: `${q + 1}분기` };
+    /* ===== Build sections per mode ===== */
+    function getSections() {
+      const now = todayDate();
+      const y = now.getFullYear(), mo = now.getMonth(), q = Math.floor(mo / 3) + 1;
+
+      if (mode === 'month')
+        return { title: MONTH_NAMES[mo], sections: [{ days: monthDays(y, mo), label: null }] };
+      if (mode === 'quarter')
+        return { title: `${q}분기`, sections: [{ days: quarterDays(y, q), label: null }] };
+      if (mode === 'year')
+        return { title: String(y), sections: [1,2,3,4].map(qq => ({ days: quarterDays(y, qq), label: `${qq}분기` })) };
+      return { title: '1년통', sections: [{ days: yearDays(y), label: null }] };
+    }
+
+    /* ===== Build a single dot ===== */
+    function makeDot(date, now, todayStr) {
+      const key     = dateKey(date);
+      const isToday = key === todayStr;
+      const isPast  = date < now && !isToday;
+      const isWknd  = showWeekends && (isWeekend(date) || HOLIDAYS.has(key));
+      const isFuture = !isPast && !isToday;
+
+      const dot = document.createElement('div');
+      const cls = ['dot'];
+      if (isFuture) cls.push('future');
+      if (isWknd)   cls.push('weekend');
+      dot.className = cls.join(' ');
+      return dot;
+    }
+
+    /* ===== Build a dot grid ===== */
+    function makeGrid(days, now, todayStr, cols) {
+      const grid = document.createElement('div');
+      grid.className = 'dot-grid';
+      grid.style.setProperty('--cols', cols);
+      days.forEach(d => grid.appendChild(makeDot(d, now, todayStr)));
+      return grid;
     }
 
     /* ===== Render ===== */
     function render() {
-      const { start, total, elapsed, label } = getRange();
-      const cols = COL_OPTIONS[mode][colIdx[mode]];
+      const now = todayDate();
+      const todayStr = dateKey(now);
+      const cols = COL_OPTIONS[colIdx];
+      const { title, sections } = getSections();
 
-      document.getElementById('modeTitle').textContent = label;
-      document.getElementById('dotGrid').style.setProperty('--cols', cols);
+      document.getElementById('modeTitle').textContent = title;
 
-      const frag = document.createDocumentFragment();
-      for (let i = 0; i < total; i++) {
-        const d    = new Date(start.getTime() + i * 86400000);
-        const key  = dateKey(d);
-        const isHol = showHolidays && HOLIDAYS.has(key);
-        const isPast = i < elapsed;
+      const container = document.getElementById('dotContainer');
+      container.innerHTML = '';
 
-        const dot = document.createElement('div');
-        if (isHol) {
-          dot.className = isPast ? 'dot holiday-past' : 'dot holiday-future';
-        } else {
-          dot.className = isPast ? 'dot' : 'dot future';
-        }
-        frag.appendChild(dot);
-      }
-
-      const grid = document.getElementById('dotGrid');
-      grid.innerHTML = '';
-      grid.appendChild(frag);
-
-      updateUI();
-    }
-
-    function updateUI() {
-      const cols = COL_OPTIONS[mode][colIdx[mode]];
-
-      // Mode button
-      document.getElementById('modeBtnLabel').textContent = mode === 'year' ? '1년통' : '분기';
-
-      // Holiday button
-      const eyeSVG = mode === 'year' ? '' : ''; // same icon, label changes
-      document.getElementById('holidayBtnLabel').textContent = `휴일: ${showHolidays ? '표시' : '숨김'}`;
-      document.getElementById('holidayLegend').style.display = showHolidays ? '' : 'none';
-
-      // Eye icon: slash when hidden
-      const eyePath = document.getElementById('eyeIcon');
-      if (!showHolidays) {
-        eyePath.innerHTML = `
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-          <line x1="1" y1="1" x2="23" y2="23"/>`;
+      if (sections.length === 1) {
+        container.appendChild(makeGrid(sections[0].days, now, todayStr, cols));
       } else {
-        eyePath.innerHTML = `
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>`;
+        const wrap = document.createElement('div');
+        wrap.className = 'year-sections';
+        sections.forEach(({ days, label }) => {
+          const sec = document.createElement('div');
+          sec.className = 'quarter-section';
+          if (label) {
+            const lbl = document.createElement('div');
+            lbl.className = 'quarter-label';
+            lbl.textContent = label;
+            sec.appendChild(lbl);
+          }
+          sec.appendChild(makeGrid(days, now, todayStr, cols));
+          wrap.appendChild(sec);
+        });
+        container.appendChild(wrap);
       }
 
-      // Columns button
-      document.getElementById('colBtnLabel').textContent = `${cols}열`;
+      syncUI();
     }
 
-    /* ===== Animated transition ===== */
+    /* ===== Sync panel UI ===== */
+    function syncUI() {
+      const cols = COL_OPTIONS[colIdx];
+      document.getElementById('modeBtnLabel').textContent    = VIEW_LABELS[mode];
+      document.getElementById('weekendBtnLabel').textContent = `휴일: ${showWeekends ? '표시' : '숨김'}`;
+      document.getElementById('weekendLegend').style.display = showWeekends ? '' : 'none';
+      document.getElementById('weekendBtn').classList.toggle('muted-bg', !showWeekends);
+      document.getElementById('colBtnLabel').textContent     = `${cols}열`;
+
+      const eye = document.getElementById('eyeIcon');
+      eye.innerHTML = showWeekends
+        ? `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`
+        : `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+           <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+           <line x1="1" y1="1" x2="23" y2="23"/>`;
+    }
+
+    /* ===== Animated swap ===== */
     function animate(fn) {
-      const grid = document.getElementById('dotGrid');
-      grid.classList.add('fading');
-      setTimeout(() => { if (fn) fn(); render(); grid.classList.remove('fading'); }, 150);
+      const c = document.getElementById('dotContainer');
+      c.style.transition = 'opacity 0.15s ease';
+      c.style.opacity = '0';
+      setTimeout(() => { fn && fn(); render(); c.style.opacity = '1'; }, 150);
     }
 
-    /* ===== Panel buttons ===== */
+    /* ===== Panel interactions ===== */
     document.getElementById('modeBtn').addEventListener('click', () => {
-      mode = mode === 'year' ? 'quarter' : 'year';
-      try { localStorage.setItem(KEY_MODE, mode); } catch (e) {}
+      mode = VIEW_MODES[(VIEW_MODES.indexOf(mode) + 1) % VIEW_MODES.length];
+      try { localStorage.setItem(K_MODE, mode); } catch (e) {}
       animate();
     });
 
-    document.getElementById('holidayBtn').addEventListener('click', () => {
-      showHolidays = !showHolidays;
-      try { localStorage.setItem(KEY_HOLIDAYS, String(showHolidays)); } catch (e) {}
+    document.getElementById('weekendBtn').addEventListener('click', () => {
+      showWeekends = !showWeekends;
+      try { localStorage.setItem(K_WEEKENDS, String(showWeekends)); } catch (e) {}
       animate();
     });
 
     document.getElementById('colBtn').addEventListener('click', () => {
-      colIdx[mode] = (colIdx[mode] + 1) % COL_OPTIONS[mode].length;
-      try { localStorage.setItem(KEY_COLS, JSON.stringify(colIdx)); } catch (e) {}
+      colIdx = (colIdx + 1) % COL_OPTIONS.length;
+      try { localStorage.setItem(K_COLS, String(colIdx)); } catch (e) {}
       animate();
     });
 
     /* ===== Drag to move ===== */
-    (function initDrag() {
+    (function () {
       const wrapper = document.getElementById('widget');
       const card    = document.getElementById('card');
-      const BLOCKED = '.resize-handle,button,[contenteditable],a,input';
-      let dragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
+      const BLOCKED = '.resize-handle,button,a,input';
+      let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
 
       card.addEventListener('mousedown', e => {
         if (e.target.closest(BLOCKED)) return;
         dragging = true;
-        const rect = wrapper.getBoundingClientRect();
-        origLeft = rect.left; origTop = rect.top;
-        startX = e.clientX;   startY  = e.clientY;
+        const r = wrapper.getBoundingClientRect();
+        ox = r.left; oy = r.top; sx = e.clientX; sy = e.clientY;
         card.classList.add('dragging');
         e.preventDefault();
       });
@@ -427,65 +497,58 @@
       document.addEventListener('mousemove', e => {
         if (!dragging) return;
         wrapper.style.position = 'fixed';
-        wrapper.style.left = `${origLeft + e.clientX - startX}px`;
-        wrapper.style.top  = `${origTop  + e.clientY - startY}px`;
+        wrapper.style.left = `${ox + e.clientX - sx}px`;
+        wrapper.style.top  = `${oy + e.clientY - sy}px`;
       });
 
       document.addEventListener('mouseup', () => {
         if (!dragging) return;
         dragging = false;
         card.classList.remove('dragging');
-        try {
-          localStorage.setItem(KEY_POS, JSON.stringify({ left: wrapper.style.left, top: wrapper.style.top }));
-        } catch (e) {}
+        try { localStorage.setItem(K_POS, JSON.stringify({ left: wrapper.style.left, top: wrapper.style.top })); } catch (e) {}
       });
 
       try {
-        const pos = JSON.parse(localStorage.getItem(KEY_POS) || 'null');
-        if (pos) { wrapper.style.position = 'fixed'; wrapper.style.left = pos.left; wrapper.style.top = pos.top; }
+        const p = JSON.parse(localStorage.getItem(K_POS) || 'null');
+        if (p) { wrapper.style.position = 'fixed'; wrapper.style.left = p.left; wrapper.style.top = p.top; }
       } catch (e) {}
     })();
 
-    /* ===== Resize handles ===== */
-    (function initResize() {
+    /* ===== Resize ===== */
+    (function () {
       const card = document.getElementById('card');
-      const MIN_W = 200, MAX_W = 480, MIN_H = 160;
-      let resizing = false, dir = '', startW = 0, startH = 0, startX = 0, startY = 0;
+      const MIN_W = 220, MAX_W = 700, MIN_H = 160;
+      let on = false, dir = '', sw = 0, sh = 0, sx = 0, sy = 0;
 
       document.querySelectorAll('.resize-handle').forEach(h => {
         h.addEventListener('mousedown', e => {
-          resizing = true;
-          dir    = h.dataset.direction;
-          startW = card.offsetWidth; startH = card.offsetHeight;
-          startX = e.clientX;        startY = e.clientY;
+          on = true; dir = h.dataset.direction;
+          sw = card.offsetWidth; sh = card.offsetHeight;
+          sx = e.clientX; sy = e.clientY;
           e.preventDefault(); e.stopPropagation();
         });
       });
 
       document.addEventListener('mousemove', e => {
-        if (!resizing) return;
-        const dx = e.clientX - startX, dy = e.clientY - startY;
-        if (dir === 'right')  card.style.width  = `${Math.min(MAX_W, Math.max(MIN_W, startW + dx))}px`;
-        if (dir === 'left')   card.style.width  = `${Math.min(MAX_W, Math.max(MIN_W, startW - dx))}px`;
-        if (dir === 'bottom') card.style.height = `${Math.max(MIN_H, startH + dy)}px`;
-        if (dir === 'top')    card.style.height = `${Math.max(MIN_H, startH - dy)}px`;
+        if (!on) return;
+        const dx = e.clientX - sx, dy = e.clientY - sy;
+        if (dir === 'right')  card.style.width  = `${Math.min(MAX_W, Math.max(MIN_W, sw + dx))}px`;
+        if (dir === 'left')   card.style.width  = `${Math.min(MAX_W, Math.max(MIN_W, sw - dx))}px`;
+        if (dir === 'bottom') card.style.height = `${Math.max(MIN_H, sh + dy)}px`;
+        if (dir === 'top')    card.style.height = `${Math.max(MIN_H, sh - dy)}px`;
       });
 
       document.addEventListener('mouseup', () => {
-        if (!resizing) return;
-        resizing = false;
-        try {
-          localStorage.setItem(KEY_SIZE, JSON.stringify({ w: card.offsetWidth, h: card.offsetHeight }));
-        } catch (e) {}
+        if (!on) return; on = false;
+        try { localStorage.setItem(K_SIZE, JSON.stringify({ w: card.offsetWidth, h: card.offsetHeight })); } catch (e) {}
       });
 
       try {
-        const s = JSON.parse(localStorage.getItem(KEY_SIZE) || 'null');
+        const s = JSON.parse(localStorage.getItem(K_SIZE) || 'null');
         if (s) { if (s.w) card.style.width = `${s.w}px`; if (s.h) card.style.height = `${s.h}px`; }
       } catch (e) {}
     })();
 
-    /* ===== Init ===== */
     render();
   </script>
 </body>
