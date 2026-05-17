@@ -179,50 +179,6 @@
       opacity: 0.6;
     }
 
-    /* === Holiday list === */
-    .holiday-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-      border-top: 1px solid var(--border);
-      padding-top: 1rem;
-    }
-
-    .holiday-list.empty { display: none; }
-
-    .holiday-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .h-name {
-      font-size: 0.8125rem;
-      color: var(--foreground);
-    }
-
-    .h-meta {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
-
-    .h-date {
-      font-size: 0.75rem;
-      color: var(--muted-foreground);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .h-dday {
-      font-size: 0.75rem;
-      font-variant-numeric: tabular-nums;
-      color: hsl(220 10% 42%);
-      font-weight: 500;
-      min-width: 2.5rem;
-      text-align: right;
-    }
-
-    .h-dday.past { color: var(--muted-foreground); font-weight: 400; }
 
     /* === Resize handles === */
     .resize-handle {
@@ -323,8 +279,6 @@
 
       <div class="date-grid" id="dateGrid"></div>
 
-      <div class="holiday-list" id="holidayList"></div>
-
       <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
       <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
       <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
@@ -405,8 +359,6 @@
       return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     }
 
-    function diffDays(a, b) { return Math.round((b - a) / 86400000); }
-
     /* ===== Render ===== */
     function render() {
       const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
@@ -414,7 +366,6 @@
       document.getElementById('titleMonth').textContent = MONTHS[viewMonth];
 
       buildGrid();
-      renderHolidays();
     }
 
     function buildGrid() {
@@ -479,46 +430,6 @@
       }
 
       return cell;
-    }
-
-    function renderHolidays() {
-      const list = document.getElementById('holidayList');
-      const today = todayDate;
-
-      // Holidays in view month + upcoming ones
-      const items = Object.entries(HOLIDAYS)
-        .map(([key, name]) => {
-          const [y, m, d] = key.split('-').map(Number);
-          return { key, name, date: new Date(y, m - 1, d), day: d };
-        })
-        .filter(h => h.date.getFullYear() === viewYear && h.date.getMonth() === viewMonth)
-        .sort((a, b) => a.date - b.date);
-
-      if (items.length === 0) {
-        list.classList.add('empty');
-        return;
-      }
-
-      list.classList.remove('empty');
-      list.innerHTML = '';
-
-      items.forEach(({ name, date, day }) => {
-        const diff = diffDays(today, date);
-        let ddayText, ddayClass;
-        if (diff > 0)       { ddayText = `D-${diff}`;  ddayClass = 'h-dday'; }
-        else if (diff === 0){ ddayText = 'D-Day';        ddayClass = 'h-dday'; }
-        else                { ddayText = `D+${-diff}`;  ddayClass = 'h-dday past'; }
-
-        const item = document.createElement('div');
-        item.className = 'holiday-item';
-        item.innerHTML = `
-          <span class="h-name">${name}</span>
-          <div class="h-meta">
-            <span class="h-date">${viewMonth + 1}월 ${day}일</span>
-            <span class="${ddayClass}">${ddayText}</span>
-          </div>`;
-        list.appendChild(item);
-      });
     }
 
     /* ===== Animated transition ===== */
