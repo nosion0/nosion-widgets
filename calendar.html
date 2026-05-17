@@ -534,22 +534,28 @@
       document.addEventListener('mousemove', e => {
         if (!resizing) return;
         const dx = e.clientX - startX, dy = e.clientY - startY;
-        if (dir === 'right' || dir === 'left') {
-          const delta = dir === 'right' ? dx : -dx;
-          const newW = Math.min(MAX_W, Math.max(MIN_W, startW + delta * 2));
+        if (dir === 'right') {
+          const newW = Math.min(MAX_W, Math.max(MIN_W, startW + dx));
+          card.style.width = newW + 'px';
+        }
+        if (dir === 'left') {
+          const newW = Math.min(MAX_W, Math.max(MIN_W, startW - dx));
           const actualDelta = newW - startW;
-          card.style.width = `${newW}px`;
+          card.style.width = newW + 'px';
           if (wrapper.style.position === 'fixed') {
-            wrapper.style.left = `${startLeft - actualDelta / 2}px`;
+            wrapper.style.left = (startLeft - actualDelta) + 'px';
           }
         }
-        if (dir === 'bottom' || dir === 'top') {
-          const delta = dir === 'bottom' ? dy : -dy;
-          const newH = Math.max(MIN_H, startH + delta * 2);
+        if (dir === 'bottom') {
+          const newH = Math.max(MIN_H, startH + dy);
+          card.style.height = newH + 'px';
+        }
+        if (dir === 'top') {
+          const newH = Math.max(MIN_H, startH - dy);
           const actualDelta = newH - startH;
-          card.style.height = `${newH}px`;
+          card.style.height = newH + 'px';
           if (wrapper.style.position === 'fixed') {
-            wrapper.style.top = `${startTop - actualDelta / 2}px`;
+            wrapper.style.top = (startTop - actualDelta) + 'px';
           }
         }
       });
