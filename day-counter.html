@@ -160,9 +160,10 @@
     /* ===== Dot grid ===== */
     .dot-grid {
       display: grid;
-      grid-template-columns: repeat(var(--cols, 7), 12px);
+      grid-template-columns: repeat(var(--cols, 7), 1fr);
       gap: 8px;
-      justify-content: center;
+      justify-items: center;
+      width: 100%;
       transition: opacity 0.15s ease;
     }
 
