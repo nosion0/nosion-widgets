@@ -161,10 +161,9 @@
     /* ===== Dot grid ===== */
     .dot-grid {
       display: grid;
-      grid-template-columns: repeat(var(--cols, 7), 1fr);
+      grid-template-columns: repeat(var(--cols, 7), 12px);
       gap: 8px;
-      justify-items: center;
-      width: 100%;
+      justify-content: center;
       transition: opacity 0.15s ease;
     }
 
@@ -205,6 +204,8 @@
       font-weight: 600;
       color: var(--foreground);
     }
+
+    .quarter-section .dot-grid { align-self: center; }
 
     /* ===== Resize handles ===== */
     .resize-handle {
