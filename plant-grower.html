@@ -287,6 +287,9 @@
     .slot:hover { background: var(--muted); }
     .slot.current { border-color: var(--foreground); border-width: 2px; }
     .slot svg { width: 78%; height: 78%; overflow: visible; }
+    /* Slot thumbnails are ~45px tall — non-scaling-stroke keeps 3px which looks chunky;
+       override to 1.4px so shapes are legible at small size */
+    .slot svg *[vector-effect="non-scaling-stroke"] { stroke-width: 1.4; }
     .slot.locked svg { opacity: 0.16; }
 
     .slot .badge {
