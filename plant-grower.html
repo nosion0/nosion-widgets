@@ -425,7 +425,7 @@
       </g>`;
 
     /* ===== Joguman helpers: bold non-scaling outline, flat fill, growth-by-scaling ===== */
-    const SW = 3.3, WHITE = 'hsl(0 0% 100%)';
+    const SW = 3, WHITE = 'hsl(0 0% 100%)';
     const fO = (f = FILL) => `fill="${f}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"`;
     const oO = (extra = '') => `fill="none" stroke="${INK}" stroke-width="${SW}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" ${extra}`;
     const stemLine = (d, w = SW, c = STEM) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
