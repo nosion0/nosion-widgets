@@ -441,9 +441,9 @@
 
     /* Flat hand-drawn pot (bold outline, no shine); BACK behind plant, FRONT over its base */
     const POT_BACK =
-      `<path d="M45 104 L49 134 Q49.5 137 52.5 137 L67.5 137 Q70.5 137 71 134 L75 104 Z" fill="var(--pot)" stroke="${INK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` +
+      `<path d="M45 104 L49 134 Q49.5 137 52.5 137 L67.5 137 Q70.5 137 71 134 L75 104 Z" fill="var(--pot)" stroke="${INK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>` +
       `<ellipse cx="60" cy="104" rx="15" ry="2.6" fill="${SOIL}"/>`;
-    const POT_FRONT = `<rect x="39" y="99" width="42" height="10" rx="5" fill="var(--pot)" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`;
+    const POT_FRONT = `<rect x="39" y="99" width="42" height="10" rx="5" fill="var(--pot)" stroke="${INK}" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
     const DROP =
       `<path class="drop" d="M60 16 q5 8 0 13 q-5 -5 0 -13z" fill="${ACC}"/>` +
       `<path class="drop" style="animation-delay:.2s" d="M65 10 q4 6.5 0 11 q-4 -4.5 0 -11z" fill="${ACC}"/>`;
