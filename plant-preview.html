@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>식물 성장 단계 검토</title>
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      /* same palette as plant-grower.html so var(--xxx) resolves identically */
+      --ink:    hsl(220 13% 20%);
+      --stem:   hsl(220 12% 34%);
+      --leaf:   hsl(220 10% 60%);
+      --fill:   hsl(220 10% 80%);
+      --accent: hsl(220 13% 26%);
+      --pot:    hsl(220 10% 87%);
+      --soil:   hsl(220 9% 64%);
+      --blush:  hsl(220 14% 74%);
+      --shine:  hsl(0 0% 100% / .55);
+
+      --fg: hsl(220 13% 18%);
+      --muted: hsl(215 14% 50%);
+      --border: hsl(220 9% 86%);
+    }
+    * { margin: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, system-ui, sans-serif;
+      background: hsl(0 0% 100%);
+      color: var(--fg);
+      padding: 28px 24px 60px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .head {
+      display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+    .sub { font-size: 13px; color: var(--muted); }
+    .toggle {
+      margin-left: auto; display: flex; gap: 6px;
+    }
+    .toggle button {
+      font-family: inherit; font-size: 13px; cursor: pointer;
+      border: 1px solid var(--border); background: #fff; color: var(--fg);
+      padding: 6px 14px; border-radius: 8px; transition: background .15s, border-color .15s;
+    }
+    .toggle button.on { background: var(--fg); color: #fff; border-color: var(--fg); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 88px repeat(7, 1fr);
+      gap: 6px;
+      max-width: 1000px;
+    }
+    .cell {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff;
+      overflow: hidden;
+    }
+    .cell svg { width: 86%; height: 86%; overflow: visible; }
+
+    /* mirror the widget's wilted look (tilt + dim); sad mouth comes from the face fn */
+    .plant-body { transform-origin: 60px 104px; }
+    .plant-svg.wilted .plant-body { opacity: 0.55; transform: rotate(4deg); }
+
+    .colhead {
+      border: none;
+      aspect-ratio: auto;
+      flex-direction: column;
+      gap: 1px;
+      font-size: 12px; font-weight: 600; color: var(--fg);
+      padding: 4px 0 8px;
+    }
+    .colhead .req { font-size: 10px; font-weight: 500; color: var(--muted); }
+    .rowhead {
+      border: none; aspect-ratio: auto;
+      justify-content: flex-end; padding-right: 10px;
+      font-size: 13px; font-weight: 600;
+    }
+    .corner { border: none; }
+    .wilted-tag { color: var(--muted); }
+    #err { color: #b00; font-size: 14px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <h1>🌱 식물 성장 단계 검토</h1>
+    <span class="sub" id="sub">10종 × 7단계 · 실제 위젯(plant-grower.html)에서 직접 로드</span>
+    <div class="toggle">
+      <button id="btnNormal" class="on" type="button">정상</button>
+      <button id="btnWilted" type="button">시듦</button>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div id="err"></div>
+
+  <script>
+    let api = null;     // { PLANTS, stageOf, STAGE_THRESHOLDS, build }
+    let wilted = false;
+
+    function buildApiFromSource(txt) {
+      const start = txt.indexOf("const INK = 'var(--ink)'");
+      const end   = txt.indexOf("/* ============ State ============ */");
+      if (start < 0 || end < 0 || end <= start) throw new Error("코드 구간을 찾지 못했습니다.");
+      const code = txt.slice(start, end);
+      // The slice defines: helpers (incl. face), POT_BACK, POT_FRONT, DROP,
+      // PLANTS, TOTAL, STAGE_THRESHOLDS, MAX_WATER, stageOf — all self-contained.
+      const tail = `
+        ;return {
+          PLANTS: PLANTS,
+          stageOf: stageOf,
+          STAGE_THRESHOLDS: STAGE_THRESHOLDS,
+          build: function (id, stage, w) {
+            var plant = PLANTS.find(function (p) { return p.id === id; });
+            var body = plant.stages[stage - 1] || '';
+            var hp = plant.head[stage - 1];
+            var faceSvg = hp ? face(hp[0], hp[1], hp[2], w ? 'sad' : 'happy') : '';
+            return '<svg class="plant-svg' + (w ? ' wilted' : '') + '" viewBox="0 0 120 150" preserveAspectRatio="xMidYMax meet">'
+              + POT_BACK + '<g class="plant-body">' + body + faceSvg + '</g>' + POT_FRONT + '</svg>';
+          }
+        };`;
+      return (new Function(code + tail))();
+    }
+
+    function render() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      // corner
+      const corner = document.createElement('div');
+      corner.className = 'cell corner';
+      grid.appendChild(corner);
+      // column headers (stages 1..7) with water requirement
+      for (let s = 1; s <= 7; s++) {
+        const c = document.createElement('div');
+        c.className = 'cell colhead';
+        const req = api.STAGE_THRESHOLDS[s - 1];
+        c.innerHTML = `<div>${s}단계</div><div class="req">${req}회</div>`;
+        grid.appendChild(c);
+      }
+      // rows: each plant × 7 stages
+      api.PLANTS.forEach(p => {
+        const rh = document.createElement('div');
+        rh.className = 'cell rowhead';
+        rh.textContent = p.name;
+        grid.appendChild(rh);
+        for (let s = 1; s <= 7; s++) {
+          const c = document.createElement('div');
+          c.className = 'cell';
+          c.innerHTML = api.build(p.id, s, wilted);
+          grid.appendChild(c);
+        }
+      });
+      document.getElementById('sub').textContent =
+        `10종 × 7단계 · ${wilted ? '시든 상태' : '정상 상태'} · 실제 위젯에서 직접 로드`;
+    }
+
+    document.getElementById('btnNormal').addEventListener('click', () => {
+      wilted = false;
+      document.getElementById('btnNormal').classList.add('on');
+      document.getElementById('btnWilted').classList.remove('on');
+      render();
+    });
+    document.getElementById('btnWilted').addEventListener('click', () => {
+      wilted = true;
+      document.getElementById('btnWilted').classList.add('on');
+      document.getElementById('btnNormal').classList.remove('on');
+      render();
+    });
+
+    fetch('plant-grower.html')
+      .then(r => { if (!r.ok) throw new Error('plant-grower.html 로드 실패: ' + r.status); return r.text(); })
+      .then(txt => { api = buildApiFromSource(txt); render(); })
+      .catch(e => { document.getElementById('err').textContent = '오류: ' + e.message; });
+  </script>
+</body>
+</html>
