@@ -432,16 +432,23 @@
     /* Each stage = SVG body string (pot added separately). Grows from ~y=102 upward. */
     const PLANTS = [
       { id: 'sprout', name: '새싹',
-        stages: [
-          ``,
-          stem('M60 104 V99') + bulb(93, 7, 6.5),
-          stem('M60 104 V96') + bulb(89, 9, 8) + leaf(53, 97, -52, 0.5) + leaf(67, 97, 52, 0.5),
-          stem('M60 104 V92') + bulb(84, 10.5, 9.5) + leaf(51, 95, -54, 0.62) + leaf(69, 95, 54, 0.62),
-          stem('M60 104 V88') + bulb(78, 11.5, 10.5) + leaf(50, 92, -55, 0.72) + leaf(70, 92, 55, 0.72) + leaf(55, 68, -24, 0.42) + leaf(65, 68, 24, 0.42),
-          stem('M60 104 V84') + bulb(73, 12, 11) + leaf(49, 90, -56, 0.8) + leaf(71, 90, 56, 0.8) + leaf(54, 62, -22, 0.5) + leaf(66, 62, 22, 0.5),
-          stem('M60 104 V80') + bulb(68, 12.5, 11.5) + leaf(48, 88, -57, 0.85) + leaf(72, 88, 57, 0.85) + leaf(53, 57, -20, 0.55) + leaf(60, 54, 0, 0.5) + leaf(67, 57, 20, 0.55),
-        ],
-        head: [null, [60,93,0.5], [60,89,0.62], [60,84,0.72], [60,78,0.8], [60,73,0.88], [60,68,0.95]] },
+        ...(() => {
+          /* rounded cotyledon leaf (wide, soft tip) — spreads from the sides like arms,
+             never pointy horns on top of the head */
+          const rleaf = (x, y, r, s) => `<path d="M0 0 C-10 -3 -11 -15 0 -19 C11 -15 10 -3 0 0Z" fill="${LEAF}" stroke="${INK}" stroke-width="1.9" transform="translate(${x},${y}) rotate(${r}) scale(${s})"/>`;
+          return {
+            stages: [
+              ``,
+              stem('M60 104 V99') + bulb(94, 6.5, 6),
+              stem('M60 104 V97') + bulb(91, 8.5, 8) + rleaf(51, 93, -70, 0.62) + rleaf(69, 93, 70, 0.62),
+              stem('M60 104 V95') + bulb(88, 10, 9.5) + rleaf(49, 90, -72, 0.74) + rleaf(71, 90, 72, 0.74),
+              stem('M60 104 V93') + bulb(85, 11, 10.5) + rleaf(48, 88, -74, 0.84) + rleaf(72, 88, 74, 0.84),
+              stem('M60 104 V91') + bulb(82, 11.5, 11) + rleaf(47, 85, -76, 0.92) + rleaf(73, 85, 76, 0.92) + rleaf(53, 95, -60, 0.5) + rleaf(67, 95, 60, 0.5),
+              stem('M60 104 V89') + bulb(79, 12, 11.5) + rleaf(46, 82, -78, 1.0) + rleaf(74, 82, 78, 1.0) + rleaf(52, 93, -62, 0.55) + rleaf(68, 93, 62, 0.55),
+            ],
+            head: [null, [60,94,0.5], [60,91,0.64], [60,88,0.74], [60,85,0.82], [60,82,0.9], [60,79,0.96]],
+          };
+        })() },
 
       { id: 'cactus', name: '선인장',
         ...(() => {
