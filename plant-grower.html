@@ -390,6 +390,10 @@
       `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="${INK}" stroke-width="${w}"/>`;
     const bulb = (y, rx, ry, c = FILL) =>
       `<ellipse cx="60" cy="${y}" rx="${rx}" ry="${ry}" fill="${c}" stroke="${INK}" stroke-width="2.4"/>`;
+    /* fat rounded leaf (chunky/cute), base at (x,y) pointing up */
+    const fleaf = (x, y, r, s, c = LEAF) =>
+      `<path d="M0 0 C-11 -3 -12 -17 0 -21 C12 -17 11 -3 0 0Z" fill="${c}" stroke="${INK}" stroke-width="2.2"
+        transform="translate(${x},${y}) rotate(${r}) scale(${s})"/>`;
     const petalRing = (x, y, s, n, c = FILL, ry = 8.5) =>
       `<g transform="translate(${x},${y}) scale(${s})">` +
       Array.from({length: n}, (_, i) =>
@@ -433,205 +437,211 @@
     const PLANTS = [
       { id: 'sprout', name: '새싹',
         ...(() => {
-          /* The broad front cotyledon leaf itself is the face surface — no separate round head. */
-          const front = (y, s) => `<path d="M0 0 C-13 -3 -14 -20 0 -24 C14 -20 13 -3 0 0Z" fill="${LEAF}" stroke="${INK}" stroke-width="2.1" transform="translate(60,${y}) scale(${s})"/>`;
-          const side = (x, y, r, s) => `<path d="M0 0 C-9 -2 -10 -14 0 -17 C10 -14 9 -2 0 0Z" fill="${LEAF}" stroke="${INK}" stroke-width="1.9" transform="translate(${x},${y}) rotate(${r}) scale(${s})"/>`;
+          /* two fat leaves meeting at the stem; face sits on the merged front (no separate head) */
           return {
             stages: [
               ``,
-              stem('M60 104 V99') + front(99, 0.64),
-              stem('M60 104 V98') + side(52, 98, -64, 0.55) + side(68, 98, 64, 0.55) + front(98, 0.82),
-              stem('M60 104 V97') + side(50, 97, -66, 0.66) + side(70, 97, 66, 0.66) + front(97, 0.96),
-              stem('M60 104 V96') + side(49, 96, -68, 0.74) + side(71, 96, 68, 0.74) + front(96, 1.08),
-              stem('M60 104 V95') + side(48, 95, -70, 0.8) + side(72, 95, 70, 0.8) + side(54, 101, -54, 0.5) + side(66, 101, 54, 0.5) + front(95, 1.18),
-              stem('M60 104 V94') + side(47, 94, -72, 0.86) + side(73, 94, 72, 0.86) + side(53, 100, -56, 0.55) + side(67, 100, 56, 0.55) + front(94, 1.28),
+              stem('M60 107 V102', 3.2) + fleaf(60, 102, -38, 0.72) + fleaf(60, 102, 38, 0.72),
+              stem('M60 107 V101', 3.4) + fleaf(60, 101, -39, 0.98) + fleaf(60, 101, 39, 0.98),
+              stem('M60 107 V100', 3.5) + fleaf(60, 100, -40, 1.16) + fleaf(60, 100, 40, 1.16),
+              stem('M60 107 V99', 3.6) + fleaf(60, 99, -40, 1.3) + fleaf(60, 99, 40, 1.3),
+              stem('M60 107 V98', 3.6) + fleaf(60, 98, -40, 1.4) + fleaf(60, 98, 40, 1.4),
+              stem('M60 107 V97', 3.6) + fleaf(60, 97, -40, 1.5) + fleaf(60, 97, 40, 1.5),
             ],
-            head: [null, [60,92,0.5], [60,90,0.6], [60,88,0.7], [60,86,0.78], [60,85,0.86], [60,84,0.94]],
+            head: [null, [60,96,0.66], [60,93,0.86], [60,91,1.0], [60,89,1.08], [60,88,1.14], [60,87,1.2]],
           };
         })() },
 
       { id: 'cactus', name: '선인장',
         ...(() => {
-          const body = (y, h) => `<rect x="50" y="${y}" width="20" height="${h}" rx="10" fill="${FILL}" stroke="${INK}" stroke-width="2.4"/>`;
-          const spine = (y0, y1) => `<path d="M60 ${y0} V${y1} M55 ${y0+5} V${y1-3} M65 ${y0+5} V${y1-3}" stroke="${LEAF}" stroke-width="1.3" opacity="0.6"/>`;
-          const armL = `<path d="M50 84 q-11 0 -11 -11 v-4 q0 -5.5 5.5 -5.5 t5.5 5.5" fill="${FILL}" stroke="${INK}" stroke-width="2.4"/>`;
-          const armR = `<path d="M70 78 q11 0 11 -11 v-4 q0 -5.5 -5.5 -5.5 t-5.5 5.5" fill="${FILL}" stroke="${INK}" stroke-width="2.4"/>`;
+          const body = (y, w) => `<rect x="${60 - w/2}" y="${y}" width="${w}" height="${106 - y}" rx="${w/2}" fill="${FILL}" stroke="${INK}" stroke-width="2.8"/>`;
+          const armL = `<path d="M46 84 C38 84 37 75 37 71 C37 66 44 66 46 71 Z" fill="${FILL}" stroke="${INK}" stroke-width="2.8"/>`;
+          const armR = `<path d="M74 78 C82 78 83 69 83 65 C83 60 76 60 74 65 Z" fill="${FILL}" stroke="${INK}" stroke-width="2.8"/>`;
           return {
             stages: [
               ``,
-              body(87, 19),
-              body(80, 26),
-              body(70, 36) + spine(76, 102),
-              body(63, 43) + spine(69, 100) + armL,
-              body(58, 48) + spine(64, 100) + armL + armR,
-              body(54, 52) + spine(60, 98) + armL + armR + blossom(60, 51, 1.0),
+              body(86, 22),
+              body(76, 28),
+              body(66, 32) + armL,
+              body(60, 32) + armL + armR,
+              body(57, 32) + armL + armR,
+              body(57, 32) + armL + armR + blossom(60, 56, 1.1),
             ],
-            head: [null, [60,94,0.62], [60,89,0.74], [60,85,0.9], [60,83,0.96], [60,83,0.98], [60,84,0.98]],
+            head: [null, [60,95,0.9], [60,89,1.1], [60,85,1.25], [60,83,1.3], [60,82,1.3], [60,83,1.3]],
           };
         })() },
 
       { id: 'clover', name: '클로버',
         ...(() => {
-          const tre = (x, y, s, four) => {
+          /* one chunky shamrock that grows bigger; becomes a 4-leaf clover at the end */
+          const tre = (cx, cy, s, four) => {
             const angs = four ? [45,135,225,315] : [90,210,330];
-            return `<g transform="translate(${x},${y}) scale(${s})">` +
-              angs.map(a => `<circle cx="0" cy="-6.5" r="5" fill="${FILL}" stroke="${INK}" stroke-width="1.9" transform="rotate(${a})"/>`).join('') +
+            return `<g transform="translate(${cx},${cy}) scale(${s})">` +
+              angs.map(a => `<circle cx="0" cy="-7" r="7.5" fill="${FILL}" stroke="${INK}" stroke-width="2.4" transform="rotate(${a})"/>`).join('') +
               `</g>`;
           };
           return {
             stages: [
               ``,
-              stem('M60 104 V94', 2.4) + tre(60, 90, 0.7),
-              stem('M60 104 V92', 2.4) + stem('M60 99 L51 92', 2.2) + tre(60, 87, 0.85) + tre(49, 89, 0.62),
-              stem('M60 104 V90', 2.4) + stem('M60 98 L50 90', 2.2) + stem('M60 97 L70 90', 2.2) + tre(60, 84, 0.95) + tre(48, 87, 0.7) + tre(72, 87, 0.7),
-              stem('M60 104 V88', 2.4) + stem('M60 97 L49 88', 2.2) + stem('M60 96 L71 88', 2.2) + tre(60, 81, 1.0) + tre(47, 85, 0.76) + tre(73, 85, 0.76),
-              stem('M60 104 V86', 2.4) + stem('M60 97 L48 86', 2.2) + stem('M60 95 L72 86', 2.2) + stem('M60 94 L60 79', 2.2) + tre(60, 77, 1.05) + tre(46, 83, 0.8) + tre(74, 83, 0.8) + tre(60, 69, 0.72),
-              stem('M60 104 V84', 2.4) + stem('M60 96 L47 85', 2.2) + stem('M60 95 L73 85', 2.2) + tre(47, 82, 0.84) + tre(73, 82, 0.84) + tre(60, 75, 1.12, true),
+              stem('M60 106 V96', 3) + tre(60, 91, 0.7),
+              stem('M60 106 V94', 3.2) + tre(60, 88, 0.95),
+              stem('M60 106 V93', 3.3) + tre(60, 86, 1.12),
+              stem('M60 106 V92', 3.4) + tre(60, 84, 1.28),
+              stem('M60 106 V91', 3.4) + tre(60, 83, 1.4),
+              stem('M60 106 V90', 3.4) + tre(60, 82, 1.5, true),
             ],
-            head: [null, [60,90,0.58], [60,87,0.7], [60,84,0.8], [60,81,0.88], [60,77,0.94], [60,75,1.0]],
+            head: [null, [60,90,0.72], [60,87,0.92], [60,85,1.05], [60,83,1.15], [60,82,1.2], [60,81,1.25]],
           };
         })() },
 
       { id: 'monstera', name: '몬스테라',
         ...(() => {
-          const mleaf = (x, y, r, s) =>
+          /* big rounded leaves with one simple notch each, all rooted on the stem */
+          const ml = (x, y, r, s) =>
             `<g transform="translate(${x},${y}) rotate(${r}) scale(${s})">
-              <path d="M0 0 C-15 -4 -17 -25 0 -33 C17 -25 15 -4 0 0Z" fill="${FILL}" stroke="${INK}" stroke-width="2.1"/>
-              <path d="M0 -5 V-28" stroke="${INK}" stroke-width="1.3"/>
-              <path d="M-2.5 -11 l-8 -2 M-2.5 -20 l-8 -3 M2.5 -11 l8 -2 M2.5 -20 l8 -3" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>
-            </g>`;
-          const mMain = (y, s) =>
-            `<g transform="translate(60,${y}) scale(${s})">
-              <path d="M0 0 C-16 -5 -18 -28 0 -36 C18 -28 16 -5 0 0Z" fill="${FILL}" stroke="${INK}" stroke-width="2.3"/>
-              <path d="M0 -30 V-35 M-9 -28 l5 -3 M9 -28 l-5 -3" stroke="${INK}" stroke-width="1.3" stroke-linecap="round"/>
+              <path d="M0 0 C-17 -5 -18 -27 0 -32 C18 -27 17 -5 0 0Z" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>
+              <path d="M-15 -16 q6 -1 7 2 M15 -16 q-6 -1 -7 2" stroke="${INK}" stroke-width="2" fill="none" stroke-linecap="round"/>
             </g>`;
           return {
             stages: [
               ``,
-              stem('M60 104 V97') + mMain(95, 0.5),
-              stem('M60 104 V95') + mMain(92, 0.66),
-              stem('M60 104 V93') + stem('M60 99 L50 92', 2.4) + mMain(86, 0.85) + mleaf(48, 92, -42, 0.6),
-              stem('M60 104 V91') + stem('M60 98 L49 90', 2.4) + stem('M60 97 L71 89', 2.4) + mMain(81, 0.95) + mleaf(47, 90, -44, 0.68) + mleaf(73, 88, 44, 0.68),
-              stem('M60 104 V89') + stem('M60 97 L48 88', 2.4) + stem('M60 96 L72 87', 2.4) + mMain(77, 1.0) + mleaf(46, 88, -46, 0.74) + mleaf(74, 86, 46, 0.74),
-              stem('M60 104 V87') + stem('M60 96 L47 86', 2.4) + stem('M60 95 L73 85', 2.4) + stem('M60 94 L52 77', 2.2) + mMain(73, 1.05) + mleaf(45, 86, -48, 0.78) + mleaf(75, 84, 48, 0.78) + mleaf(50, 76, -24, 0.6),
+              stem('M60 106 V100', 3.4) + ml(60, 100, 0, 0.62),
+              stem('M60 106 V98', 3.4) + ml(60, 98, 0, 0.86),
+              stem('M60 106 V95', 3.4) + ml(60, 95, 50, 0.7) + ml(60, 96, 0, 1.0),
+              stem('M60 106 V92', 3.4) + ml(60, 93, -52, 0.74) + ml(60, 91, 52, 0.74) + ml(60, 92, 0, 1.08),
+              stem('M60 106 V90', 3.4) + ml(60, 92, -54, 0.8) + ml(60, 90, 54, 0.8) + ml(60, 89, 0, 1.14),
+              stem('M60 106 V88', 3.4) + ml(60, 91, -56, 0.86) + ml(60, 89, 56, 0.86) + ml(60, 86, 0, 1.2),
             ],
-            head: [null, [60,87,0.48], [60,83,0.6], [60,76,0.74], [60,70,0.82], [60,66,0.88], [60,61,0.94]],
+            head: [null, [60,90,0.6], [60,85,0.85], [60,82,1.0], [60,78,1.05], [60,75,1.1], [60,72,1.15]],
           };
         })() },
 
       { id: 'tomato', name: '토마토',
         ...(() => {
-          const tom = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${FILL}" stroke="${INK}" stroke-width="2"/>` +
-            `<path d="M${x-2.5} ${y-r} l-2 -3 M${x} ${y-r} v-3.5 M${x+2.5} ${y-r} l2 -3" stroke="${STEM}" stroke-width="1.4" stroke-linecap="round"/>`;
-          const bud = (y) => `<circle cx="60" cy="${y}" r="5" fill="${FILL}" stroke="${INK}" stroke-width="2.2"/>`;
+          /* chunky bush + big round tomatoes; face on the biggest fruit once it appears */
+          const tom = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
+            `<path d="M${x-3} ${y-r+1} q3 -4 6 0" fill="none" stroke="${STEM}" stroke-width="1.8" stroke-linecap="round"/>`;
+          const bud = (y, r) => `<circle cx="60" cy="${y}" r="${r}" fill="${LEAF}" stroke="${INK}" stroke-width="2.6"/>`;
           return {
             stages: [
               ``,
-              stem('M60 104 V98') + bud(94),
-              stem('M60 104 V92') + leaf(52, 96, -46, 0.55) + leaf(68, 96, 46, 0.55) + bud(88),
-              stem('M60 104 V84') + leaf(51, 92, -48, 0.68) + leaf(69, 92, 48, 0.68) + leaf(54, 80, -22, 0.5) + bud(78),
-              stem('M60 104 V74') + leaf(50, 90, -50, 0.76) + leaf(70, 90, 50, 0.76) + leaf(53, 78, -24, 0.58) + blossom(52, 70, 0.55) + blossom(68, 72, 0.55) + bud(66),
-              stem('M60 104 V66') + leaf(50, 90, -52, 0.82) + leaf(70, 90, 52, 0.82) + leaf(53, 76, -24, 0.6) + tom(50, 72, 6) + tom(70, 74, 6) + tom(60, 64, 7.5),
-              stem('M60 104 V60') + leaf(50, 90, -54, 0.86) + leaf(70, 90, 54, 0.86) + leaf(53, 74, -24, 0.62) + tom(49, 70, 6) + tom(71, 72, 6) + tom(58, 80, 5.5) + tom(60, 60, 8),
+              stem('M60 106 V100', 3.2) + bud(96, 6),
+              stem('M60 106 V96', 3.2) + fleaf(60, 96, -46, 0.72) + fleaf(60, 96, 46, 0.72) + bud(89, 7),
+              stem('M60 106 V92', 3.3) + fleaf(60, 93, -48, 0.86) + fleaf(60, 93, 48, 0.86) + bud(83, 8),
+              stem('M60 106 V90', 3.4) + fleaf(60, 92, -50, 0.92) + fleaf(60, 92, 50, 0.92) + tom(60, 80, 9.5),
+              stem('M60 106 V88', 3.4) + fleaf(60, 91, -52, 0.96) + fleaf(60, 91, 52, 0.96) + tom(51, 82, 7.5) + tom(69, 82, 7.5) + tom(60, 73, 11),
+              stem('M60 106 V86', 3.4) + fleaf(60, 90, -54, 1.0) + fleaf(60, 90, 54, 1.0) + tom(50, 82, 7.5) + tom(70, 82, 7.5) + tom(60, 71, 12),
             ],
-            head: [null, [60,94,0.5], [60,88,0.56], [60,78,0.64], [60,66,0.68], [60,64,0.74], [60,60,0.8]],
+            head: [null, [60,96,0.66], [60,89,0.74], [60,83,0.82], [60,80,0.9], [60,73,1.0], [60,71,1.05]],
           };
         })() },
 
       { id: 'bamboo', name: '대나무',
         ...(() => {
-          const cane = (x, top, segs, w = 4) => {
-            let d = `<path d="M${x} 105 V${top}" stroke="${STEM}" stroke-width="${w}" stroke-linecap="round" fill="none"/>`;
-            for (let i = 0; i <= segs; i++) {
-              const yy = 105 - ((105 - top) / segs) * i;
-              d += `<path d="M${x - w} ${yy} h${w * 2}" stroke="${INK}" stroke-width="1.7"/>`;
-            }
-            return d;
+          /* ONE fat rounded stalk with soft segment lines (no protruding nodes) + small leaves */
+          const stalk = (y, w) => `<rect x="${60 - w/2}" y="${y}" width="${w}" height="${106 - y}" rx="${w/2}" fill="${FILL}" stroke="${INK}" stroke-width="2.8"/>`;
+          const segLines = (top, w) => {
+            let out = '';
+            for (let yy = top + 16; yy < 102; yy += 18)
+              out += `<path d="M${60 - w/2 + 2} ${yy} Q60 ${yy + 3} ${60 + w/2 - 2} ${yy}" stroke="${INK}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+            return out;
           };
-          const bl = (x, y, r) => `<path d="M0 0 Q3 -11 0 -21 Q-3 -11 0 0Z" fill="${LEAF}" stroke="${INK}" stroke-width="1.5" transform="translate(${x},${y}) rotate(${r}) scale(0.72)"/>`;
+          const tops = (top) => fleaf(64, top + 3, 50, 0.66) + fleaf(56, top + 3, -50, 0.66);
           return {
             stages: [
               ``,
-              cane(60, 90, 2, 6),
-              cane(60, 78, 3, 6) + bl(64, 80, 34),
-              cane(60, 64, 3, 6) + bl(64, 68, 32) + bl(56, 68, -32),
-              cane(58, 54, 4, 6) + cane(72, 74, 3, 3.4) + bl(62, 58, 30) + bl(54, 58, -28) + bl(72, 74, 30),
-              cane(57, 46, 4, 6) + cane(71, 64, 4, 3.4) + bl(61, 50, 28) + bl(53, 50, -28) + bl(71, 64, 30) + bl(71, 64, -18),
-              cane(56, 40, 5, 6) + cane(70, 56, 4, 3.4) + cane(45, 68, 3, 3) + bl(60, 44, 28) + bl(52, 44, -28) + bl(70, 56, 30) + bl(45, 68, -20),
+              stalk(84, 20) + segLines(84, 20),
+              stalk(72, 22) + segLines(72, 22) + tops(72),
+              stalk(62, 24) + segLines(62, 24) + tops(62),
+              stalk(54, 24) + segLines(54, 24) + tops(54),
+              stalk(50, 24) + segLines(50, 24) + tops(50),
+              stalk(48, 24) + segLines(48, 24) + tops(48),
             ],
-            head: [null, [60,84,0.62], [60,72,0.62], [60,80,0.6], [58,80,0.6], [57,78,0.6], [56,76,0.6]],
+            head: [null, [60,96,0.9], [60,90,1.05], [60,86,1.2], [60,84,1.25], [60,84,1.25], [60,84,1.25]],
           };
         })() },
 
       { id: 'cherry', name: '벚꽃나무',
         ...(() => {
-          const trunk = (top, w) => `<path d="M${60-w} 105 Q${60-w*0.5} ${(top+105)/2} ${60-w*0.5} ${top} L${60+w*0.5} ${top} Q${60+w*0.5} ${(top+105)/2} ${60+w} 105 Z" fill="${FILL}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`;
-          const br = (d) => `<path d="${d}" fill="none" stroke="${STEM}" stroke-width="2.2" stroke-linecap="round"/>`;
+          /* fat trunk + a round blossom canopy dotted with little flowers (face on trunk) */
+          const trunk = (top, w) => `<path d="M${60-w} 106 Q${60-w*0.5} ${(top+106)/2} ${60-w*0.5} ${top} L${60+w*0.5} ${top} Q${60+w*0.5} ${(top+106)/2} ${60+w} 106 Z" fill="${FILL}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>`;
+          const canopy = (cy, r) => `<circle cx="60" cy="${cy}" r="${r}" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>`
+            + [[0,0],[-0.5,-0.25],[0.5,-0.15],[-0.28,0.45],[0.34,0.4]].map(o => blossom(60 + o[0]*r, cy + o[1]*r, 0.62)).join('');
           return {
             stages: [
               ``,
-              trunk(90, 5),
-              trunk(82, 6) + br('M60 88 L53 82') + br('M60 88 L67 82') + blossom(53, 79, 0.72) + blossom(67, 79, 0.72) + blossom(60, 77, 0.72),
-              trunk(76, 7) + br('M60 84 L50 76') + br('M60 84 L70 76') + [[50,73],[70,73],[60,69]].map(p=>blossom(p[0],p[1],0.82)).join(''),
-              trunk(70, 8) + br('M60 80 L48 70') + br('M60 80 L72 70') + br('M60 74 L60 65') + [[48,67],[72,67],[60,60],[54,67],[66,67]].map(p=>blossom(p[0],p[1],0.9)).join(''),
-              trunk(64, 9) + br('M60 76 L46 64') + br('M60 76 L74 64') + br('M60 70 L60 57') + [[46,61],[74,61],[60,54],[51,62],[69,62],[60,63]].map(p=>blossom(p[0],p[1],0.95)).join(''),
-              trunk(60, 10) + br('M60 72 L44 60') + br('M60 72 L76 60') + br('M60 66 L60 53') + [[44,57],[76,57],[60,50],[50,58],[70,58],[58,60],[66,54],[54,54]].map(p=>blossom(p[0],p[1],1.0)).join(''),
+              trunk(88, 5) + canopy(80, 12),
+              trunk(82, 6) + canopy(73, 15),
+              trunk(76, 7) + canopy(65, 18),
+              trunk(72, 8) + canopy(58, 21),
+              trunk(68, 9) + canopy(53, 23),
+              trunk(64, 10) + canopy(49, 25),
             ],
-            head: [null, [60,96,0.5], [60,94,0.58], [60,94,0.64], [60,94,0.7], [60,94,0.76], [60,94,0.8]],
+            head: [null, [60,98,0.52], [60,96,0.6], [60,94,0.66], [60,92,0.72], [60,90,0.78], [60,88,0.82]],
           };
         })() },
 
       { id: 'sunflower', name: '해바라기',
-        stages: [
-          ``,
-          stem('M60 104 V97', 3) + bulb(93, 5, 5),
-          stem('M60 104 V90', 3) + leaf(53, 95, -50, 0.55) + leaf(67, 95, 50, 0.55) + bulb(86, 6, 6),
-          stem('M60 104 V78', 3.2) + leaf(52, 92, -52, 0.66) + leaf(68, 92, 52, 0.66) + petalRing(60, 72, 0.6, 12) + disc(60, 72, 7, LEAF, 2),
-          stem('M60 104 V64', 3.2) + leaf(52, 90, -52, 0.74) + leaf(68, 90, 52, 0.74) + petalRing(60, 58, 0.85, 13) + disc(60, 58, 9, LEAF, 2.2),
-          stem('M60 104 V54', 3.2) + leaf(52, 86, -52, 0.8) + leaf(68, 86, 52, 0.8) + petalRing(60, 48, 1.0, 13) + disc(60, 48, 11, LEAF, 2.4),
-          stem('M60 104 V48', 3.4) + leaf(51, 84, -52, 0.85) + leaf(69, 84, 52, 0.85) + petalRing(60, 42, 1.1, 14) + disc(60, 42, 12, LEAF, 2.4),
-        ],
-        head: [null, [60,93,0.45], [60,86,0.5], [60,72,0.58], [60,58,0.78], [60,48,0.92], [60,42,1.0]] },
-
-      { id: 'mushroom', name: '버섯',
         ...(() => {
-          const cap = (x, y, s) =>
-            `<g transform="translate(${x},${y}) scale(${s})">
-              <rect x="-4" y="-2" width="8" height="14" rx="3.5" fill="hsl(220 10% 90%)" stroke="${INK}" stroke-width="1.8"/>
-              <path d="M-13 -2 Q-13 -17 0 -17 Q13 -17 13 -2 Q0 3 -13 -2Z" fill="${FILL}" stroke="${INK}" stroke-width="2.2"/>
-              <circle cx="-5.5" cy="-8" r="2" fill="hsl(0 0% 100%)" stroke="${INK}" stroke-width="1"/>
-              <circle cx="4" cy="-10" r="1.6" fill="hsl(0 0% 100%)" stroke="${INK}" stroke-width="1"/>
-              <circle cx="6" cy="-5" r="1.3" fill="hsl(0 0% 100%)" stroke="${INK}" stroke-width="1"/>
-            </g>`;
+          /* big round head with fat petals, face in the center; chunky leaf on the stem */
+          const headF = (cy, s) => `<g transform="translate(60,${cy}) scale(${s})">`
+            + Array.from({length:10},(_,i)=>`<ellipse cx="0" cy="-17" rx="5.6" ry="9" fill="${FILL}" stroke="${INK}" stroke-width="2.2" transform="rotate(${i*36})"/>`).join('')
+            + `<circle r="15" fill="${LEAF}" stroke="${INK}" stroke-width="2.8"/></g>`;
           return {
             stages: [
               ``,
-              cap(60, 95, 0.72),
-              cap(60, 92, 0.95),
-              cap(60, 88, 1.2),
-              cap(57, 90, 1.25) + cap(72, 98, 0.7),
-              cap(56, 88, 1.3) + cap(73, 97, 0.8) + cap(47, 99, 0.6),
-              cap(56, 86, 1.35) + cap(73, 96, 0.85) + cap(47, 98, 0.68) + cap(64, 100, 0.5),
+              stem('M60 106 V99', 3.4) + bulb(95, 5, 5),
+              stem('M60 106 V92', 3.5) + fleaf(60, 95, 56, 0.72) + bulb(87, 7, 7),
+              stem('M60 106 V82', 3.6) + fleaf(60, 92, 58, 0.85) + headF(73, 0.62),
+              stem('M60 106 V72', 3.7) + fleaf(60, 90, 60, 0.95) + headF(62, 0.82),
+              stem('M60 106 V64', 3.8) + fleaf(60, 88, 60, 1.0) + headF(54, 0.95),
+              stem('M60 106 V60', 3.8) + fleaf(60, 86, 62, 1.0) + headF(50, 1.05),
             ],
-            head: [null, [60,92,0.46], [60,88,0.58], [60,83,0.74], [57,84,0.76], [56,82,0.8], [56,80,0.82]],
+            head: [null, [60,95,0.55], [60,87,0.66], [60,73,0.78], [60,62,1.0], [60,54,1.2], [60,50,1.35]],
+          };
+        })() },
+
+      { id: 'mushroom', name: '버섯',
+        ...(() => {
+          /* one big chunky mushroom (fat cap + stout stem) + small ones, face on the big cap */
+          const mush = (cx, s) => `<g transform="translate(${cx},106) scale(${s})">`
+            + `<rect x="-9" y="-26" width="18" height="26" rx="9" fill="hsl(220 10% 90%)" stroke="${INK}" stroke-width="2.6"/>`
+            + `<path d="M-28 -24 Q-28 -56 0 -56 Q28 -56 28 -24 Q0 -14 -28 -24 Z" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>`
+            + `<circle cx="-14" cy="-36" r="3.6" fill="hsl(0 0% 100%)" stroke="${INK}" stroke-width="1.4"/>`
+            + `<circle cx="11" cy="-40" r="2.8" fill="hsl(0 0% 100%)" stroke="${INK}" stroke-width="1.4"/></g>`;
+          return {
+            stages: [
+              ``,
+              mush(60, 0.5),
+              mush(60, 0.72),
+              mush(60, 0.95),
+              mush(57, 1.05) + mush(76, 0.58),
+              mush(56, 1.12) + mush(77, 0.66) + mush(44, 0.5),
+              mush(56, 1.18) + mush(77, 0.72) + mush(44, 0.56),
+            ],
+            head: [null, [60,90,0.5], [60,84,0.72], [60,78,0.95], [57,76,1.0], [56,74,1.05], [56,72,1.1]],
           };
         })() },
 
       { id: 'oldtree', name: '고목',
         ...(() => {
-          const trunk = (top, w) => `<path d="M${60-w} 105 Q${60-w*0.55} ${top+12} 60 ${top} Q${60+w*0.55} ${top+12} ${60+w} 105 Z" fill="${FILL}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`;
-          const canopy = (cs) => cs.map(c => disc(c[0], c[1], c[2], LEAF, 2.2)).join('');
+          /* fat trunk + a big round leafy crown (3 overlapping blobs), face on the trunk */
+          const trunk = (top, w) => `<path d="M${60-w} 106 Q${60-w*0.55} ${top+10} 60 ${top} Q${60+w*0.55} ${top+10} ${60+w} 106 Z" fill="${FILL}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>`;
+          const crown = (cy, s) => `<g transform="translate(60,${cy}) scale(${s})">`
+            + `<circle cx="-12" cy="5" r="12" fill="${LEAF}" stroke="${INK}" stroke-width="2.6"/>`
+            + `<circle cx="12" cy="5" r="12" fill="${LEAF}" stroke="${INK}" stroke-width="2.6"/>`
+            + `<circle cx="0" cy="-6" r="14" fill="${LEAF}" stroke="${INK}" stroke-width="2.6"/></g>`;
           return {
             stages: [
               ``,
-              trunk(92, 4) + canopy([[60,86,7]]),
-              trunk(84, 5) + canopy([[60,78,9]]),
-              trunk(78, 6) + `<path d="M60 86 L52 80 M60 84 L68 78" stroke="${STEM}" stroke-width="2" fill="none"/>` + canopy([[52,74,8],[68,72,8],[60,68,10]]),
-              trunk(72, 7) + `<path d="M60 82 L50 74 M60 80 L70 72" stroke="${STEM}" stroke-width="2.2" fill="none"/>` + canopy([[50,68,9],[70,66,9],[60,60,12],[58,70,8]]),
-              trunk(66, 8) + `<path d="M60 78 L48 68 M60 76 L72 66" stroke="${STEM}" stroke-width="2.4" fill="none"/>` + canopy([[48,62,10],[72,60,10],[60,54,13],[54,66,9],[68,64,9]]),
-              trunk(62, 9) + `<path d="M60 74 L46 62 M60 72 L74 60 M60 68 L60 56" stroke="${STEM}" stroke-width="2.6" fill="none"/>` + canopy([[46,58,11],[74,56,11],[60,50,15],[50,64,10],[70,62,10],[60,62,11]]),
+              trunk(88, 6) + crown(82, 0.55),
+              trunk(82, 7) + crown(74, 0.72),
+              trunk(76, 8) + crown(66, 0.9),
+              trunk(70, 9) + crown(58, 1.05),
+              trunk(66, 10) + crown(52, 1.18),
+              trunk(62, 11) + crown(48, 1.3),
             ],
-            head: [null, [60,96,0.46], [60,95,0.54], [60,95,0.6], [60,95,0.66], [60,95,0.72], [60,95,0.76]],
+            head: [null, [60,98,0.55], [60,96,0.64], [60,94,0.7], [60,92,0.76], [60,91,0.8], [60,90,0.84]],
           };
         })() },
     ];
