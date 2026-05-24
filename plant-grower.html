@@ -433,20 +433,20 @@
     const PLANTS = [
       { id: 'sprout', name: '새싹',
         ...(() => {
-          /* rounded cotyledon leaf (wide, soft tip) — spreads from the sides like arms,
-             never pointy horns on top of the head */
-          const rleaf = (x, y, r, s) => `<path d="M0 0 C-10 -3 -11 -15 0 -19 C11 -15 10 -3 0 0Z" fill="${LEAF}" stroke="${INK}" stroke-width="1.9" transform="translate(${x},${y}) rotate(${r}) scale(${s})"/>`;
+          /* The broad front cotyledon leaf itself is the face surface — no separate round head. */
+          const front = (y, s) => `<path d="M0 0 C-13 -3 -14 -20 0 -24 C14 -20 13 -3 0 0Z" fill="${LEAF}" stroke="${INK}" stroke-width="2.1" transform="translate(60,${y}) scale(${s})"/>`;
+          const side = (x, y, r, s) => `<path d="M0 0 C-9 -2 -10 -14 0 -17 C10 -14 9 -2 0 0Z" fill="${LEAF}" stroke="${INK}" stroke-width="1.9" transform="translate(${x},${y}) rotate(${r}) scale(${s})"/>`;
           return {
             stages: [
               ``,
-              stem('M60 104 V99') + bulb(94, 6.5, 6),
-              stem('M60 104 V97') + bulb(91, 8.5, 8) + rleaf(51, 93, -70, 0.62) + rleaf(69, 93, 70, 0.62),
-              stem('M60 104 V95') + bulb(88, 10, 9.5) + rleaf(49, 90, -72, 0.74) + rleaf(71, 90, 72, 0.74),
-              stem('M60 104 V93') + bulb(85, 11, 10.5) + rleaf(48, 88, -74, 0.84) + rleaf(72, 88, 74, 0.84),
-              stem('M60 104 V91') + bulb(82, 11.5, 11) + rleaf(47, 85, -76, 0.92) + rleaf(73, 85, 76, 0.92) + rleaf(53, 95, -60, 0.5) + rleaf(67, 95, 60, 0.5),
-              stem('M60 104 V89') + bulb(79, 12, 11.5) + rleaf(46, 82, -78, 1.0) + rleaf(74, 82, 78, 1.0) + rleaf(52, 93, -62, 0.55) + rleaf(68, 93, 62, 0.55),
+              stem('M60 104 V99') + front(99, 0.64),
+              stem('M60 104 V98') + side(52, 98, -64, 0.55) + side(68, 98, 64, 0.55) + front(98, 0.82),
+              stem('M60 104 V97') + side(50, 97, -66, 0.66) + side(70, 97, 66, 0.66) + front(97, 0.96),
+              stem('M60 104 V96') + side(49, 96, -68, 0.74) + side(71, 96, 68, 0.74) + front(96, 1.08),
+              stem('M60 104 V95') + side(48, 95, -70, 0.8) + side(72, 95, 70, 0.8) + side(54, 101, -54, 0.5) + side(66, 101, 54, 0.5) + front(95, 1.18),
+              stem('M60 104 V94') + side(47, 94, -72, 0.86) + side(73, 94, 72, 0.86) + side(53, 100, -56, 0.55) + side(67, 100, 56, 0.55) + front(94, 1.28),
             ],
-            head: [null, [60,94,0.5], [60,91,0.64], [60,88,0.74], [60,85,0.82], [60,82,0.9], [60,79,0.96]],
+            head: [null, [60,92,0.5], [60,90,0.6], [60,88,0.7], [60,86,0.78], [60,85,0.86], [60,84,0.94]],
           };
         })() },
 
