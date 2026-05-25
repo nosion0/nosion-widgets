@@ -172,7 +172,7 @@
       render();
     });
 
-    fetch('plant-grower.html')
+    fetch('plant-grower.html?t=' + Date.now())
       .then(r => { if (!r.ok) throw new Error('plant-grower.html 로드 실패: ' + r.status); return r.text(); })
       .then(txt => { api = buildApiFromSource(txt); render(); })
       .catch(e => { document.getElementById('err').textContent = '오류: ' + e.message; });
