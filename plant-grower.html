@@ -454,10 +454,6 @@
     }
 
     /* V2 silhouettes ― integrated single-path designs, scaled per stage by grow() */
-    const U_tulip =
-      `<path d="M53 79 C48 73 44 64 46 56 C49 49 55 47 59 52 C61 55 61 63 58 72 C56 76 54 78 53 79Z" ${fO()}/>` +
-      `<path d="M67 79 C72 73 76 64 74 56 C71 49 65 47 61 52 C59 55 59 63 62 72 C64 76 66 78 67 79Z" ${fO()}/>` +
-      `<path d="M60 106 C46 106 40 98 40 89 C40 80 47 75 53 76 C55 76 57 78 57 79 L63 79 C63 78 65 76 67 76 C73 75 80 80 80 89 C80 98 74 106 60 106Z" ${fO()}/>`;
     const U_cactus =
       `<path d="M50 106 C48.5 98 48.5 90 49 85 C45 86 39 84 37.5 78 C36 72 38.5 67 43 68 C47 69 48 74 49.5 79 C49 72 48 63 50.5 57 C53 50 67 50 69.5 57 C72 63 71 71 71 77 C73 72 79.5 70 83 74 C87 78.5 85 85 79 84.5 C74 84 72 89 71 95 C70.5 99 70.5 103 70 106Z" ${fO()}/>` +
       `<g transform="translate(60,50)">` + [0,72,144,216,288].map(a =>
@@ -473,15 +469,46 @@
       `<path d="M64 52 C72 45 81 47 80 53 C76 58 68 58 63 55Z" ${fO(LEAF)}/>` +
       `<path d="M56 52 C48 45 39 47 40 53 C44 58 52 58 57 55Z" ${fO(LEAF)}/>`;
     const U_oldtree =
-      `<path d="M60 73 C50 73 37 68 33 57 C29 46 36 37 46 36 C52 35 57 40 60 44 C63 40 68 35 74 36 C84 37 91 46 87 57 C83 68 70 73 60 73Z" ${fO(LEAF)}/>` +
-      `<path d="M48 106 C46 96 45 87 47 80 C49 74 52 72 60 72 C68 72 71 74 73 80 C75 87 74 96 72 106Z" ${fO()}/>`;
+      // Fat barrel trunk — very wide belly (baobab character)
+      `<path d="M50 106 C44 94 34 78 36 65 C38 56 44 52 52 52 L68 52 C76 52 82 56 84 65 C86 78 76 94 70 106Z" ${fO()}/>` +
+      // 6 bare spreading branches from top of trunk
+      `<path d="M54 52 C50 45 46 38 43 32 M60 52 C58 43 57 35 56 29 M60 52 C62 43 63 35 64 29 M66 52 C70 45 74 38 77 32 M52 52 C46 43 40 37 35 33 M68 52 C74 43 80 37 85 33" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>` +
+      // Tiny leaf tufts at branch tips
+      `<ellipse cx="43" cy="30" rx="5" ry="3.5" ${fO(LEAF)}/>` +
+      `<ellipse cx="56" cy="27" rx="5" ry="3.5" ${fO(LEAF)}/>` +
+      `<ellipse cx="64" cy="27" rx="5" ry="3.5" ${fO(LEAF)}/>` +
+      `<ellipse cx="77" cy="30" rx="5" ry="3.5" ${fO(LEAF)}/>` +
+      `<ellipse cx="35" cy="31" rx="5" ry="3.5" ${fO(LEAF)}/>` +
+      `<ellipse cx="85" cy="31" rx="5" ry="3.5" ${fO(LEAF)}/>`;
 
     /* ============ Ten plants: V2 silhouettes (grow) + V1 explicit stages ============ */
-    const P_tulip    = grow(U_tulip,    60,  89, 1.10);
+    /* V1 tulip: closed bud opens into 3-petal cup bloom with strap leaves */
+    const P_tulip = (() => {
+      const lLeaf = (sy) =>
+        `<path d="M60 ${sy} C50 ${sy-5} 40 ${sy-14} 38 ${sy-21} C37 ${sy-26} 40 ${sy-27} 44 ${sy-25} C49 ${sy-21} 55 ${sy-11} 60 ${sy}Z" ${fO()}/>`;
+      const rLeaf = (sy) =>
+        `<path d="M60 ${sy} C70 ${sy-5} 80 ${sy-14} 82 ${sy-21} C83 ${sy-26} 80 ${sy-27} 76 ${sy-25} C71 ${sy-21} 65 ${sy-11} 60 ${sy}Z" ${fO()}/>`;
+      const cbud = (cy) =>
+        `<path d="M56 ${cy} C54 ${cy-6} 56 ${cy-14} 60 ${cy-16} C64 ${cy-14} 66 ${cy-6} 64 ${cy} Q60 ${cy+2} 56 ${cy}Z" ${fO()}/>`;
+      const petal = (tx, ty, a) =>
+        `<path d="M0 0 C-5 -3 -6 -15 0 -22 C6 -15 5 -3 0 0Z" ${fO()} transform="translate(${tx},${ty}) rotate(${a})"/>`;
+      const arc = (cx, cy, w) =>
+        `<path d="M${cx-w} ${cy} Q${cx} ${cy+5} ${cx+w} ${cy}" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`;
+      return def([
+        stem('M60 106 V101', 2.8) + cbud(100),
+        stem('M60 106 V97',  3.0) + cbud(95),
+        stem('M60 106 V92',  3.0) + lLeaf(100) + cbud(88),
+        stem('M60 106 V86',  3.2) + lLeaf(97) + rLeaf(97) + cbud(82),
+        stem('M60 106 V82',  3.2) + lLeaf(96) + rLeaf(96) +
+          petal(54, 81, -18) + petal(60, 81, 0) + petal(66, 81, 18) + arc(60, 81, 8),
+        stem('M60 106 V79',  3.4) + lLeaf(95) + rLeaf(95) +
+          petal(50, 78, -30) + petal(60, 78, 0) + petal(70, 78, 30) + arc(60, 78, 13),
+      ], [[60,92,0.55],[60,87,0.65],[60,80,0.75],[60,74,0.85],[60,71,0.95],[60,68,1.05]]);
+    })();
     const P_cactus   = grow(U_cactus,   60,  72, 1.25);
     const P_monstera = grow(U_monstera, 60,  92, 1.20);
     const P_bamboo   = grow(U_bamboo,   60,  84, 1.20);
-    const P_oldtree  = grow(U_oldtree,  60,  89, 1.05);
+    const P_oldtree  = grow(U_oldtree,  60,  78, 1.05);
 
     /* V1 clover: three-leaf shamrock → four-leaf clover at final stage */
     const P_clover = (() => {
@@ -498,14 +525,22 @@
         stem('M60 106 V92', 3.4) + tre(60, 84, 1.28),
         stem('M60 106 V91', 3.4) + tre(60, 83, 1.40),
         stem('M60 106 V90', 3.4) + tre(60, 82, 1.50, true),
-      ], [[60,90,0.72],[60,87,0.92],[60,85,1.05],[60,83,1.15],[60,82,1.20],[60,81,1.25]]);
+      ], [[65,91,0.60],[67,88,0.72],[68,86,0.85],[69,84,0.95],[70,83,1.00],[67,75,1.05]]);
     })();
 
     /* V1 tomato: green bud → big round tomatoes */
     const P_tomato = (() => {
-      const tom = (x, y, r) =>
-        `<circle cx="${x}" cy="${y}" r="${r}" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
-        `<path d="M${x-3} ${y-r+1} q3 -4 6 0" fill="none" stroke="${STEM}" stroke-width="1.8" stroke-linecap="round"/>`;
+      const tom = (x, y, r) => {
+        const ty = y - r;
+        const sepalPts = [[0,-7],[4.0,-5.7],[6.6,-2.4],[-6.6,-2.4],[-4.0,-5.7]];
+        return (
+          `<circle cx="${x}" cy="${y}" r="${r}" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
+          sepalPts.map(([dx,dy]) =>
+            `<line x1="${x}" y1="${ty}" x2="${(x+dx).toFixed(1)}" y2="${(ty+dy).toFixed(1)}" stroke="${LEAF}" stroke-width="2.0" stroke-linecap="round"/>`
+          ).join('') +
+          `<line x1="${x}" y1="${ty}" x2="${x}" y2="${ty-5}" stroke="${STEM}" stroke-width="2.2" stroke-linecap="round"/>`
+        );
+      };
       const bud = (y, r) =>
         `<circle cx="60" cy="${y}" r="${r}" fill="${LEAF}" stroke="${INK}" stroke-width="2.6"/>`;
       return def([
@@ -522,9 +557,19 @@
     const P_cherry = (() => {
       const trunk = (top, w) =>
         `<path d="M${60-w} 106 Q${60-w*0.5} ${(top+106)/2} ${60-w*0.5} ${top} L${60+w*0.5} ${top} Q${60+w*0.5} ${(top+106)/2} ${60+w} 106 Z" fill="${FILL}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>`;
-      const canopy = (cy, r) =>
-        `<circle cx="60" cy="${cy}" r="${r}" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
-        [[0,0],[-0.5,-0.25],[0.5,-0.15],[-0.28,0.45],[0.34,0.4]].map(o => blossom(60 + o[0]*r, cy + o[1]*r, 0.62)).join('');
+      const canopy = (cy, r) => {
+        const x = 60;
+        // 3-lobe organic cloud silhouette (left lobe, center top, right lobe)
+        const p =
+          `M${x-r} ${cy}` +
+          ` C${x-r*1.1} ${cy-r*0.4} ${x-r*0.9} ${cy-r*1.0} ${x-r*0.45} ${cy-r*1.1}` +
+          ` C${x-r*0.15} ${cy-r*1.3} ${x+r*0.15} ${cy-r*1.3} ${x+r*0.45} ${cy-r*1.1}` +
+          ` C${x+r*0.9} ${cy-r*1.0} ${x+r*1.1} ${cy-r*0.4} ${x+r} ${cy}` +
+          ` Q${x} ${cy+r*0.38} ${x-r} ${cy} Z`;
+        return `<path d="${p}" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
+          [[0,-0.68],[-0.45,-0.3],[0.42,-0.22],[-0.18,0.1],[0.28,0.08]].map(o =>
+            blossom(x + o[0]*r, cy + o[1]*r, 0.62)).join('');
+      };
       return def([
         trunk(88, 5) + canopy(80, 12),
         trunk(82, 6) + canopy(73, 15),
@@ -542,7 +587,7 @@
         + Array.from({length:10}, (_, i) =>
           `<ellipse cx="0" cy="-17" rx="5.6" ry="9" fill="${FILL}" stroke="${INK}" stroke-width="2.2" transform="rotate(${i*36})"/>`
         ).join('')
-        + `<circle r="15" fill="${LEAF}" stroke="${INK}" stroke-width="2.8"/></g>`;
+        + `<circle r="15" fill="${FILL}" stroke="${INK}" stroke-width="2.8"/></g>`;
       return def([
         stem('M60 106 V99', 3.4) + bulb(95, 5, 5),
         stem('M60 106 V92', 3.5) + fleaf(60, 95, 56, 0.72) + bulb(87, 7, 7),
@@ -557,10 +602,12 @@
     const P_mushroom = (() => {
       const mush = (cx, s) =>
         `<g transform="translate(${cx},106) scale(${s})">` +
-        `<rect x="-9" y="-26" width="18" height="26" rx="9" fill="hsl(220 10% 90%)" stroke="${INK}" stroke-width="2.6"/>` +
-        `<path d="M-28 -24 Q-28 -56 0 -56 Q28 -56 28 -24 Q0 -14 -28 -24Z" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
-        `<circle cx="-14" cy="-36" r="3.6" fill="#fff" stroke="${INK}" stroke-width="1.4"/>` +
-        `<circle cx="11"  cy="-40" r="2.8" fill="#fff" stroke="${INK}" stroke-width="1.4"/></g>`;
+        `<path d="M-8 0 C-9 -7 -9 -18 -7 -24 Q0 -27 7 -24 C9 -18 9 -7 8 0 Q0 3 -8 0Z" fill="hsl(220 10% 93%)" stroke="${INK}" stroke-width="2.4"/>` +
+        `<path d="M-26 -22 C-28 -38 -18 -60 0 -62 C18 -60 28 -38 26 -22 Q0 -13 -26 -22Z" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
+        `<circle cx="-13" cy="-40" r="5.5" fill="${WHITE}" stroke="${INK}" stroke-width="1.4"/>` +
+        `<circle cx="10"  cy="-46" r="4.5" fill="${WHITE}" stroke="${INK}" stroke-width="1.4"/>` +
+        `<circle cx="0"   cy="-31" r="3.5" fill="${WHITE}" stroke="${INK}" stroke-width="1.2"/>` +
+        `</g>`;
       return def([
         mush(60, 0.50),
         mush(60, 0.72),
