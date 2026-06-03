@@ -364,14 +364,6 @@
   </style>
 </head>
 <body>
-  <!-- 손그림 rough 필터 (노시언 스타일) -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-    <filter id="roughSky" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="1" seed="5" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </defs></svg>
-
   <div class="widget-wrapper" id="widget">
     <div class="card" id="card">
       <div class="card-body">
@@ -550,12 +542,38 @@
     ];
     const CITY_KEY = 'nosion-constellation-city-v1';
 
-    let currentCity = CITIES[0];
-    try {
-      const saved = localStorage.getItem(CITY_KEY);
-      if (saved) { const f = CITIES.find(c => c.name === saved); if (f) currentCity = f; }
-    } catch (e) {}
-    function saveCity() { try { localStorage.setItem(CITY_KEY, currentCity.name); } catch (e) {} }
+    // manualName: 사용자가 직접 고른 도시명(없으면 자동 모드)
+    let manualName = null;
+    try { manualName = localStorage.getItem(CITY_KEY); } catch (e) {}
+    let autoLoc = null;            // IP로 감지한 현재 위치
+    let currentCity = CITIES[0];   // 실제 적용 위치
+
+    function resolveActive() {
+      if (manualName) {
+        const f = CITIES.find(c => c.name === manualName);
+        if (f) return f;
+      }
+      return autoLoc || CITIES[0];
+    }
+    function applyActive() {
+      currentCity = resolveActive();
+      buildCityDropdown();
+      update();
+    }
+
+    // IP 기반 위치 자동 감지 (권한 팝업 없음, 실패 시 null)
+    function fetchIPLocation() {
+      let ctrl = null, to = null;
+      try { ctrl = new AbortController(); to = setTimeout(() => ctrl.abort(), 4500); } catch (e) {}
+      return fetch('https://ipapi.co/json/', ctrl ? { signal: ctrl.signal } : undefined)
+        .then(r => (r && r.ok) ? r.json() : null)
+        .then(d => {
+          if (to) clearTimeout(to);
+          if (!d || typeof d.latitude !== 'number' || typeof d.longitude !== 'number') return null;
+          return { name: d.city || '현재 위치', lat: d.latitude, lng: d.longitude, tz: d.timezone || undefined, auto: true };
+        })
+        .catch(() => { if (to) clearTimeout(to); return null; });
+    }
 
     /* ============================================
        천문 계산 — 지방 항성시(LST)와 천정 별자리
@@ -608,7 +626,7 @@
     const footerTimeEl = document.getElementById('footerTime');
 
     function buildFigure(c) {
-      let svg = '<g filter="url(#roughSky)">';
+      let svg = '<g>';
       for (const [i, j] of c.lines) {
         const a = c.stars[i], b = c.stars[j];
         svg += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
@@ -639,27 +657,44 @@
       constStarEl.textContent = c.star;
       constAltEl.textContent = `약 ${altitude}°`;
 
-      citySelectorEl.textContent = currentCity.name;
+      citySelectorEl.textContent = (currentCity.auto ? '📍 ' : '') + currentCity.name;
       footerTimeEl.textContent = formatLocalTime(now, currentCity.tz);
     }
 
     /* ----- 도시 선택 드롭다운 ----- */
     function buildCityDropdown() {
       cityDropdownEl.innerHTML = '';
+      // 자동(현재 위치) 옵션 — 전체 폭
+      const autoBtn = document.createElement('button');
+      autoBtn.className = 'city-option';
+      autoBtn.type = 'button';
+      autoBtn.textContent = '📍 현재 위치';
+      autoBtn.setAttribute('role', 'menuitem');
+      autoBtn.style.gridColumn = '1 / -1';
+      if (!manualName) autoBtn.classList.add('selected');
+      autoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        manualName = null;
+        try { localStorage.removeItem(CITY_KEY); } catch (er) {}
+        closeCityDropdown();
+        applyActive();
+        if (!autoLoc) fetchIPLocation().then(loc => { if (loc && !manualName) { autoLoc = loc; applyActive(); } });
+      });
+      cityDropdownEl.appendChild(autoBtn);
+      // 도시 목록
       CITIES.forEach(city => {
         const btn = document.createElement('button');
         btn.className = 'city-option';
         btn.type = 'button';
         btn.textContent = city.name;
         btn.setAttribute('role', 'menuitem');
-        if (city.name === currentCity.name) btn.classList.add('selected');
+        if (manualName === city.name) btn.classList.add('selected');
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          currentCity = city;
-          saveCity();
+          manualName = city.name;
+          try { localStorage.setItem(CITY_KEY, city.name); } catch (er) {}
           closeCityDropdown();
-          buildCityDropdown();
-          update();
+          applyActive();
         });
         cityDropdownEl.appendChild(btn);
       });
@@ -684,8 +719,10 @@
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCityDropdown(); });
 
-    buildCityDropdown();
-    update();
+    applyActive();                 // 즉시 표시 (수동값 또는 기본 서울)
+    if (!manualName) {             // 자동 모드면 IP로 위치 감지 후 갱신
+      fetchIPLocation().then(loc => { if (loc && !manualName) { autoLoc = loc; applyActive(); } });
+    }
     // 1분마다 갱신 (시간이 지나면 머리 위 별자리도 서서히 바뀜)
     setInterval(update, 60 * 1000);
 
