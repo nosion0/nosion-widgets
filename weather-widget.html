@@ -273,22 +273,49 @@
       text-transform: uppercase;
     }
 
+    /* 예보 토글 */
+    .forecast-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      align-self: flex-start;
+      background: none;
+      border: none;
+      padding: 0.15rem 0;
+      margin: 0;
+      cursor: pointer;
+      color: var(--muted-foreground);
+      transition: color var(--transition);
+    }
+    .forecast-toggle:hover { color: var(--foreground); }
+    .forecast-toggle .chevron {
+      width: 12px; height: 12px;
+      stroke: currentColor; stroke-width: 2;
+      fill: none; stroke-linecap: round; stroke-linejoin: round;
+      transition: transform var(--transition);
+    }
+    .forecast-section.collapsed .forecast-list { display: none; }
+    .forecast-section.collapsed .chevron { transform: rotate(-90deg); }
+
     .forecast-list {
       display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 0.25rem;
     }
 
     .forecast-item {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
+      gap: 0.35rem;
+      flex: 1;
     }
 
     .fc-day {
-      font-size: 0.8125rem;
-      color: var(--foreground);
-      width: 2.5rem;
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      width: auto;
     }
 
     .fc-icon { font-size: 1rem; line-height: 0; user-select: none; }
@@ -298,26 +325,25 @@
       stroke-linecap: round; stroke-linejoin: round;
     }
     .fc-icon svg {
-      width: 20px; height: 20px; display: block; overflow: visible;
+      width: 24px; height: 24px; display: block; overflow: visible;
       stroke: var(--foreground); stroke-width: 1.7; fill: none;
       stroke-linecap: round; stroke-linejoin: round;
     }
 
-    .fc-desc {
-      flex: 1;
-      font-size: 0.75rem;
-      color: var(--muted-foreground);
-      margin: 0 0.75rem;
-    }
+    .fc-desc { display: none; }
 
     .fc-temp {
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       color: var(--foreground);
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.05rem;
     }
 
-    .fc-temp .low { color: var(--muted-foreground); margin-left: 0.375rem; }
+    .fc-temp .low { color: var(--muted-foreground); margin-left: 0; }
 
     /* === Resize handles === */
     .resize-handle {
@@ -455,8 +481,11 @@
         <span class="outfit-text" id="outfitText">날씨 정보를 불러오는 중...</span>
       </div>
 
-      <div class="forecast-section">
-        <span class="section-label">5일 예보</span>
+      <div class="forecast-section" id="forecastSection">
+        <button class="forecast-toggle" id="forecastToggle" type="button" aria-expanded="true">
+          <span class="section-label">5일 예보</span>
+          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
         <div class="forecast-list" id="forecastList">
           <div class="forecast-item" style="justify-content:center;padding:0.5rem 0;">
             <span style="font-size:0.8125rem;color:var(--muted-foreground)">로딩 중...</span>
@@ -504,6 +533,7 @@
     const KEY_CITY = 'nosion-weather-city-v1';
     const KEY_SIZE = 'nosion-weather-size-v1';
     const KEY_POS  = 'nosion-weather-pos-v1';
+    const KEY_FC   = 'nosion-weather-forecast-open-v1';
 
     /* ===== State ===== */
     let city = 'Seoul';
@@ -781,6 +811,27 @@
     })();
 
     /* ===== Init ===== */
+    /* ===== 5일 예보 토글 ===== */
+    (function initForecastToggle() {
+      const section = document.getElementById('forecastSection');
+      const toggle  = document.getElementById('forecastToggle');
+      let open = true;
+      try {
+        const saved = localStorage.getItem(KEY_FC);
+        if (saved !== null) open = saved === '1';
+      } catch (e) {}
+      function apply() {
+        section.classList.toggle('collapsed', !open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+      apply();
+      toggle.addEventListener('click', () => {
+        open = !open;
+        try { localStorage.setItem(KEY_FC, open ? '1' : '0'); } catch (e) {}
+        apply();
+      });
+    })();
+
     fetchWeather();
     setInterval(fetchWeather, 30 * 60 * 1000); // 30분마다 자동 갱신
   </script>
