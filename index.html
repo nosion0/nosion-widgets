@@ -82,11 +82,20 @@
       background: var(--muted);
     }
 
+    /* hand-drawn monochrome line icons (Nosion style) */
     .widget-icon {
-      font-size: 1.25rem;
-      line-height: 1;
       margin-bottom: 0.25rem;
-      user-select: none;
+      line-height: 0;
+    }
+    .widget-icon svg {
+      width: 26px;
+      height: 26px;
+      display: block;
+      overflow: visible;
+      stroke: var(--foreground);
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .widget-name {
@@ -126,6 +135,14 @@
 </head>
 <body>
 
+  <!-- shared hand-drawn "rough" filter: gently wobbles every line so icons look hand-drawn -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <filter id="rough" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="1" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs></svg>
+
   <div class="header">
     <div class="logo">노시언 위젯</div>
     <p class="desc">노션 임베드용 미니멀 위젯 모음 — 각 위젯을 클릭해 미리보기하거나 URL을 노션에 붙여넣으세요.</p>
@@ -134,62 +151,62 @@
   <div class="section-label">위젯 목록</div>
   <div class="widget-grid">
     <a class="widget-card" href="calendar.html">
-      <div class="widget-icon">🗓</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><rect x="3.5" y="5" width="17" height="15.5" rx="2.4"/><path d="M3.5 9.6h17"/><path d="M8 3v4M16 3v4"/></g></svg></div>
       <div class="widget-name">달력</div>
       <div class="widget-desc">월별 달력, 공휴일 도트, 월 이동</div>
     </a>
     <a class="widget-card" href="quote-widget.html">
-      <div class="widget-icon">💬</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><path d="M4 5.5h16a1.6 1.6 0 0 1 1.6 1.6v7.8a1.6 1.6 0 0 1-1.6 1.6h-7.5L7 20v-3.5H4a1.6 1.6 0 0 1-1.6-1.6V7.1A1.6 1.6 0 0 1 4 5.5z"/><path d="M7 9.6h10M7 12.6h6.5"/></g></svg></div>
       <div class="widget-name">명언</div>
       <div class="widget-desc">74개 명언 컬렉션, 페이지네이션</div>
     </a>
     <a class="widget-card" href="day-counter.html">
-      <div class="widget-icon">📅</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><rect x="3.5" y="4.5" width="17" height="16" rx="2.4"/><path d="M3.5 9h17"/><circle cx="8" cy="13.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="13.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="13.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="8" cy="17" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="17" r="1.1" fill="currentColor" stroke="none"/></g></svg></div>
       <div class="widget-name">데이카운터</div>
       <div class="widget-desc">연간·분기·월간 도트 진도, 공휴일</div>
     </a>
     <a class="widget-card" href="weather-widget.html">
-      <div class="widget-icon">🌤</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><circle cx="9" cy="8" r="2.6"/><path d="M9 3.2v1.4M4.3 8H2.9M5.5 4.5l-1-1M13.5 8h-1.4M12.5 4.5l1-1"/><path d="M8 19h9a3 3 0 0 0 .4-6 4 4 0 0 0-7.7-1.1A3.2 3.2 0 0 0 8 19z"/></g></svg></div>
       <div class="widget-name">날씨</div>
       <div class="widget-desc">현재 기온·예보·옷차림 추천</div>
     </a>
     <a class="widget-card" href="moon-phase.html">
-      <div class="widget-icon">🌙</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><path d="M17.5 14.8A7.2 7.2 0 1 1 9.8 4.6a5.6 5.6 0 0 0 7.7 10.2z"/></g></svg></div>
       <div class="widget-name">달 위상</div>
       <div class="widget-desc">오늘 달의 위상, 월출·월몰 시간</div>
     </a>
     <a class="widget-card" href="lunch-picker.html">
-      <div class="widget-icon">🎲</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><rect x="4" y="4" width="16" height="16" rx="3.2"/><circle cx="8.8" cy="8.8" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.2" cy="8.8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="8.8" cy="15.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.2" cy="15.2" r="1.1" fill="currentColor" stroke="none"/></g></svg></div>
       <div class="widget-name">점심 추첨기</div>
       <div class="widget-desc">랜덤 점심 메뉴 추첨, 3D 애니메이션</div>
     </a>
     <a class="widget-card" href="routine-tracker.html">
-      <div class="widget-icon">✅</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><rect x="3.5" y="3.5" width="17" height="17" rx="3.2"/><path d="M7.8 12.3l2.9 2.9L16.4 9"/></g></svg></div>
       <div class="widget-name">루틴 트래커</div>
       <div class="widget-desc">주간 루틴 체크, 달성률 트렌드</div>
     </a>
     <a class="widget-card" href="live-clock.html">
-      <div class="widget-icon">🕐</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.3l3.4 2"/></g></svg></div>
       <div class="widget-name">실시간 시계</div>
       <div class="widget-desc">12H/24H, 초 표시 토글</div>
     </a>
     <a class="widget-card" href="pomodoro-timer.html">
-      <div class="widget-icon">🍅</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><path d="M12 7.6c-3.7 0-6.6 2.7-6.6 6.2S8.3 20 12 20s6.6-3.1 6.6-6.2S15.7 7.6 12 7.6z"/><path d="M9.4 7.9C8.8 6 9.7 4.7 11.1 4.4M12.2 7.5c-.1-1.7.8-2.8 2.3-3.1"/></g></svg></div>
       <div class="widget-name">포모도로</div>
       <div class="widget-desc">25/5분 타이머, 세션 카운트</div>
     </a>
     <a class="widget-card" href="dday-counter.html">
-      <div class="widget-icon">📌</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><path d="M7 3.4v17.2"/><path d="M7 4.4h10.6l-2.7 3.7 2.7 3.7H7"/></g></svg></div>
       <div class="widget-name">디데이</div>
       <div class="widget-desc">날짜 카운트다운, 3가지 표시 모드</div>
     </a>
     <a class="widget-card" href="mood-tracker.html">
-      <div class="widget-icon">😊</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><circle cx="12" cy="12" r="8.5"/><circle cx="9.2" cy="10.4" r="1" fill="currentColor" stroke="none"/><circle cx="14.8" cy="10.4" r="1" fill="currentColor" stroke="none"/><path d="M8.8 14q3.2 2.5 6.4 0"/></g></svg></div>
       <div class="widget-name">무드 트래커</div>
       <div class="widget-desc">일별 감정 기록, 월간 히스토리</div>
     </a>
     <a class="widget-card" href="plant-grower.html">
-      <div class="widget-icon">🌱</div>
+      <div class="widget-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><path d="M12 20.5V12"/><path d="M12 14.5C10.6 11 7.6 9.8 5 10.2c-.2 3 2.2 5.4 6 5z"/><path d="M12 12.8c.9-3 3.4-4 5.6-3.6.1 2.6-2 4.6-5.6 4.1z"/></g></svg></div>
       <div class="widget-name">식물 키우기</div>
       <div class="widget-desc">매일 물주기로 식물 성장, 10종 수집</div>
     </a>
