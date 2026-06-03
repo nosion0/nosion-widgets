@@ -386,19 +386,13 @@
     <div class="card" id="card">
       <div class="card-body">
 
-      <!-- API key setup overlay -->
-      <div class="overlay" id="setupOverlay">
-        <div class="overlay-title">날씨 위젯 설정</div>
-        <div class="overlay-desc">
-          <a href="https://openweathermap.org/api" target="_blank" rel="noopener">OpenWeatherMap</a>에서<br>
-          무료 API 키를 발급받아 입력하세요.
-        </div>
+      <!-- City setup overlay (API 키 불필요 — Open-Meteo) -->
+      <div class="overlay hidden" id="setupOverlay">
+        <div class="overlay-title">도시 설정</div>
+        <div class="overlay-desc">도시 이름을 입력하세요 (예: Seoul, Busan, Tokyo)</div>
         <div class="api-input-group">
-          <input class="api-input" type="text" id="apiKeyInput" placeholder="API 키 입력" autocomplete="off" />
-          <button class="api-save-btn" id="apiSaveBtn" type="button">저장</button>
-        </div>
-        <div class="overlay-desc" id="citySetupRow" style="display:flex;gap:0.5rem;width:100%;">
-          <input class="api-input" type="text" id="cityInput" placeholder="도시 (예: Seoul)" style="flex:1" />
+          <input class="api-input" type="text" id="cityInput" placeholder="도시 입력" autocomplete="off" />
+          <button class="api-save-btn" id="citySaveBtn" type="button">저장</button>
         </div>
       </div>
 
@@ -471,10 +465,10 @@
         </svg>
       </button>
       <button class="control-btn" id="settingsBtn" type="button"
-              data-tooltip="API 설정" title="API 설정" aria-label="API 키 설정">
+              data-tooltip="도시 변경" title="도시 변경" aria-label="도시 변경">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
         </svg>
       </button>
     </div>
@@ -482,34 +476,40 @@
 
   <script>
     /* ===== localStorage keys ===== */
-    const KEY_API  = 'nosion-weather-apikey-v1';
     const KEY_CITY = 'nosion-weather-city-v1';
     const KEY_SIZE = 'nosion-weather-size-v1';
     const KEY_POS  = 'nosion-weather-pos-v1';
 
     /* ===== State ===== */
-    let apiKey = '';
-    let city   = 'Seoul';
+    let city = 'Seoul';
+    try { city = localStorage.getItem(KEY_CITY) || 'Seoul'; } catch (e) {}
 
-    try {
-      apiKey = localStorage.getItem(KEY_API) || '';
-      city   = localStorage.getItem(KEY_CITY) || 'Seoul';
-    } catch (e) {}
-
-    /* ===== Weather icon map (OWM condition codes) ===== */
-    function condIcon(id, isDay) {
-      if (id >= 200 && id < 300) return '⛈';
-      if (id >= 300 && id < 400) return '🌦';
-      if (id >= 500 && id < 510) return isDay ? '🌧' : '🌧';
-      if (id === 511)            return '🌨';
-      if (id >= 520 && id < 600) return '🌧';
-      if (id >= 600 && id < 700) return '❄';
-      if (id >= 700 && id < 800) return '🌫';
-      if (id === 800)            return isDay ? '☀' : '🌙';
-      if (id === 801)            return isDay ? '🌤' : '🌤';
-      if (id === 802)            return '⛅';
-      if (id >= 803)             return '☁';
+    /* ===== Weather code map (WMO codes — Open-Meteo) ===== */
+    function wmoIcon(code, isDay) {
+      if (code === 0)  return isDay ? '☀' : '🌙';
+      if (code === 1)  return '🌤';
+      if (code === 2)  return '⛅';
+      if (code === 3)  return '☁';
+      if (code === 45 || code === 48) return '🌫';
+      if (code >= 51 && code <= 57) return '🌦';
+      if (code >= 61 && code <= 67) return '🌧';
+      if (code >= 71 && code <= 77) return '❄';
+      if (code >= 80 && code <= 82) return '🌧';
+      if (code >= 85 && code <= 86) return '🌨';
+      if (code >= 95) return '⛈';
       return '🌡';
+    }
+    function wmoDesc(code) {
+      const M = {
+        0:'맑음', 1:'대체로 맑음', 2:'부분 흐림', 3:'흐림',
+        45:'안개', 48:'안개',
+        51:'약한 이슬비', 53:'이슬비', 55:'강한 이슬비', 56:'언 이슬비', 57:'언 이슬비',
+        61:'약한 비', 63:'비', 65:'강한 비', 66:'언 비', 67:'언 비',
+        71:'약한 눈', 73:'눈', 75:'강한 눈', 77:'싸락눈',
+        80:'소나기', 81:'소나기', 82:'강한 소나기', 85:'소나기눈', 86:'소나기눈',
+        95:'뇌우', 96:'우박 뇌우', 99:'우박 뇌우',
+      };
+      return M[code] || '—';
     }
 
     /* ===== Outfit advice by temperature ===== */
@@ -522,51 +522,50 @@
       return { icon: '🧣', text: '매우 춥습니다. 패딩·목도리·장갑으로 완전 무장하세요.' };
     }
 
-    /* ===== Fetch current weather ===== */
+    /* ===== Fetch current weather (Open-Meteo — API 키 불필요) ===== */
     async function fetchWeather() {
-      if (!apiKey) { showSetup(); return; }
-
-      const base = 'https://api.openweathermap.org/data/2.5';
-      const params = `q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric&lang=kr`;
-
       try {
-        const [curRes, foreRes] = await Promise.all([
-          fetch(`${base}/weather?${params}`),
-          fetch(`${base}/forecast?${params}&cnt=40`),
-        ]);
+        // 1) 도시명 → 좌표 (무료 지오코딩, 키 없음)
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=ko&format=json`);
+        const geo = await geoRes.json();
+        if (!geo.results || !geo.results.length) throw new Error('도시를 찾을 수 없습니다');
+        const { latitude, longitude, name } = geo.results[0];
 
-        if (!curRes.ok) {
-          const err = await curRes.json().catch(() => ({}));
-          throw new Error(err.message || `HTTP ${curRes.status}`);
-        }
+        // 2) 현재 날씨 + 6일 일별 예보
+        const url = 'https://api.open-meteo.com/v1/forecast'
+          + `?latitude=${latitude}&longitude=${longitude}`
+          + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m'
+          + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
+          + '&timezone=auto&forecast_days=6&wind_speed_unit=ms';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
 
-        const cur  = await curRes.json();
-        const fore = await foreRes.json();
-        renderWeather(cur, fore);
+        renderWeather(data, name);
         hideSetup();
       } catch (err) {
         renderError(err.message);
       }
     }
 
-    function renderWeather(cur, fore) {
-      const temp    = Math.round(cur.main.temp);
-      const feels   = Math.round(cur.main.feels_like);
-      const high    = Math.round(cur.main.temp_max);
-      const low     = Math.round(cur.main.temp_min);
-      const hum     = cur.main.humidity;
-      const wind    = cur.wind.speed.toFixed(1);
-      const id      = cur.weather[0].id;
-      const now     = new Date();
-      const isDay   = now.getHours() >= 6 && now.getHours() < 19;
-      const cityKo  = cur.name;
+    function renderWeather(data, cityName) {
+      const c = data.current, d = data.daily;
+      const temp  = Math.round(c.temperature_2m);
+      const feels = Math.round(c.apparent_temperature);
+      const hum   = Math.round(c.relative_humidity_2m);
+      const wind  = Number(c.wind_speed_10m).toFixed(1);
+      const code  = c.weather_code;
+      const now   = new Date();
+      const isDay = now.getHours() >= 6 && now.getHours() < 19;
+      const high  = Math.round(d.temperature_2m_max[0]);
+      const low   = Math.round(d.temperature_2m_min[0]);
 
-      document.getElementById('cityLabel').textContent = cityKo;
+      document.getElementById('cityLabel').textContent = cityName;
       document.getElementById('updatedTime').textContent =
         now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 기준';
       document.getElementById('tempValue').textContent    = `${temp}°`;
       document.getElementById('tempFeels').textContent    = `체감 ${feels}°`;
-      document.getElementById('weatherIcon').textContent  = condIcon(id, isDay);
+      document.getElementById('weatherIcon').textContent  = wmoIcon(code, isDay);
       document.getElementById('humidity').textContent     = `${hum}%`;
       document.getElementById('windSpeed').textContent    = `${wind}m/s`;
       document.getElementById('tempRange').textContent    = `${high}/${low}°`;
@@ -575,38 +574,17 @@
       document.getElementById('outfitIcon').textContent = icon;
       document.getElementById('outfitText').textContent = text;
 
-      // 5-day forecast — pick noon entry per day
-      const days = {};
-      (fore.list || []).forEach(item => {
-        const date = item.dt_txt.slice(0, 10);
-        if (!days[date]) days[date] = [];
-        days[date].push(item);
-      });
-
+      // 5-day forecast (daily 인덱스 1..5; 0 = 오늘)
       const DAY_KO = ['일', '월', '화', '수', '목', '금', '토'];
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const foreItems = Object.entries(days)
-        .filter(([d]) => d !== todayStr)
-        .slice(0, 5)
-        .map(([date, items]) => {
-          const noon = items.reduce((a, b) =>
-            Math.abs(+new Date(a.dt_txt) - +new Date(date + ' 12:00:00')) <
-            Math.abs(+new Date(b.dt_txt) - +new Date(date + ' 12:00:00')) ? a : b);
-          const hiItem = items.reduce((a, b) => a.main.temp_max > b.main.temp_max ? a : b);
-          const loItem = items.reduce((a, b) => a.main.temp_min < b.main.temp_min ? a : b);
-          const d = new Date(date);
-          return {
-            day: DAY_KO[d.getDay()] + '요일',
-            icon: condIcon(noon.weather[0].id, true),
-            desc: noon.weather[0].description,
-            hi: Math.round(hiItem.main.temp_max),
-            lo: Math.round(loItem.main.temp_min),
-          };
-        });
-
       const list = document.getElementById('forecastList');
       list.innerHTML = '';
-      foreItems.forEach(({ day, icon, desc, hi, lo }) => {
+      for (let i = 1; i <= 5 && i < d.time.length; i++) {
+        const dt   = new Date(d.time[i] + 'T00:00:00');
+        const day  = DAY_KO[dt.getDay()] + '요일';
+        const icon = wmoIcon(d.weather_code[i], true);
+        const desc = wmoDesc(d.weather_code[i]);
+        const hi   = Math.round(d.temperature_2m_max[i]);
+        const lo   = Math.round(d.temperature_2m_min[i]);
         const el = document.createElement('div');
         el.className = 'forecast-item';
         el.innerHTML = `
@@ -615,7 +593,7 @@
           <span class="fc-desc">${desc}</span>
           <span class="fc-temp">${hi}°<span class="low">${lo}°</span></span>`;
         list.appendChild(el);
-      });
+      }
     }
 
     function renderError(msg) {
@@ -624,29 +602,27 @@
         '<div class="forecast-item" style="justify-content:center;padding:0.5rem 0;"><span style="font-size:0.8125rem;color:var(--muted-foreground)">예보를 불러올 수 없습니다</span></div>';
     }
 
-    /* ===== Setup overlay ===== */
+    /* ===== City setup overlay ===== */
     function showSetup() {
-      document.getElementById('apiKeyInput').value = apiKey;
-      document.getElementById('cityInput').value   = city;
+      const input = document.getElementById('cityInput');
+      input.value = city;
       document.getElementById('setupOverlay').classList.remove('hidden');
+      input.focus();
     }
 
     function hideSetup() {
       document.getElementById('setupOverlay').classList.add('hidden');
     }
 
-    document.getElementById('apiSaveBtn').addEventListener('click', () => {
-      const k = document.getElementById('apiKeyInput').value.trim();
+    document.getElementById('citySaveBtn').addEventListener('click', () => {
       const c = document.getElementById('cityInput').value.trim() || 'Seoul';
-      if (!k) return;
-      apiKey = k;
-      city   = c;
-      try {
-        localStorage.setItem(KEY_API, apiKey);
-        localStorage.setItem(KEY_CITY, city);
-      } catch (e) {}
+      city = c;
+      try { localStorage.setItem(KEY_CITY, city); } catch (e) {}
       hideSetup();
       fetchWeather();
+    });
+    document.getElementById('cityInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('citySaveBtn').click();
     });
 
     document.getElementById('settingsBtn').addEventListener('click', showSetup);
@@ -771,13 +747,8 @@
     })();
 
     /* ===== Init ===== */
-    if (!apiKey) {
-      showSetup();
-    } else {
-      fetchWeather();
-      // Auto-refresh every 30 minutes
-      setInterval(fetchWeather, 30 * 60 * 1000);
-    }
+    fetchWeather();
+    setInterval(fetchWeather, 30 * 60 * 1000); // 30분마다 자동 갱신
   </script>
 </body>
 </html>
