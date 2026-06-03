@@ -236,10 +236,21 @@
 
     .outfit-icon {
       font-size: 1.25rem;
-      line-height: 1;
+      line-height: 0;
       flex-shrink: 0;
       margin-top: 0.05rem;
       user-select: none;
+    }
+    .outfit-icon svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+      overflow: visible;
+      stroke: var(--foreground);
+      stroke-width: 1.6;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .outfit-text {
@@ -382,6 +393,14 @@
   </style>
 </head>
 <body>
+  <!-- 손그림 rough 필터 (노시언 스타일 선 아이콘용) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <filter id="rough" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="1" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs></svg>
+
   <div class="widget-wrapper" id="widget">
     <div class="card" id="card">
       <div class="card-body">
@@ -512,14 +531,22 @@
       return M[code] || '—';
     }
 
+    /* ===== Nosion-style 옷차림 선 아이콘 (검정 손그림) ===== */
+    const OUTFIT = {
+      tshirt:    '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><path d="M9 4 L4.5 7 L6.6 9.6 L8.5 8.1 V20 H15.5 V8.1 L17.4 9.6 L19.5 7 L15 4 C14 5.4 13.1 6 12 6 C10.9 6 10 5.4 9 4 Z"/></g></svg>',
+      long:      '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><path d="M9 4 L5 6 L3.6 14 L6.1 14.6 L7.6 9.2 V20 H16.4 V9.2 L17.9 14.6 L20.4 14 L19 6 L15 4 C14 5.4 13.1 6 12 6 C10.9 6 10 5.4 9 4 Z"/></g></svg>',
+      coat:      '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><path d="M9 4 L5.6 6 L6.6 13 H8 V21 H16 V13 H17.4 L18.4 6 L15 4 L12 7 Z"/><path d="M12 7 V20"/></g></svg>',
+      coatScarf: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)"><path d="M9 5 L5.6 7 L6.6 13.5 H8 V21 H16 V13.5 H17.4 L18.4 7 L15 5 L12 8 Z"/><path d="M12 8 V20"/><path d="M9.2 5.4 Q12 8.2 14.8 5.4"/></g></svg>',
+    };
+
     /* ===== Outfit advice by temperature ===== */
     function outfitAdvice(temp) {
-      if (temp >= 28) return { icon: '👕', text: '매우 더운 날씨입니다. 반팔·반바지에 선크림을 꼭 챙기세요.' };
-      if (temp >= 23) return { icon: '👔', text: '따뜻한 날씨입니다. 얇은 셔츠나 반팔이 잘 어울려요.' };
-      if (temp >= 17) return { icon: '🧥', text: '선선한 날씨입니다. 가디건이나 얇은 재킷을 걸치세요.' };
-      if (temp >= 12) return { icon: '🧣', text: '약간 쌀쌀합니다. 가벼운 자켓과 긴팔을 입어요.' };
-      if (temp >= 7)  return { icon: '🧤', text: '제법 춥습니다. 코트나 두꺼운 재킷을 입고 목도리도 챙기세요.' };
-      return { icon: '🧣', text: '매우 춥습니다. 패딩·목도리·장갑으로 완전 무장하세요.' };
+      if (temp >= 28) return { icon: OUTFIT.tshirt,    text: '매우 더운 날씨입니다. 반팔·반바지에 선크림을 꼭 챙기세요.' };
+      if (temp >= 23) return { icon: OUTFIT.tshirt,    text: '따뜻한 날씨입니다. 얇은 셔츠나 반팔이 잘 어울려요.' };
+      if (temp >= 17) return { icon: OUTFIT.long,      text: '선선한 날씨입니다. 가디건이나 얇은 재킷을 걸치세요.' };
+      if (temp >= 12) return { icon: OUTFIT.coat,      text: '약간 쌀쌀합니다. 가벼운 자켓과 긴팔을 입어요.' };
+      if (temp >= 7)  return { icon: OUTFIT.coat,      text: '제법 춥습니다. 코트나 두꺼운 재킷을 입고 목도리도 챙기세요.' };
+      return            { icon: OUTFIT.coatScarf, text: '매우 춥습니다. 패딩·목도리·장갑으로 완전 무장하세요.' };
     }
 
     /* ===== Fetch current weather (Open-Meteo — API 키 불필요) ===== */
@@ -571,7 +598,7 @@
       document.getElementById('tempRange').textContent    = `${high}/${low}°`;
 
       const { icon, text } = outfitAdvice(temp);
-      document.getElementById('outfitIcon').textContent = icon;
+      document.getElementById('outfitIcon').innerHTML = icon;
       document.getElementById('outfitText').textContent = text;
 
       // 5-day forecast (daily 인덱스 1..5; 0 = 오늘)
