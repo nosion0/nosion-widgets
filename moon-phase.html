@@ -503,17 +503,17 @@
         </div>
       </div>
 
-      <!-- 푸터: 도시 선택 + 날짜 (또는 데모 모드 안내) -->
+      <!-- 푸터: 나라 선택 + 날짜 (또는 데모 모드 안내) -->
       <div class="footer">
         <!-- 일반 모드 -->
         <span id="cityWrap">
-          <button class="city-selector" id="citySelector" type="button" aria-haspopup="true" aria-expanded="false">서울</button>
+          <button class="city-selector" id="citySelector" type="button" aria-haspopup="true" aria-expanded="false" aria-label="나라 선택">대한민국</button>
           <span class="city-sep">·</span>
           <span id="footerDate">—</span>
         </span>
         <!-- 데모 모드 -->
         <span id="demoText" style="display:none">—</span>
-        <!-- 도시 선택 드롭다운 -->
+        <!-- 나라 선택 드롭다운 -->
         <div class="city-dropdown" id="cityDropdown" role="menu"></div>
       </div>
 
@@ -678,9 +678,9 @@
      * 특정 날짜의 월출/월몰 시각 계산
      * 반환: { rise: Date|null, set: Date|null, alwaysUp: boolean, alwaysDown: boolean }
      */
-    function getMoonTimes(date, lat, lng) {
-      const t = new Date(date);
-      t.setHours(0, 0, 0, 0);
+    function getMoonTimes(dayStart, lat, lng) {
+      // dayStart: 해당 지역의 '오늘 0시'에 해당하는 시각(인스턴트). 여기서 24시간 탐색.
+      const t = new Date(dayStart);
 
       const hc = 0.133 * rad; // 달의 시반경 + 굴절 보정
       let h0 = getMoonPosition(t, lat, lng).altitude - hc;
@@ -773,31 +773,33 @@
     /* ============================================
        메인 — 상태 갱신 및 표시
        ============================================ */
-    // 한국 주요 도시 (위/경도)
-    const CITIES = [
-      { name: '서울', lat: 37.5665, lng: 126.9780 },
-      { name: '부산', lat: 35.1796, lng: 129.0756 },
-      { name: '인천', lat: 37.4563, lng: 126.7052 },
-      { name: '대구', lat: 35.8714, lng: 128.6014 },
-      { name: '대전', lat: 36.3504, lng: 127.3845 },
-      { name: '광주', lat: 35.1595, lng: 126.8526 },
-      { name: '울산', lat: 35.5384, lng: 129.3114 },
-      { name: '제주', lat: 33.4996, lng: 126.5312 }
+    // 나라별 지리적 중심(대표 좌표)·대표 타임존
+    // 위상은 전 세계 동일하고, 월출·월몰만 위치/타임존에 따라 달라짐
+    // ※ 미국·호주처럼 여러 타임존에 걸친 나라는 중심부 기준 대표 tz 사용
+    const COUNTRIES = [
+      { name: '대한민국', lat: 36.5,  lng: 127.8,  tz: 'Asia/Seoul' },
+      { name: '일본',     lat: 36.2,  lng: 138.3,  tz: 'Asia/Tokyo' },
+      { name: '중국',     lat: 35.9,  lng: 104.2,  tz: 'Asia/Shanghai' },
+      { name: '미국',     lat: 39.8,  lng: -98.6,  tz: 'America/Chicago' },
+      { name: '영국',     lat: 54.0,  lng:  -2.0,  tz: 'Europe/London' },
+      { name: '프랑스',   lat: 46.6,  lng:   2.4,  tz: 'Europe/Paris' },
+      { name: '독일',     lat: 51.2,  lng:  10.4,  tz: 'Europe/Berlin' },
+      { name: '호주',     lat: -25.7, lng: 134.5,  tz: 'Australia/Darwin' }
     ];
-    const CITY_KEY = 'nosion-moon-phase-city-v1';
+    const CITY_KEY = 'nosion-moon-phase-country-v1';
 
     // 저장된 도시 복원 (없으면 서울 기본)
-    let currentCity = CITIES[0];
+    let currentCountry = COUNTRIES[0];
     try {
       const saved = localStorage.getItem(CITY_KEY);
       if (saved) {
-        const found = CITIES.find(c => c.name === saved);
-        if (found) currentCity = found;
+        const found = COUNTRIES.find(c => c.name === saved);
+        if (found) currentCountry = found;
       }
     } catch (e) {}
 
     function saveCity() {
-      try { localStorage.setItem(CITY_KEY, currentCity.name); } catch (e) {}
+      try { localStorage.setItem(CITY_KEY, currentCountry.name); } catch (e) {}
     }
 
     const phaseNameEl = document.getElementById('phaseName');
@@ -814,11 +816,12 @@
     const footerDateEl = document.getElementById('footerDate');
     const demoTextEl = document.getElementById('demoText');
 
-    function formatTime(date) {
+    function formatTime(date, tz) {
       if (!date) return '—';
-      const h = String(date.getHours()).padStart(2, '0');
-      const m = String(date.getMinutes()).padStart(2, '0');
-      return `${h}:${m}`;
+      // 선택 나라의 현지 시각으로 표기 (tz 없으면 브라우저 로컬)
+      return date.toLocaleTimeString('ko-KR', {
+        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz
+      });
     }
 
     function formatDays(days) {
@@ -829,13 +832,31 @@
       return `D-${d}`;
     }
 
-    function formatDate(date) {
-      // "5/17 (일)" 형식
-      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-      const m = date.getMonth() + 1;
-      const d = date.getDate();
-      const w = dayNames[date.getDay()];
+    function formatDate(date, tz) {
+      // "5/17 (일)" 형식 — 선택 나라의 현지 날짜 기준
+      const m = +new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'numeric' }).format(date);
+      const d = +new Intl.DateTimeFormat('en-US', { timeZone: tz, day: 'numeric' }).format(date);
+      const w = new Intl.DateTimeFormat('ko-KR', { timeZone: tz, weekday: 'short' }).format(date);
       return `${m}/${d} (${w})`;
+    }
+
+    /**
+     * 특정 타임존의 '오늘 0시'에 해당하는 시각(인스턴트)을 반환.
+     * 해외 나라 선택 시 월출/월몰을 그 나라의 하루 기준으로 계산하기 위함.
+     */
+    function startOfDayInTz(tz) {
+      const now = new Date();
+      if (!tz) { const t = new Date(now); t.setHours(0, 0, 0, 0); return t; }
+      const p = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz, hourCycle: 'h23',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }).formatToParts(now).reduce((a, x) => (a[x.type] = x.value, a), {});
+      // 해당 타임존 벽시계를 UTC 필드로 본 값 − 실제 now = 타임존 오프셋(ms)
+      const wallAsUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+      const offsetMs = wallAsUTC - (now.getTime() - now.getMilliseconds());
+      const midnightWallUTC = Date.UTC(+p.year, +p.month - 1, +p.day, 0, 0, 0);
+      return new Date(midnightWallUTC - offsetMs);
     }
 
     /**
@@ -900,8 +921,10 @@
       nextPhaseLabelEl.textContent = next.name;
       nextPhaseValueEl.textContent = formatDays(next.days);
 
-      // 월출/월몰 — 선택된 도시 기준
-      const times = getMoonTimes(today, currentCity.lat, currentCity.lng);
+      // 월출/월몰 — 선택된 나라의 대표 좌표·타임존(현지 하루) 기준
+      const tz = currentCountry.tz;
+      const dayStart = startOfDayInTz(tz);
+      const times = getMoonTimes(dayStart, currentCountry.lat, currentCountry.lng);
       if (times.alwaysUp) {
         moonRiseEl.textContent = '하루 종일';
         moonSetEl.textContent = '안 짐';
@@ -909,8 +932,8 @@
         moonRiseEl.textContent = '안 뜸';
         moonSetEl.textContent = '하루 종일 짐';
       } else {
-        moonRiseEl.textContent = times.rise ? formatTime(times.rise) : '—';
-        moonSetEl.textContent = times.set ? formatTime(times.set) : '—';
+        moonRiseEl.textContent = times.rise ? formatTime(times.rise, tz) : '—';
+        moonSetEl.textContent = times.set ? formatTime(times.set, tz) : '—';
       }
 
       // 푸터 — 데모 모드 / 일반 모드 분리
@@ -921,24 +944,24 @@
       } else {
         cityWrapEl.style.display = '';
         demoTextEl.style.display = 'none';
-        citySelectorEl.textContent = currentCity.name;
-        footerDateEl.textContent = formatDate(today);
+        citySelectorEl.textContent = currentCountry.name;
+        footerDateEl.textContent = formatDate(today, currentCountry.tz);
       }
     }
 
     /* ----- 도시 선택 드롭다운 ----- */
     function buildCityDropdown() {
       cityDropdownEl.innerHTML = '';
-      CITIES.forEach(city => {
+      COUNTRIES.forEach(city => {
         const btn = document.createElement('button');
         btn.className = 'city-option';
         btn.type = 'button';
         btn.textContent = city.name;
         btn.setAttribute('role', 'menuitem');
-        if (city.name === currentCity.name) btn.classList.add('selected');
+        if (city.name === currentCountry.name) btn.classList.add('selected');
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          currentCity = city;
+          currentCountry = city;
           saveCity();
           closeCityDropdown();
           buildCityDropdown(); // selected 마크 갱신

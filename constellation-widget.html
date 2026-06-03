@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지금 머리 위 별자리</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    /* ============================================
+       노시언 위젯 시그니처 디자인 토큰
+       ============================================ */
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 13% 18%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+                   system-ui, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      word-break: keep-all;
+    }
+
+    body {
+      padding: 1rem;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .widget-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      position: relative;
+      width: fit-content;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 3rem 2.75rem;
+      width: 350px;
+      position: relative;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      align-items: safe center;
+      justify-content: safe center;
+      box-sizing: border-box;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+    }
+    .card.dragging { cursor: grabbing; }
+
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.4rem;
+      width: 100%;
+      max-width: 276px;
+    }
+
+    /* === 캡션 === */
+    .sky-caption {
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      user-select: none;
+    }
+
+    /* === 별자리 그림 (주인공) === */
+    .sky {
+      position: relative;
+      width: 190px;
+      height: 190px;
+      flex-shrink: 0;
+    }
+
+    .star-figure {
+      width: 190px;
+      height: 190px;
+      display: block;
+    }
+    .star-figure line {
+      stroke: var(--foreground);
+      stroke-width: 0.9;
+      stroke-linecap: round;
+      opacity: 0.5;
+    }
+    .star-figure circle {
+      fill: var(--foreground);
+    }
+
+    /* 마우스오버 시 떠오르는 이야기 */
+    .story {
+      position: absolute;
+      inset: -6px;
+      background: var(--card);
+      border-radius: 0.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.1rem;
+      text-align: center;
+      font-size: 0.8125rem;
+      line-height: 1.65;
+      color: var(--foreground);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+    .sky:hover .story { opacity: 1; }
+
+    /* === 이름 + 메타 === */
+    .const-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.45rem;
+      user-select: none;
+    }
+    .const-name {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--foreground);
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      text-align: center;
+    }
+    .const-meta {
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .const-meta .dot {
+      width: 2px; height: 2px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.5;
+    }
+    .hover-hint {
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+      opacity: 0.7;
+      letter-spacing: 0.01em;
+      user-select: none;
+    }
+    .sky:hover ~ .const-display .hover-hint { opacity: 0; }
+
+    /* === 구분선 === */
+    .divider {
+      height: 1px;
+      width: 100%;
+      background: var(--border);
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+
+    /* === 정보 영역 === */
+    .info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    .info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .info-label {
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+    }
+    .info-value {
+      font-size: 0.8125rem;
+      color: var(--foreground);
+      font-weight: 500;
+    }
+
+    /* === 푸터 (도시 선택 + 시각) === */
+    .footer {
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+      opacity: 0.6;
+      letter-spacing: 0.03em;
+      text-align: center;
+      user-select: none;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .footer:hover { opacity: 0.8; }
+
+    .city-selector {
+      font: inherit;
+      letter-spacing: inherit;
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0 2px;
+      border-radius: 3px;
+      transition: background var(--transition), color var(--transition);
+    }
+    .city-selector:hover { color: var(--foreground); background: var(--muted); }
+    .city-selector.open { color: var(--foreground); }
+    .city-sep { margin: 0 0.25rem; opacity: 0.6; }
+
+    .city-dropdown {
+      position: absolute;
+      bottom: calc(100% + 0.25rem);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.3125rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      min-width: 150px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+    }
+    .city-dropdown.show {
+      opacity: 1;
+      pointer-events: auto;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+    .city-option {
+      font-family: inherit;
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.375rem 0.625rem;
+      border-radius: 0.25rem;
+      text-align: center;
+      transition: background var(--transition), color var(--transition);
+    }
+    .city-option:hover { background: var(--muted); color: var(--foreground); }
+    .city-option.selected { color: var(--foreground); font-weight: 500; background: var(--muted); }
+
+    /* === 우측 컨트롤 === */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity var(--transition);
+      padding-top: 0.25rem;
+    }
+    .widget-wrapper:hover .controls { opacity: 1; }
+
+    .control-btn {
+      width: 24px; height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: rgba(115, 115, 115, 0.5);
+      cursor: pointer;
+      transition: color var(--transition);
+      border-radius: 4px;
+      position: relative;
+    }
+    .control-btn:hover:not(:disabled) { color: var(--foreground); }
+    .control-btn svg { width: 13px; height: 13px; stroke-width: 2; }
+
+    .control-btn[data-tooltip]::before,
+    .control-btn[data-tooltip]::after {
+      position: absolute;
+      right: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease 0s;
+      z-index: 50;
+    }
+    .control-btn[data-tooltip]::before {
+      content: attr(data-tooltip);
+      background: var(--card);
+      color: var(--foreground);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 0.3125rem 0.625rem;
+      font-size: 0.6875rem;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .control-btn[data-tooltip]::after {
+      content: '';
+      right: calc(100% + 3px);
+      width: 5px; height: 5px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transform: translateY(-50%) rotate(-45deg);
+    }
+    .control-btn[data-tooltip]:hover::before,
+    .control-btn[data-tooltip]:hover::after { opacity: 1; transition-delay: 0.4s; }
+
+    /* === 리사이즈 핸들 === */
+    .resize-handle {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      z-index: 20;
+    }
+    .resize-handle .bar {
+      background: var(--border);
+      transition: opacity var(--transition), background var(--transition),
+                  width 0.15s ease, height 0.15s ease;
+      border-radius: 999px;
+      opacity: 0;
+    }
+    .widget-wrapper:hover .resize-handle .bar { opacity: 1; }
+    .resize-handle:hover .bar { background: var(--muted-foreground); }
+
+    .handle-top { top: 0; left: 50%; transform: translate(-50%, -50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-top .bar { width: 36px; height: 1px; }
+    .handle-top:hover .bar { height: 3px; }
+    .handle-bottom { bottom: 0; left: 50%; transform: translate(-50%, 50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-bottom .bar { width: 36px; height: 1px; }
+    .handle-bottom:hover .bar { height: 3px; }
+    .handle-left { left: 0; top: 50%; transform: translate(-50%, -50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-left .bar { width: 1px; height: 36px; }
+    .handle-left:hover .bar { width: 3px; }
+    .handle-right { right: 0; top: 50%; transform: translate(50%, -50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-right .bar { width: 1px; height: 36px; }
+    .handle-right:hover .bar { width: 3px; }
+  </style>
+</head>
+<body>
+  <!-- 손그림 rough 필터 (노시언 스타일) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <filter id="roughSky" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="1" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs></svg>
+
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
+      <div class="card-body">
+
+        <div class="sky-caption">지금 머리 위 별자리</div>
+
+        <div class="sky" id="sky">
+          <svg class="star-figure" id="starFigure" viewBox="0 0 100 100" aria-hidden="true"></svg>
+          <div class="story" id="story">—</div>
+        </div>
+
+        <div class="const-display">
+          <div class="const-name" id="constName">—</div>
+          <div class="const-meta">
+            <span id="constEn">—</span>
+            <span class="dot"></span>
+            <span id="constSeason">—</span>
+          </div>
+          <div class="hover-hint">✶ 별 그림에 마우스를 올리면 이야기가 나와요</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">밝은 별</span>
+            <span class="info-value" id="constStar">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">천정 고도</span>
+            <span class="info-value" id="constAlt">—</span>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span id="cityWrap">
+            <button class="city-selector" id="citySelector" type="button" aria-haspopup="true" aria-expanded="false" aria-label="도시 선택">서울</button>
+            <span class="city-sep">·</span>
+            <span id="footerTime">—</span>
+          </span>
+          <div class="city-dropdown" id="cityDropdown" role="menu"></div>
+        </div>
+
+      </div>
+
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="resizeResetBtn"
+              data-tooltip="크기 초기화" title="크기 초기화"
+              type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+    const rad = Math.PI / 180;
+
+    /* ============================================
+       별자리 데이터
+       ra: 적경(시간 0~24), dec: 적위(도)
+       stars: [x,y] 0~100 정규좌표(위가 작은 y), lines: 연결 인덱스 쌍
+       stars[0] = 대표(밝은) 별 — 약간 크게 표시
+       ============================================ */
+    const CONSTELLATIONS = [
+      { ko: '큰곰자리', en: 'Ursa Major', ra: 11.0, dec: 56, star: '북두칠성', season: '봄철',
+        story: '북쪽 하늘의 큰 곰. 꼬리의 일곱 별 ‘북두칠성’이 북극성을 찾는 길잡이가 됩니다.',
+        stars: [[24,34],[24,55],[45,58],[45,40],[60,37],[73,32],[86,29]],
+        lines: [[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]] },
+      { ko: '작은곰자리', en: 'Ursa Minor', ra: 15.0, dec: 78, star: '북극성', season: '사계절',
+        story: '꼬리 끝의 북극성이 늘 북쪽을 가리켜, 오랜 세월 뱃사람들의 나침반이 되어 준 작은 곰입니다.',
+        stars: [[85,20],[72,30],[60,40],[48,48],[40,64],[57,67],[58,49]],
+        lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]] },
+      { ko: '카시오페이아자리', en: 'Cassiopeia', ra: 1.0, dec: 60, star: '시더', season: '가을철',
+        story: '‘W’ 모양의 다섯 별. 미모를 뽐내다 벌을 받아 하늘에 매달린 왕비의 별자리입니다.',
+        stars: [[15,42],[33,62],[50,40],[68,64],[85,44]],
+        lines: [[0,1],[1,2],[2,3],[3,4]] },
+      { ko: '케페우스자리', en: 'Cepheus', ra: 22.0, dec: 70, star: '알데라민', season: '가을철',
+        story: '카시오페이아 왕비의 남편인 에티오피아의 왕. 오각형 집 모양으로 북쪽 하늘에 자리합니다.',
+        stars: [[28,62],[72,62],[72,40],[28,40],[50,22]],
+        lines: [[0,1],[1,2],[2,3],[3,0],[2,4],[3,4]] },
+      { ko: '백조자리', en: 'Cygnus', ra: 20.5, dec: 42, star: '데네브', season: '여름철',
+        story: '여름밤 은하수를 따라 날개를 활짝 편 백조. 십자 모양이라 ‘북쪽 십자가’로도 불립니다.',
+        stars: [[50,16],[50,50],[50,86],[20,44],[80,52]],
+        lines: [[0,1],[1,2],[3,1],[1,4]] },
+      { ko: '거문고자리', en: 'Lyra', ra: 18.8, dec: 38, star: '직녀성(베가)', season: '여름철',
+        story: '여름철 가장 밝은 별 직녀성(베가)이 있는 작은 별자리. 음악의 신이 켜던 하프를 닮았습니다.',
+        stars: [[35,24],[50,38],[42,56],[63,48],[55,68]],
+        lines: [[0,1],[1,3],[3,4],[4,2],[2,1]] },
+      { ko: '독수리자리', en: 'Aquila', ra: 19.7, dec: 5, star: '견우성(알타이르)', season: '여름철',
+        story: '은하수를 사이에 두고 직녀와 마주 본 견우성(알타이르)이 빛나는, 제우스의 독수리입니다.',
+        stars: [[50,50],[50,28],[50,74],[28,56],[72,52]],
+        lines: [[1,0],[0,2],[3,0],[0,4]] },
+      { ko: '오리온자리', en: 'Orion', ra: 5.5, dec: 2, star: '리겔 · 베텔게우스', season: '겨울철',
+        story: '겨울밤의 대표 사냥꾼. 나란한 세 별 ‘삼태성’이 허리띠로, 가장 찾기 쉬운 별자리입니다.',
+        stars: [[30,20],[66,22],[40,50],[50,52],[60,54],[38,82],[70,80]],
+        lines: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[4,6],[5,6]] },
+      { ko: '황소자리', en: 'Taurus', ra: 4.6, dec: 18, star: '알데바란', season: '겨울철',
+        story: 'V자 얼굴에 붉은 눈(알데바란)을 가진 황소. 제우스가 변신한 모습이라 전해집니다.',
+        stars: [[45,58],[25,40],[65,38],[80,22],[55,26]],
+        lines: [[1,0],[0,2],[2,3],[0,4]] },
+      { ko: '쌍둥이자리', en: 'Gemini', ra: 7.0, dec: 24, star: '폴룩스', season: '겨울철',
+        story: '사이좋은 형제 카스토르와 폴룩스. 두 머리 별이 나란히 빛나는 겨울 별자리입니다.',
+        stars: [[38,24],[62,26],[34,48],[58,50],[32,72],[56,74]],
+        lines: [[0,2],[2,4],[1,3],[3,5],[2,3]] },
+      { ko: '사자자리', en: 'Leo', ra: 10.5, dec: 16, star: '레굴루스', season: '봄철',
+        story: '봄철 남쪽 하늘의 사자. 갈기 부분이 물음표를 뒤집은 낫 모양이라 알아보기 쉽습니다.',
+        stars: [[30,66],[28,50],[33,35],[44,30],[56,37],[83,58],[63,63]],
+        lines: [[0,1],[1,2],[2,3],[3,4],[0,6],[6,5],[4,5]] },
+      { ko: '목동자리', en: 'Bootes', ra: 14.5, dec: 33, star: '아르크투루스', season: '봄철',
+        story: '봄철 밝은 주황별 아르크투루스를 든 목동. 연 또는 넥타이 모양으로 보입니다.',
+        stars: [[48,84],[30,55],[40,38],[56,35],[68,55],[50,22]],
+        lines: [[0,1],[1,2],[2,5],[5,3],[3,4],[4,0]] },
+      { ko: '전갈자리', en: 'Scorpius', ra: 16.8, dec: -30, star: '안타레스', season: '여름철',
+        story: '붉은 심장 안타레스를 품은 전갈. 여름철 남쪽 낮게 휘어진 꼬리가 인상적입니다.',
+        stars: [[24,28],[20,40],[30,50],[42,54],[54,62],[66,72],[74,82],[60,86]],
+        lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]] },
+      { ko: '궁수자리', en: 'Sagittarius', ra: 19.0, dec: -27, star: '눈키', season: '여름철',
+        story: '은하수 중심을 향해 활을 겨눈 궁수. 별들이 ‘주전자’ 모양을 이룹니다.',
+        stars: [[35,46],[60,46],[62,68],[38,68],[76,56],[24,56],[48,32]],
+        lines: [[0,1],[1,2],[2,3],[3,0],[1,4],[4,2],[0,5],[5,3],[0,6],[6,1]] },
+      { ko: '페가수스자리', en: 'Pegasus', ra: 23.0, dec: 18, star: '마르카브', season: '가을철',
+        story: '커다란 사각형(가을의 대사각형)이 특징인, 하늘을 나는 날개 달린 말입니다.',
+        stars: [[32,32],[70,30],[72,68],[34,70],[86,20]],
+        lines: [[0,1],[1,2],[2,3],[3,0],[1,4]] },
+      { ko: '안드로메다자리', en: 'Andromeda', ra: 0.8, dec: 38, star: '알페라츠', season: '가을철',
+        story: '사슬에 묶인 공주. 페가수스 사각형에서 이어지는 별의 사슬로 찾을 수 있습니다.',
+        stars: [[18,62],[40,52],[60,42],[80,30]],
+        lines: [[0,1],[1,2],[2,3]] },
+      { ko: '페르세우스자리', en: 'Perseus', ra: 3.4, dec: 45, star: '미르파크', season: '가을철',
+        story: '메두사를 물리친 영웅. 안드로메다 공주를 구해 낸 가을 별자리입니다.',
+        stars: [[42,24],[46,46],[38,64],[58,56],[30,80],[62,72]],
+        lines: [[0,1],[1,2],[2,4],[1,3],[3,5]] },
+      { ko: '마차부자리', en: 'Auriga', ra: 5.5, dec: 44, star: '카펠라', season: '겨울철',
+        story: '밝은 별 카펠라가 빛나는 오각형. 마차를 모는 사람의 모습이라 전해집니다.',
+        stars: [[35,28],[62,26],[74,54],[50,74],[26,54]],
+        lines: [[0,1],[1,2],[2,3],[3,4],[4,0]] },
+      { ko: '처녀자리', en: 'Virgo', ra: 13.4, dec: -2, star: '스피카', season: '봄철',
+        story: '밝은 별 스피카(보리 이삭)를 든 봄의 여신. 풍요와 수확을 상징합니다.',
+        stars: [[40,82],[46,60],[56,46],[38,44],[70,42]],
+        lines: [[0,1],[1,2],[2,3],[2,4]] },
+      { ko: '물병자리', en: 'Aquarius', ra: 22.5, dec: -9, star: '사달수드', season: '가을철',
+        story: '물을 쏟는 소년의 별자리. 신들에게 물을 따르던 미소년 가니메데로 전해집니다.',
+        stars: [[28,40],[45,46],[56,38],[64,54],[48,64]],
+        lines: [[0,1],[1,2],[2,3],[1,4]] },
+      { ko: '남십자자리', en: 'Crux', ra: 12.5, dec: -60, star: '아크룩스', season: '남반구',
+        story: '남반구 하늘의 작은 십자가. 남쪽을 찾는 길잡이로, 남반구에서 잘 보입니다.',
+        stars: [[50,18],[50,82],[26,50],[74,52]],
+        lines: [[0,1],[2,3]] }
+    ];
+
+    /* ============================================
+       도시 (위/경도/타임존)
+       머리 위 별자리는 위도(천정 적위)·경도/시각(LST)에 따라 달라짐
+       ============================================ */
+    const CITIES = [
+      { name: '서울',     lat: 37.57,  lng: 126.98, tz: 'Asia/Seoul' },
+      { name: '도쿄',     lat: 35.68,  lng: 139.65, tz: 'Asia/Tokyo' },
+      { name: '뉴욕',     lat: 40.71,  lng: -74.01, tz: 'America/New_York' },
+      { name: '런던',     lat: 51.51,  lng: -0.13,  tz: 'Europe/London' },
+      { name: '파리',     lat: 48.86,  lng: 2.35,   tz: 'Europe/Paris' },
+      { name: '두바이',   lat: 25.20,  lng: 55.27,  tz: 'Asia/Dubai' },
+      { name: '시드니',   lat: -33.87, lng: 151.21, tz: 'Australia/Sydney' },
+      { name: '상파울루', lat: -23.55, lng: -46.63, tz: 'America/Sao_Paulo' }
+    ];
+    const CITY_KEY = 'nosion-constellation-city-v1';
+
+    let currentCity = CITIES[0];
+    try {
+      const saved = localStorage.getItem(CITY_KEY);
+      if (saved) { const f = CITIES.find(c => c.name === saved); if (f) currentCity = f; }
+    } catch (e) {}
+    function saveCity() { try { localStorage.setItem(CITY_KEY, currentCity.name); } catch (e) {} }
+
+    /* ============================================
+       천문 계산 — 지방 항성시(LST)와 천정 별자리
+       ============================================ */
+    function daysSinceJ2000(date) {
+      // JD = ms/86400000 + 2440587.5 ; J2000 = 2451545.0
+      return date.valueOf() / 86400000 + 2440587.5 - 2451545.0;
+    }
+    function localSiderealDeg(date, lng) {
+      const d = daysSinceJ2000(date);
+      let theta = 280.46061837 + 360.98564736629 * d + lng; // 동경 +
+      theta = ((theta % 360) + 360) % 360;
+      return theta;
+    }
+    // 두 천구 좌표 사이 각거리(도)
+    function angularDistance(ra1h, dec1, ra2h, dec2) {
+      const r1 = ra1h * 15 * rad, d1 = dec1 * rad;
+      const r2 = ra2h * 15 * rad, d2 = dec2 * rad;
+      let c = Math.sin(d1) * Math.sin(d2) + Math.cos(d1) * Math.cos(d2) * Math.cos(r1 - r2);
+      c = Math.min(1, Math.max(-1, c));
+      return Math.acos(c) / rad;
+    }
+    // 천정(머리 위)에 가장 가까운 별자리 + 그 별자리 중심의 고도
+    function overheadConstellation(date, lat, lng) {
+      const lstDeg = localSiderealDeg(date, lng);
+      const zenithRaH = lstDeg / 15; // 천정 적경(시간)
+      const zenithDec = lat;         // 천정 적위 = 위도
+      let best = null, bestDist = Infinity;
+      for (const c of CONSTELLATIONS) {
+        const dist = angularDistance(c.ra, c.dec, zenithRaH, zenithDec);
+        if (dist < bestDist) { bestDist = dist; best = c; }
+      }
+      // 별자리 중심의 고도(altitude) ≈ 90 − (천정과의 각거리)
+      const altitude = Math.max(0, Math.round(90 - bestDist));
+      return { c: best, altitude };
+    }
+
+    /* ============================================
+       렌더링
+       ============================================ */
+    const starFigureEl = document.getElementById('starFigure');
+    const storyEl = document.getElementById('story');
+    const constNameEl = document.getElementById('constName');
+    const constEnEl = document.getElementById('constEn');
+    const constSeasonEl = document.getElementById('constSeason');
+    const constStarEl = document.getElementById('constStar');
+    const constAltEl = document.getElementById('constAlt');
+    const citySelectorEl = document.getElementById('citySelector');
+    const cityDropdownEl = document.getElementById('cityDropdown');
+    const footerTimeEl = document.getElementById('footerTime');
+
+    function buildFigure(c) {
+      let svg = '<g filter="url(#roughSky)">';
+      for (const [i, j] of c.lines) {
+        const a = c.stars[i], b = c.stars[j];
+        svg += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
+      }
+      c.stars.forEach((s, idx) => {
+        const r = idx === 0 ? 2.9 : 2.0;
+        svg += `<circle cx="${s[0]}" cy="${s[1]}" r="${r}"/>`;
+      });
+      svg += '</g>';
+      return svg;
+    }
+
+    function formatLocalTime(date, tz) {
+      return date.toLocaleTimeString('ko-KR', {
+        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz
+      });
+    }
+
+    function update() {
+      const now = new Date();
+      const { c, altitude } = overheadConstellation(now, currentCity.lat, currentCity.lng);
+
+      starFigureEl.innerHTML = buildFigure(c);
+      storyEl.textContent = c.story;
+      constNameEl.textContent = c.ko;
+      constEnEl.textContent = c.en;
+      constSeasonEl.textContent = c.season;
+      constStarEl.textContent = c.star;
+      constAltEl.textContent = `약 ${altitude}°`;
+
+      citySelectorEl.textContent = currentCity.name;
+      footerTimeEl.textContent = formatLocalTime(now, currentCity.tz);
+    }
+
+    /* ----- 도시 선택 드롭다운 ----- */
+    function buildCityDropdown() {
+      cityDropdownEl.innerHTML = '';
+      CITIES.forEach(city => {
+        const btn = document.createElement('button');
+        btn.className = 'city-option';
+        btn.type = 'button';
+        btn.textContent = city.name;
+        btn.setAttribute('role', 'menuitem');
+        if (city.name === currentCity.name) btn.classList.add('selected');
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          currentCity = city;
+          saveCity();
+          closeCityDropdown();
+          buildCityDropdown();
+          update();
+        });
+        cityDropdownEl.appendChild(btn);
+      });
+    }
+    function openCityDropdown() {
+      cityDropdownEl.classList.add('show');
+      citySelectorEl.classList.add('open');
+      citySelectorEl.setAttribute('aria-expanded', 'true');
+    }
+    function closeCityDropdown() {
+      cityDropdownEl.classList.remove('show');
+      citySelectorEl.classList.remove('open');
+      citySelectorEl.setAttribute('aria-expanded', 'false');
+    }
+    citySelectorEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (cityDropdownEl.classList.contains('show')) closeCityDropdown();
+      else openCityDropdown();
+    });
+    document.addEventListener('click', (e) => {
+      if (!cityDropdownEl.contains(e.target) && e.target !== citySelectorEl) closeCityDropdown();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeCityDropdown(); });
+
+    buildCityDropdown();
+    update();
+    // 1분마다 갱신 (시간이 지나면 머리 위 별자리도 서서히 바뀜)
+    setInterval(update, 60 * 1000);
+
+    /* ============================================
+       4방향 리사이즈
+       ============================================ */
+    const SIZE_KEY = 'nosion-constellation-size-v1';
+    const MIN_WIDTH = 300, MAX_WIDTH = 600, MIN_HEIGHT = 380, MAX_HEIGHT = 700;
+    const DEFAULT_WIDTH = 350;
+    const cardEl = document.getElementById('card');
+    const widgetEl = document.getElementById('widget');
+
+    let cardWidth = DEFAULT_WIDTH;
+    let cardHeight = null;
+    try {
+      const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null');
+      if (s) {
+        if (typeof s.width === 'number') cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width));
+        if (typeof s.height === 'number' && s.height > 0) cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height));
+      }
+    } catch (e) {}
+
+    function applyCardSize() {
+      cardEl.style.width = cardWidth + 'px';
+      cardEl.style.height = cardHeight !== null ? cardHeight + 'px' : '';
+    }
+    function saveSize() {
+      try { localStorage.setItem(SIZE_KEY, JSON.stringify({ width: cardWidth, height: cardHeight })); } catch (e) {}
+    }
+
+    let resizeDrag = null, startLeft = 0, startTop = 0;
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = { direction, startX: x, startY: y, startWidth: rect.width, startHeight: rect.height };
+      if (getComputedStyle(widgetEl).position !== 'fixed') {
+        const wr = widgetEl.getBoundingClientRect();
+        widgetEl.style.position = 'fixed';
+        widgetEl.style.left = wr.left + 'px';
+        widgetEl.style.top = wr.top + 'px';
+        widgetEl.style.transform = 'none';
+      }
+      startLeft = parseFloat(widgetEl.style.left) || 0;
+      startTop = parseFloat(widgetEl.style.top) || 0;
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX, dy = y - resizeDrag.startY, dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
+        const actual = cardWidth - resizeDrag.startWidth;
+        if (widgetEl.style.position === 'fixed') widgetEl.style.left = (startLeft - actual / 2) + 'px';
+      }
+      if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta);
+        const actual = cardHeight - resizeDrag.startHeight;
+        if (widgetEl.style.position === 'fixed') widgetEl.style.top = (startTop - actual / 2) + 'px';
+      }
+      applyCardSize();
+    }
+    function endResize() {
+      if (!resizeDrag) return;
+      saveSize();
+      resizeDrag = null;
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    }
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+      const direction = handle.dataset.direction;
+      handle.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); startResize(direction, e.clientX, e.clientY); });
+      handle.addEventListener('touchstart', (e) => { e.preventDefault(); const t = e.touches[0]; startResize(direction, t.clientX, t.clientY); }, { passive: false });
+    });
+    document.addEventListener('mousemove', (e) => { if (resizeDrag) { e.preventDefault(); moveResize(e.clientX, e.clientY); } });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('touchmove', (e) => { if (resizeDrag) { const t = e.touches[0]; moveResize(t.clientX, t.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+    applyCardSize();
+
+    /* ============================================
+       위치 이동 (카드 빈 영역 드래그)
+       ============================================ */
+    const POS_KEY = 'nosion-constellation-pos-v1';
+    let offsetX = 0, offsetY = 0, moveDrag = null;
+    try {
+      const p = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
+      if (p) { if (typeof p.x === 'number') offsetX = p.x; if (typeof p.y === 'number') offsetY = p.y; }
+    } catch (e) {}
+
+    function applyPosition() { widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`; }
+    function savePosition() { try { localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY })); } catch (e) {} }
+
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input', '.city-dropdown'];
+      for (const sel of blocked) if (target.closest(sel)) return false;
+      return true;
+    }
+    function startMove(x, y) {
+      moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY };
+      document.body.style.userSelect = 'none';
+      cardEl.classList.add('dragging');
+    }
+    function doMove(x, y) {
+      if (!moveDrag) return;
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
+      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
+      applyPosition();
+    }
+    function endMove() {
+      if (!moveDrag) return;
+      savePosition();
+      moveDrag = null;
+      document.body.style.userSelect = '';
+      cardEl.classList.remove('dragging');
+    }
+    applyPosition();
+    cardEl.addEventListener('mousedown', (e) => { if (!isDraggableTarget(e.target)) return; e.preventDefault(); startMove(e.clientX, e.clientY); });
+    cardEl.addEventListener('touchstart', (e) => { if (!isDraggableTarget(e.target)) return; const t = e.touches[0]; startMove(t.clientX, t.clientY); }, { passive: true });
+    document.addEventListener('mousemove', (e) => { if (moveDrag) { e.preventDefault(); doMove(e.clientX, e.clientY); } });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('touchmove', (e) => { if (moveDrag) { const t = e.touches[0]; doMove(t.clientX, t.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    /* 크기·위치 초기화 */
+    document.getElementById('resizeResetBtn').addEventListener('click', () => {
+      cardWidth = DEFAULT_WIDTH; cardHeight = null; applyCardSize(); saveSize();
+      offsetX = 0; offsetY = 0; applyPosition(); savePosition();
+    });
+  </script>
+</body>
+</html>
