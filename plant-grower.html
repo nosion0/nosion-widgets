@@ -66,7 +66,8 @@
       flex-shrink: 0;
     }
 
-    .widget-wrapper:hover .left-panel {
+    .widget-wrapper:hover .left-panel,
+    .widget-wrapper:focus-within .left-panel {
       opacity: 1;
       pointer-events: auto;
     }
@@ -124,6 +125,7 @@
       align-items: center;
       justify-content: center;
       min-height: 0;
+      padding-bottom: 2rem; /* lift the plant up so the pot isn't flush with the bottom */
     }
 
     .plant-svg {
@@ -136,29 +138,64 @@
 
     .plant-body { transform-origin: 60px 104px; }
 
-    /* Watering sway */
-    @keyframes sway {
-      0%,100% { transform: rotate(0deg); }
-      20%     { transform: rotate(-3.5deg); }
-      55%     { transform: rotate(2.5deg); }
-      80%     { transform: rotate(-1.2deg); }
+    /* Idle "alive" motion — the main plant gently sways on a slow loop */
+    @keyframes idle {
+      0%   { transform: rotate(0deg); }
+      25%  { transform: rotate(-1.1deg); }
+      60%  { transform: rotate(0.9deg); }
+      100% { transform: rotate(0deg); }
     }
-    .plant-svg.watering .plant-body { animation: sway 0.7s ease; }
+    .plant-svg .plant-body { animation: idle 4.5s ease-in-out infinite; }
+    /* keep the small gallery thumbnails still */
+    .slot .plant-body { animation: none; }
 
-    /* Water drop */
+    /* Watering: gentle happy bob (revives from wilt) */
+    @keyframes sway {
+      0%,100% { transform: rotate(0deg) translateY(0); }
+      18%     { transform: rotate(-3deg) translateY(-1.5px); }
+      48%     { transform: rotate(2.4deg) translateY(0); }
+      74%     { transform: rotate(-1.2deg); }
+    }
+    .plant-svg.watering .plant-body { animation: sway 0.85s ease; }
+
+    /* Water drops — several droplets fall in, staggered (delays set inline per drop) */
     .drop { opacity: 0; }
     @keyframes drop-fall {
-      0%   { transform: translateY(-26px); opacity: 0; }
-      10%  { opacity: 1; }
-      80%  { opacity: 1; }
-      100% { transform: translateY(83px); opacity: 0; }
+      0%   { transform: translateY(-10px); opacity: 0; }
+      16%  { opacity: 1; }
+      84%  { opacity: 1; }
+      100% { transform: translateY(72px); opacity: 0; }
     }
-    .plant-svg.watering .drop { animation: drop-fall 0.9s ease; }
+    .plant-svg.watering .drop { animation: drop-fall 0.8s ease-in; }
 
-    /* Wilted look */
+    /* Soil ripple when the water lands */
+    .ripple { opacity: 0; transform-box: fill-box; transform-origin: center; }
+    @keyframes ripple {
+      0%, 50% { opacity: 0;   transform: scale(0.35); }
+      66%     { opacity: 0.5; transform: scale(0.7); }
+      100%    { opacity: 0;   transform: scale(1.45); }
+    }
+    .plant-svg.watering .ripple { animation: ripple 1s ease-out; }
+
+    /* New flowers/buds gently bloom in (instead of popping) when a stage adds them */
+    .bloom-in { transform-box: fill-box; transform-origin: center; animation: bloom-in 0.5s ease-out both; }
+    @keyframes bloom-in {
+      0%   { transform: scale(0);    opacity: 0; }
+      65%  { transform: scale(1.18); opacity: 1; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+
+    /* Wilted look (idle pauses so the droop stays put) */
     .plant-svg.wilted .plant-body {
+      animation: none;
       opacity: 0.55;
       transform: rotate(4deg);
+    }
+
+    /* Respect reduced-motion: drop the ambient idle sway */
+    @media (prefers-reduced-motion: reduce) {
+      .plant-svg .plant-body { animation: none; }
+      .bloom-in { animation: none; }
     }
 
     /* ===== Hover info overlay ===== */
@@ -178,8 +215,11 @@
     .info-bottom { bottom: 1.25rem; }
 
     .widget-wrapper:hover .info-top,
-    .widget-wrapper:hover .info-bottom { opacity: 1; }
-    .widget-wrapper:hover .info-bottom { pointer-events: auto; }
+    .widget-wrapper:hover .info-bottom,
+    .widget-wrapper:focus-within .info-top,
+    .widget-wrapper:focus-within .info-bottom { opacity: 1; }
+    .widget-wrapper:hover .info-bottom,
+    .widget-wrapper:focus-within .info-bottom { pointer-events: auto; }
 
     .plant-name {
       font-size: 1.0625rem;
@@ -194,45 +234,31 @@
       letter-spacing: 0.01em;
     }
 
-    /* progress bar */
-    .progress {
-      width: 120px;
-      height: 4px;
-      border-radius: 99px;
-      background: var(--muted);
-      overflow: hidden;
-      margin-top: 0.35rem;
-    }
-    .progress-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 99px;
-      transition: width 0.4s ease;
-    }
-
     .water-btn {
       display: flex;
       align-items: center;
       gap: 0.4rem;
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      background: var(--foreground);
-      color: hsl(0 0% 100%);
+      background: hsl(0 0% 100%);
+      color: var(--foreground);
       padding: 0.5rem 1.1rem;
       font-size: 0.875rem;
       font-weight: 500;
       font-family: inherit;
       cursor: pointer;
-      transition: opacity 0.15s ease, background 0.15s ease;
+      transition: background 0.15s ease;
     }
-    .water-btn:hover { opacity: 0.88; }
+    .water-btn:hover { background: var(--muted); }
+    /* watered today: still a white button, but the droplet icon fills in */
     .water-btn.done {
-      background: hsl(0 0% 100%);
-      color: var(--muted-foreground);
+      color: var(--foreground);
       cursor: default;
     }
-    .water-btn.done:hover { opacity: 1; }
+    .water-btn.done:hover { background: hsl(0 0% 100%); }
     .water-btn svg { width: 15px; height: 15px; }
+    .water-btn svg path { fill: none; transition: fill 0.2s ease; }
+    .water-btn.done svg path { fill: currentColor; }
 
     /* ===== Collection gallery ===== */
     .gallery {
@@ -353,7 +379,7 @@
     <div class="card" id="card">
       <div class="info-top">
         <div class="plant-name" id="plantName">새싹</div>
-        <div class="plant-meta" id="plantMeta">1단계 · 0/30</div>
+        <div class="plant-meta" id="plantMeta"></div>
       </div>
 
       <div class="plant-stage" id="plantStage"></div>
@@ -366,7 +392,6 @@
           </svg>
           <span id="waterBtnLabel">물주기</span>
         </button>
-        <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
       </div>
 
       <!-- Collection gallery -->
@@ -386,22 +411,8 @@
   <script>
     /* ============ SVG helpers ============ */
     const INK = 'var(--ink)', STEM = 'var(--stem)', LEAF = 'var(--leaf)',
-          FILL = 'var(--fill)', ACC = 'var(--accent)',
-          BLUSH = 'var(--blush)', SHINE = 'var(--shine)', SOIL = 'var(--soil)';
+          FILL = 'var(--fill)', ACC = 'var(--accent)', SOIL = 'var(--soil)';
 
-    const leaf = (x, y, r, s, c = LEAF) =>
-      `<path d="M0 0 Q-7 -9 0 -22 Q7 -9 0 0Z" fill="${c}" stroke="${INK}" stroke-width="1.8"
-        transform="translate(${x},${y}) rotate(${r}) scale(${s})"/>`;
-    const stem = (d, w = 2.8) =>
-      `<path d="${d}" fill="none" stroke="${STEM}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
-    const disc = (x, y, r, c = LEAF, w = 1.8) =>
-      `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="${INK}" stroke-width="${w}"/>`;
-    const bulb = (y, rx, ry, c = FILL) =>
-      `<ellipse cx="60" cy="${y}" rx="${rx}" ry="${ry}" fill="${c}" stroke="${INK}" stroke-width="2.4"/>`;
-    /* fat rounded leaf (chunky/cute), base at (x,y) pointing up */
-    const fleaf = (x, y, r, s, c = LEAF) =>
-      `<path d="M0 0 C-11 -3 -12 -17 0 -21 C12 -17 11 -3 0 0Z" fill="${c}" stroke="${INK}" stroke-width="2.2"
-        transform="translate(${x},${y}) rotate(${r}) scale(${s})"/>`;
     const petalRing = (x, y, s, n, c = FILL, ry = 8.5) =>
       `<g transform="translate(${x},${y}) scale(${s})">` +
       Array.from({length: n}, (_, i) =>
@@ -414,22 +425,24 @@
           transform="rotate(${a})"/>`).join('') +
       `<circle cx="0" cy="0" r="2" fill="${ACC}"/></g>`;
 
-    /* Joguman-style face: small dot eyes + faint, thin little smile (sad when wilted) */
-    const face = (cx, cy, s = 1, mood = 'happy') =>
-      `<g transform="translate(${cx},${cy}) scale(${s})">
-        <circle cx="-4.6" cy="-2.4" r="1.8" fill="${INK}"/>
-        <circle cx="4.6" cy="-2.4" r="1.8" fill="${INK}"/>
-        ${mood === 'sad'
-          ? `<path d="M-2.7 5 Q0 3 2.7 5" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/>`
-          : `<path d="M-2.7 4.6 Q0 6.6 2.7 4.6" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/>`}
-      </g>`;
+    /* Joguman-style face: small dot eyes + faint, thin little smile.
+       Mood is governed by the module-level FACE_MOOD flag, set right before a plant is generated
+       (so the many baked-in face() calls — incl. tomato's 3 faces — all follow it without threading). */
+    let FACE_MOOD = 'happy';
+    const face = (cx, cy, s = 1) =>
+      `<g transform="translate(${cx},${cy}) scale(${s})">`
+      + `<circle cx="-4.6" cy="-2.4" r="1.8" fill="${INK}"/>`
+      + `<circle cx="4.6" cy="-2.4" r="1.8" fill="${INK}"/>`
+      + (FACE_MOOD === 'sad'
+          ? `<path d="M-2.4 4.9 Q0 3.7 2.4 4.9" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>`
+          : `<path d="M-2.4 4.9 Q0 5.9 2.4 4.9" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>`)
+      + `</g>`;
 
     /* ===== Joguman helpers: bold outline, flat fill, explicit growth stages ===== */
     const SW = 2.5, WHITE = '#fff';
     const fO = (f = FILL) => `fill="${f}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round" stroke-linecap="round"`;
     const oO = (extra = '') => `fill="none" stroke="${INK}" stroke-width="${SW}" stroke-linecap="round" stroke-linejoin="round" ${extra}`;
     const stemLine = (d, w = SW, c = STEM) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
-    function def(s6,h6){return{stages:['', ...s6],head:[null,...h6]};}
 
     /* Flat hand-drawn pot (bold outline, no shine); BACK behind plant, FRONT over its base */
     const POT_BACK =
@@ -437,161 +450,142 @@
       `<ellipse cx="60" cy="104" rx="15" ry="2.6" fill="${SOIL}"/>`;
     const POT_FRONT = `<rect x="39" y="99" width="42" height="10" rx="5" fill="var(--pot)" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>`;
     const DROP =
-      `<path class="drop" d="M60 16 q5 8 0 13 q-5 -5 0 -13z" fill="${ACC}"/>` +
-      `<path class="drop" style="animation-delay:.2s" d="M65 10 q4 6.5 0 11 q-4 -4.5 0 -11z" fill="${ACC}"/>`;
+      `<path class="drop" d="M60 27 q5 8 0 13 q-5 -5 0 -13z" fill="${ACC}"/>` +
+      `<path class="drop" style="animation-delay:.12s" d="M51 23 q4.2 6.6 0 11 q-4.2 -4.6 0 -11z" fill="${ACC}"/>` +
+      `<path class="drop" style="animation-delay:.24s" d="M68 25 q4.4 7 0 12 q-4.4 -5 0 -12z" fill="${ACC}"/>` +
+      `<path class="drop" style="animation-delay:.36s" d="M61 21 q3.6 5.8 0 9.5 q-3.6 -4 0 -9.5z" fill="${ACC}"/>` +
+      `<ellipse class="ripple" cx="60" cy="97" rx="11" ry="2.4" fill="none" stroke="${ACC}" stroke-width="1.4"/>`;
 
-    /* ============ V2 grow() system for scaling-based plants ============ */
-    const SCALES_G = [0.46, 0.58, 0.70, 0.82, 0.92, 1.0];
-    function grow(unit, fx, fy, fs) {
-      const stages = [''], head = [null];
-      SCALES_G.forEach(sc => {
-        stages.push(`<g transform="translate(60,105) scale(${sc}) translate(-60,-105)">${unit}</g>`);
-        head.push([Math.round((60 + (fx - 60) * sc) * 10) / 10,
-                   Math.round((105 + (fy - 105) * sc) * 10) / 10,
-                   Math.round(fs * sc * 100) / 100]);
-      });
-      return { stages, head };
-    }
+    /* ============ Developmental 10-stage growth (ported from the approved design source) ============ */
+    /* Stages 1..9 are generated by P[id](n); stage 10 is the approved final F[id]().
+       Faces are baked into each drawing and follow the module-level FACE_MOOD flag. */
+    const cap  = (v, a, b) => Math.max(a, Math.min(b, v));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const scG  = (u, s) => `<g transform="translate(60,105) scale(${s.toFixed(3)}) translate(-60,-105)">${u}</g>`;
+    const armR = (x, y, s = 1) => `<path d="M${x} ${y} C${x+9*s} ${y-2*s} ${x+12*s} ${y-9*s} ${x+11*s} ${y-14*s} C${x+10*s} ${y-18*s} ${x+4*s} ${y-16*s} ${x+1*s} ${y-9*s} C${x} ${y-5*s} ${x} ${y-2*s} ${x} ${y}Z" ${fO(LEAF)}/>`;
+    const armL = (x, y, s = 1) => `<path d="M${x} ${y} C${x-9*s} ${y-2*s} ${x-12*s} ${y-9*s} ${x-11*s} ${y-14*s} C${x-10*s} ${y-18*s} ${x-4*s} ${y-16*s} ${x-1*s} ${y-9*s} C${x} ${y-5*s} ${x} ${y-2*s} ${x} ${y}Z" ${fO(LEAF)}/>`;
+    const cloverPolar = (cx, cy, R0, A, k, phaseDeg, N = 96) => { let pts = []; for (let i = 0; i < N; i++) { const th = (i/N)*Math.PI*2; const r = R0 + A*Math.cos(k*(th - phaseDeg*Math.PI/180)); pts.push([cx + r*Math.cos(th), cy - r*Math.sin(th)]); } return 'M' + pts.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L ') + 'Z'; };
+    const scallop = (cx, cy, r, n) => { const rx = r*1.12, ry = r; let pts = []; for (let i = 0; i < n; i++) { const a = (i/n)*Math.PI*2 - Math.PI/2; pts.push([cx + Math.cos(a)*rx, cy + Math.sin(a)*ry]); } let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`; for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i+1)%n]; const mx = (p[0]+q[0])/2, my = (p[1]+q[1])/2; const dx = mx-cx, dy = my-cy, L = Math.hypot(dx, dy) || 1; const b = r*0.2; d += ` Q${(mx + dx/L*b).toFixed(1)} ${(my + dy/L*b).toFixed(1)} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`; } return d + 'Z'; };
+    const simpleFlower = (x, y, s = 1, fill = WHITE, k = 5) => { const R0 = 3.6, A = 1.5, N = 40; let pts = []; for (let i = 0; i < N; i++) { const th = (i/N)*Math.PI*2; const r = (R0 + A*Math.cos(k*(th - Math.PI/2)))*s; pts.push([x + r*Math.cos(th), y - r*Math.sin(th)]); } return `<path d="M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)} L${pts.slice(1).map(p => p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')}Z" fill="${fill}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`; };
+    const lf = (x, y, a, s = 1, c = LEAF) => `<path d="M0 0 C-9 -2 -11 -10 0 -14 C11 -10 9 -2 0 0Z" fill="${c}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round" transform="translate(${x},${y}) rotate(${a}) scale(${s})"/>`;
+    const sprout = (g) => { const top = 106 - (8 + 12*g); return stemLine(`M60 106 V${(top+3).toFixed(1)}`, 2.6) + lf(60, top+4, -40, 0.45 + 0.3*g) + lf(60, top+4, 40, 0.45 + 0.3*g) + face(60, top, 0.5 + 0.12*g); };
 
-    /* V2 silhouettes ― integrated single-path designs, scaled per stage by grow() */
-    const U_tulip =
-      `<path d="M53 79 C48 73 44 64 46 56 C49 49 55 47 59 52 C61 55 61 63 58 72 C56 76 54 78 53 79Z" ${fO()}/>` +
-      `<path d="M67 79 C72 73 76 64 74 56 C71 49 65 47 61 52 C59 55 59 63 62 72 C64 76 66 78 67 79Z" ${fO()}/>` +
-      `<path d="M60 106 C46 106 40 98 40 89 C40 80 47 75 53 76 C55 76 57 78 57 79 L63 79 C63 78 65 76 67 76 C73 75 80 80 80 89 C80 98 74 106 60 106Z" ${fO()}/>`;
-    const U_cactus =
-      `<path d="M50 106 C48.5 98 48.5 90 49 85 C45 86 39 84 37.5 78 C36 72 38.5 67 43 68 C47 69 48 74 49.5 79 C49 72 48 63 50.5 57 C53 50 67 50 69.5 57 C72 63 71 71 71 77 C73 72 79.5 70 83 74 C87 78.5 85 85 79 84.5 C74 84 72 89 71 95 C70.5 99 70.5 103 70 106Z" ${fO()}/>` +
-      `<g transform="translate(60,50)">` + [0,72,144,216,288].map(a =>
-        `<path d="M0 -2 C-3 -3 -3 -7 0 -8 C3 -7 3 -3 0 -2Z" ${fO(WHITE)} transform="rotate(${a})"/>`
-      ).join('') + `<circle r="2.4" fill="${INK}"/></g>`;
-    const U_monstera =
-      `<path d="M60 106 C40 104 33.5 83 37 64 C40 47 50 41 60 41 C70 41 80 47 83 64 C86.5 83 80 104 60 106Z" ${fO()}/>` +
-      `<ellipse cx="50" cy="70" rx="3.1" ry="4.5" ${fO(WHITE)}/>` +
-      `<ellipse cx="70" cy="70" rx="3.1" ry="4.5" ${fO(WHITE)}/>`;
-    const U_bamboo =
-      `<path d="M52 106 C51 96 51 70 52 52 C52.5 47 67.5 47 68 52 C69 70 69 96 68 106Z" ${fO()}/>` +
-      `<path d="M49 70 Q60 73 71 70 M49 88 Q60 91 71 88" ${oO('opacity="0.5"')}/>` +
-      `<path d="M64 52 C72 45 81 47 80 53 C76 58 68 58 63 55Z" ${fO(LEAF)}/>` +
-      `<path d="M56 52 C48 45 39 47 40 53 C44 58 52 58 57 55Z" ${fO(LEAF)}/>`;
-    const U_oldtree =
-      `<path d="M60 73 C50 73 37 68 33 57 C29 46 36 37 46 36 C52 35 57 40 60 44 C63 40 68 35 74 36 C84 37 91 46 87 57 C83 68 70 73 60 73Z" ${fO(LEAF)}/>` +
-      `<path d="M48 106 C46 96 45 87 47 80 C49 74 52 72 60 72 C68 72 71 74 73 80 C75 87 74 96 72 106Z" ${fO()}/>`;
+    /* fixed-part fragments */
+    const cactusNoArm   = `<path d="M50 106 C48.5 98 48.5 90 49 85 C49 76 49 66 50.5 57 C53 50 67 50 69.5 57 C71 66 71 80 71 95 C70.5 99 70.5 103 70 106Z" ${fO()}/>`;
+    const cactusLeftArm = `<path d="M50 106 C48.5 98 48.5 90 49 85 C45 86 39 84 37.5 78 C36 72 38.5 67 43 68 C47 69 48 74 49.5 79 C49 72 48 63 50.5 57 C53 50 67 50 69.5 57 C71 66 71 80 71 95 C70.5 99 70.5 103 70 106Z" ${fO()}/>`;
+    const cactusBody    = `<path d="M50 106 C48.5 98 48.5 90 49 85 C45 86 39 84 37.5 78 C36 72 38.5 67 43 68 C47 69 48 74 49.5 79 C49 72 48 63 50.5 57 C53 50 67 50 69.5 57 C72 63 71 71 71 77 C73 72 79.5 70 83 74 C87 78.5 85 85 79 84.5 C74 84 72 89 71 95 C70.5 99 70.5 103 70 106Z" ${fO()}/>`;
+    const cactusFlower  = `<g transform="translate(60,50)">` + [0,72,144,216,288].map(a => `<path d="M0 -2 C-3 -3 -3 -7 0 -8 C3 -7 3 -3 0 -2Z" ${fO(WHITE)} transform="rotate(${a})"/>`).join('') + `<circle r="2.4" fill="${INK}"/></g>`;
+    const monsteraLeaf  = `<path d="M60 106 C44 104 36 88 37 70 C38 56 46 45 60 41 C74 45 82 56 83 70 C84 88 76 104 60 106Z" ${fO()}/>`;
+    const hole = (x, y) => `<ellipse cx="${x}" cy="${y}" rx="2.8" ry="5.5" ${fO(WHITE)}/>`;
+    const mushStem = `<path d="M48 66 C47 78 46 96 49 104 C52 107 68 107 71 104 C74 96 73 78 72 66Z" ${fO()}/>`;
+    const mushCap  = `<path d="M30 60 C30 40 43 30 60 30 C77 30 90 40 90 60 C90 64 84 68 60 68 C36 68 30 64 30 60Z" ${fO()}/>`;
+    const oldTrunk = `<path d="M40 106 C39 98 41 90 44 80 C46 70 50 62 54 59 L66 59 C70 62 74 70 76 80 C79 90 81 98 80 106Z" ${fO()}/>`;
+    const oldCrown = `<path d="M30 51 C30 45 35 42 41 42 C44 37 50 37 53 42 C56 36 64 36 67 42 C70 37 76 37 79 42 C85 42 90 45 90 51 C90 56 78 59 60 59 C42 59 30 56 30 51Z" ${fO()}/>`;
+    const tulipBloomOpen = (by) => `<path d="M${60-14} ${by-24} C${60-16} ${by-31} ${60-16} ${by-37} ${60-11} ${by-39} C${60-7} ${by-40} ${60-5} ${by-36} ${60-4} ${by-32} C${60-3} ${by-37} ${60-2} ${by-40} 60 ${by-40} C${60+2} ${by-40} ${60+3} ${by-37} ${60+4} ${by-32} C${60+5} ${by-36} ${60+7} ${by-40} ${60+11} ${by-39} C${60+16} ${by-37} ${60+16} ${by-31} ${60+14} ${by-24} C${60+13} ${by-16} ${60+7} ${by-11} 60 ${by-11} C${60-7} ${by-11} ${60-13} ${by-16} ${60-14} ${by-24}Z" ${fO()}/>`;
+    const tomFruit = (x, y, r, fr = 0.62) => `<circle cx="${x}" cy="${y}" r="${r}" ${fO()}/>` + simpleFlower(x, y-r+1.5, fr, LEAF) + face(x, y+1, fr);
 
-    /* ============ Ten plants: V2 silhouettes (grow) + V1 explicit stages ============ */
-    const P_tulip    = grow(U_tulip,    60,  89, 1.10);
-    const P_cactus   = grow(U_cactus,   60,  72, 1.25);
-    const P_monstera = grow(U_monstera, 60,  92, 1.20);
-    const P_bamboo   = grow(U_bamboo,   60,  84, 1.20);
-    const P_oldtree  = grow(U_oldtree,  60,  89, 1.05);
+    /* wrap a freshly-appearing accent so it blooms in (scale/fade) instead of popping; i = stagger index */
+    const bloomG = (inner, i = 0) => `<g class="bloom-in" style="animation-delay:${(i*0.08).toFixed(2)}s">${inner}</g>`;
 
-    /* V1 clover: three-leaf shamrock → four-leaf clover at final stage */
-    const P_clover = (() => {
-      const tre = (cx, cy, s, four) => {
-        const angs = four ? [45,135,225,315] : [90,210,330];
-        return `<g transform="translate(${cx},${cy}) scale(${s})">` +
-          angs.map(a => `<circle cx="0" cy="-7" r="7.5" fill="${FILL}" stroke="${INK}" stroke-width="2.4" transform="rotate(${a})"/>`).join('') +
-          `</g>`;
-      };
-      return def([
-        stem('M60 106 V96', 3.0) + tre(60, 91, 0.70),
-        stem('M60 106 V94', 3.2) + tre(60, 88, 0.95),
-        stem('M60 106 V93', 3.3) + tre(60, 86, 1.12),
-        stem('M60 106 V92', 3.4) + tre(60, 84, 1.28),
-        stem('M60 106 V91', 3.4) + tre(60, 83, 1.40),
-        stem('M60 106 V90', 3.4) + tre(60, 82, 1.50, true),
-      ], [[60,90,0.72],[60,87,0.92],[60,85,1.05],[60,83,1.15],[60,82,1.20],[60,81,1.25]]);
-    })();
+    /* ---- per-stage generators (stages 1..9) ---- */
+    const P = {};
+    P.cactus = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7; const s = lerp(0.5, 1.0, gm); const body = n >= 8 ? cactusBody : (n === 7 ? cactusLeftArm : cactusNoArm); let inner = body; if (n >= 9) inner += bloomG(cactusFlower); inner += face(60, 74, 1.15); return scG(inner, s); };
+    P.monstera = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7; const tipY = lerp(74, 41, gm), hw = lerp(11, 23, gm);
+      const mleaf = (cx, topY, halfW, base) => `<path d="M${cx} ${base} C${(cx-halfW).toFixed(1)} ${(base-2).toFixed(1)} ${(cx-halfW).toFixed(1)} ${(topY+(base-topY)*0.5).toFixed(1)} ${(cx-halfW*0.7).toFixed(1)} ${(topY+8).toFixed(1)} C${(cx-halfW*0.4).toFixed(1)} ${topY.toFixed(1)} ${(cx-halfW*0.2).toFixed(1)} ${(topY-1).toFixed(1)} ${cx} ${(topY-1).toFixed(1)} C${(cx+halfW*0.2).toFixed(1)} ${(topY-1).toFixed(1)} ${(cx+halfW*0.4).toFixed(1)} ${topY.toFixed(1)} ${(cx+halfW*0.7).toFixed(1)} ${(topY+8).toFixed(1)} C${(cx+halfW).toFixed(1)} ${(topY+(base-topY)*0.5).toFixed(1)} ${(cx+halfW).toFixed(1)} ${(base-2).toFixed(1)} ${cx} ${base}Z" ${fO()}/>`;
+      let u = mleaf(60, tipY, hw, 106);
+      if (n >= 6) u += bloomG(hole((60 - hw*0.4), lerp(70, 64, gm)), 0);
+      if (n >= 7) u += bloomG(hole((60 + hw*0.4), lerp(70, 64, gm)), 1);
+      if (n >= 8) u += bloomG(hole(60, lerp(64, 58, gm)), 2);
+      if (n >= 9) u += bloomG(mleaf(45, lerp(84, 77, gm), 7, 106), 0);
+      return u + face(60, lerp(96, 84, gm), lerp(0.6, 1.0, gm)); };
+    P.mushroom = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7; const capY = lerp(96, 66, gm), sw = lerp(4, 11, gm), cw = lerp(7, 30, gm), ch = lerp(6, 30, gm);
+      let u = `<path d="M${(60-sw).toFixed(1)} ${capY.toFixed(1)} L${(60-sw).toFixed(1)} 103 Q${(60-sw).toFixed(1)} 106 ${(60-sw+3).toFixed(1)} 106 L${(60+sw-3).toFixed(1)} 106 Q${(60+sw).toFixed(1)} 106 ${(60+sw).toFixed(1)} 103 L${(60+sw).toFixed(1)} ${capY.toFixed(1)}Z" ${fO()}/>`;
+      u += `<path d="M${(60-cw).toFixed(1)} ${capY.toFixed(1)} C${(60-cw).toFixed(1)} ${(capY-ch).toFixed(1)} ${(60-cw*0.55).toFixed(1)} ${(capY-ch*1.12).toFixed(1)} 60 ${(capY-ch*1.12).toFixed(1)} C${(60+cw*0.55).toFixed(1)} ${(capY-ch*1.12).toFixed(1)} ${(60+cw).toFixed(1)} ${(capY-ch).toFixed(1)} ${(60+cw).toFixed(1)} ${capY.toFixed(1)} Q60 ${(capY+ch*0.16).toFixed(1)} ${(60-cw).toFixed(1)} ${capY.toFixed(1)}Z" ${fO()}/>`;
+      if (n >= 8) { u += bloomG(`<circle cx="${(60-cw*0.45).toFixed(1)}" cy="${(capY-ch*0.55).toFixed(1)}" r="${(cw*0.16).toFixed(1)}" ${fO(WHITE)}/>`, 0) + bloomG(`<circle cx="${(60+cw*0.2).toFixed(1)}" cy="${(capY-ch*0.72).toFixed(1)}" r="${(cw*0.2).toFixed(1)}" ${fO(WHITE)}/>`, 1) + bloomG(`<circle cx="${(60+cw*0.55).toFixed(1)}" cy="${(capY-ch*0.4).toFixed(1)}" r="${(cw*0.13).toFixed(1)}" ${fO(WHITE)}/>`, 2); }
+      return u + face(60, lerp(101, 88, gm), lerp(0.55, 1.05, gm)); };
+    P.oldtree = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7; const topY = lerp(90, 57, gm), baseH = lerp(6, 20, gm), neckH = lerp(3, 7, gm);
+      let u = `<path d="M${(60-baseH).toFixed(1)} 106 C${(60-baseH-1).toFixed(1)} 98 ${(60-baseH+1).toFixed(1)} ${(topY+18).toFixed(1)} ${(60-neckH).toFixed(1)} ${(topY+3).toFixed(1)} C${(60-neckH).toFixed(1)} ${topY.toFixed(1)} ${(60+neckH).toFixed(1)} ${topY.toFixed(1)} ${(60+neckH).toFixed(1)} ${(topY+3).toFixed(1)} C${(60+baseH-1).toFixed(1)} ${(topY+18).toFixed(1)} ${(60+baseH+1).toFixed(1)} 98 ${(60+baseH).toFixed(1)} 106Z" ${fO()}/>`;
+      if (n >= 7) { const cg = cap((n-7)/3, 0, 1); const cw = lerp(14, 30, cg); const ccy = topY + 1; u += `<path d="M${(60-cw).toFixed(1)} ${ccy.toFixed(1)} C${(60-cw).toFixed(1)} ${(ccy-6).toFixed(1)} ${(60-cw+6).toFixed(1)} ${(ccy-9).toFixed(1)} ${(60-cw+12).toFixed(1)} ${(ccy-9).toFixed(1)} C${(60-6).toFixed(1)} ${(ccy-15).toFixed(1)} ${(60+6).toFixed(1)} ${(ccy-15).toFixed(1)} ${(60+cw-12).toFixed(1)} ${(ccy-9).toFixed(1)} C${(60+cw-6).toFixed(1)} ${(ccy-9).toFixed(1)} ${(60+cw).toFixed(1)} ${(ccy-6).toFixed(1)} ${(60+cw).toFixed(1)} ${ccy.toFixed(1)} C${(60+cw).toFixed(1)} ${(ccy+4).toFixed(1)} 60 ${(ccy+6).toFixed(1)} ${(60-cw).toFixed(1)} ${ccy.toFixed(1)}Z" ${fO()}/>`; }
+      return u + face(60, lerp(98, 84, gm), lerp(0.6, 1.25, gm)); };
+    P.bamboo = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7; const topY = lerp(92, 54, gm), hw = lerp(7, 13, gm);
+      let u = `<path d="M${(60-hw).toFixed(1)} 106 C${(60-hw-1).toFixed(1)} 96 ${(60-hw-1).toFixed(1)} ${(topY+8).toFixed(1)} ${(60-hw).toFixed(1)} ${topY.toFixed(1)} C${(60-hw+1).toFixed(1)} ${(topY-5).toFixed(1)} ${(60+hw-1).toFixed(1)} ${(topY-5).toFixed(1)} ${(60+hw).toFixed(1)} ${topY.toFixed(1)} C${(60+hw+1).toFixed(1)} ${(topY+8).toFixed(1)} ${(60+hw+1).toFixed(1)} 96 ${(60+hw).toFixed(1)} 106Z" ${fO()}/>`;
+      let nd = []; for (let y = topY+16; y < 103; y += 16) { nd.push(`M${(60-hw-1).toFixed(1)} ${y.toFixed(1)} Q60 ${(y+3).toFixed(1)} ${(60+hw+1).toFixed(1)} ${y.toFixed(1)}`); }
+      if (nd.length) u += `<path d="${nd.join(' ')}" ${oO('opacity="0.45"')}/>`;
+      if (n >= 8) { u += bloomG(`<path d="M${(60+hw-2).toFixed(1)} ${topY.toFixed(1)} C${(60+hw+6).toFixed(1)} ${(topY-10).toFixed(1)} ${(60+hw+18).toFixed(1)} ${(topY-10).toFixed(1)} ${(60+hw+19).toFixed(1)} ${(topY-3).toFixed(1)} C${(60+hw+14).toFixed(1)} ${(topY+4).toFixed(1)} ${(60+hw+4).toFixed(1)} ${(topY+4).toFixed(1)} ${(60+hw-2).toFixed(1)} ${(topY+1).toFixed(1)}Z" ${fO(LEAF)}/>`, 0)
+        + bloomG(`<path d="M${(60-hw+2).toFixed(1)} ${topY.toFixed(1)} C${(60-hw-6).toFixed(1)} ${(topY-10).toFixed(1)} ${(60-hw-18).toFixed(1)} ${(topY-10).toFixed(1)} ${(60-hw-19).toFixed(1)} ${(topY-3).toFixed(1)} C${(60-hw-14).toFixed(1)} ${(topY+4).toFixed(1)} ${(60-hw-4).toFixed(1)} ${(topY+4).toFixed(1)} ${(60-hw+2).toFixed(1)} ${(topY+1).toFixed(1)}Z" ${fO(LEAF)}/>`, 1)
+        + bloomG(`<path d="M60 ${(topY-1).toFixed(1)} C58 ${(topY-9).toFixed(1)} 60 ${(topY-17).toFixed(1)} 62 ${(topY-20).toFixed(1)} C64 ${(topY-15).toFixed(1)} 63 ${(topY-6).toFixed(1)} 60 ${(topY-1).toFixed(1)}Z" ${fO(LEAF)}/>`, 2); }
+      return u + face(60, ((topY+106)/2 - 2), lerp(0.65, 1.05, gm)); };
+    P.cherry = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7; const tTop = lerp(94, 74, gm), hw = lerp(3.5, 6.5, gm);
+      let u = `<path d="M${(60-hw).toFixed(1)} 106 C${(60-hw+1).toFixed(1)} 96 ${(60-hw+1).toFixed(1)} ${(tTop+6).toFixed(1)} ${(60-hw+0.5).toFixed(1)} ${tTop.toFixed(1)} L${(60+hw-0.5).toFixed(1)} ${tTop.toFixed(1)} C${(60+hw-1).toFixed(1)} ${(tTop+6).toFixed(1)} ${(60+hw-1).toFixed(1)} 96 ${(60+hw).toFixed(1)} 106Z" ${fO()}/>`;
+      if (n >= 6) { const cg = cap((n-6)/4, 0, 1); const cr = lerp(9, 24, cg); const ccy = tTop - cr*0.62; u += `<path d="${scallop(60, ccy, cr, 11)}" ${fO()}/>`;
+        if (n >= 9) { u += bloomG(blossom(56, ccy-13, 0.7), 0) + bloomG(blossom(43, ccy-7, 0.58), 1) + bloomG(blossom(72, ccy-9, 0.64), 2) + bloomG(blossom(78, ccy+2, 0.54), 3) + bloomG(blossom(46, ccy+6, 0.5), 4); }
+        return u + face(60, ccy+2, lerp(0.7, 1.15, cg)); }
+      return u + face(60, tTop+5, 0.6); };
+    P.sunflower = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7; const top = lerp(90, 52, gm);
+      let u = stemLine(`M60 106 V${top.toFixed(1)}`, lerp(3, 3.8, gm));
+      const ls = lerp(0.5, 1.0, gm), ly = lerp(98, 90, gm); u += armL(50, ly, ls) + armR(70, ly, ls);
+      if (n < 8) { const dr = lerp(5, 14, cap((n-3)/5, 0, 1)); u += `<circle cx="60" cy="${top.toFixed(1)}" r="${dr.toFixed(1)}" ${fO()}/>`; u += face(60, top, cap(dr/15, 0.45, 1)); }
+      else { const po = cap((n-8)/2, 0, 1); u += petalRing(60, top, lerp(0.85, 1.25, po), 12) + `<circle cx="60" cy="${top.toFixed(1)}" r="15" ${fO()}/>`; u += face(60, top, 1.0); }
+      return u; };
+    P.tulip = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7; const baseY = lerp(96, 78, gm);
+      let u = stemLine(`M60 106 V${baseY.toFixed(1)}`, lerp(2.8, 3.4, gm));
+      const ls = lerp(0.5, 1.0, gm), ly = lerp(99, 93, gm); u += armL(50, ly, ls) + armR(70, ly, ls);
+      if (n < 8) { const bs = lerp(0.55, 1.0, cap((n-3)/5, 0, 1)); const by = baseY;
+        u += `<path d="M${60-7*bs} ${by} C${60-9*bs} ${by-9*bs} ${60-6*bs} ${by-20*bs} 60 ${by-22*bs} C${60+6*bs} ${by-20*bs} ${60+9*bs} ${by-9*bs} ${60+7*bs} ${by} C60 ${by+2} ${60-7*bs} ${by+1} ${60-7*bs} ${by}Z" ${fO()}/>`;
+        u += face(60, by-10*bs, 0.55 + 0.35*cap((n-3)/5, 0, 1)); }
+      else { u += tulipBloomOpen(baseY+11); u += face(60, baseY-13, 1.0); }
+      return u; };
+    P.clover = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7; const cy = lerp(92, 78, gm), R0 = lerp(7, 15.5, gm), A = R0*0.116;
+      const k = n >= 9 ? 4 : 3, ph = k === 4 ? 45 : 90;
+      return stemLine(`M60 106 V${(cy+8).toFixed(1)}`, 3.2) + `<path d="${cloverPolar(60, cy, R0, A, k, ph)}" ${fO(FILL)}/>` + face(60, cy+1, lerp(0.55, 0.95, gm)); };
+    P.tomato = (n) => { if (n <= 2) return sprout(n-1); const gm = (n-3)/7;
+      const sw = lerp(2.6, 3.2, gm);
+      let u = stemLine('M60 106 C61 96 58 90 58 82 C57 74 60 68 60 60', sw) + stemLine('M58 84 C52 82 46 80 42 77', sw*0.85) + stemLine('M59 76 C66 76 73 74 78 71', sw*0.85);
+      const ls = lerp(0.55, 1.0, gm); u += armL(49, 97, ls) + armR(71, 96, ls);
+      const slots = [[60,54,11],[78,67,10],[42,73,10]]; // top, right, left
+      const numT = n >= 9 ? 3 : n >= 8 ? 2 : n >= 7 ? 1 : 0;
+      if (numT === 0) { if (n >= 6) u += slots.map(([x,y], i) => bloomG(simpleFlower(x, y, 1.0, WHITE), i)).join(''); u += face(60, 60, 0.6); }
+      else { for (let i = 0; i < 3; i++) { const [x,y,r] = slots[i]; if (i < numT) { const small = (n === 9 && i === 2); u += tomFruit(x, y, small ? r*0.55 : r, small ? 0.4 : 0.62); } else if (n >= 6) u += bloomG(simpleFlower(x, y, 1.0, WHITE), i); } }
+      return u; };
 
-    /* V1 tomato: green bud → big round tomatoes */
-    const P_tomato = (() => {
-      const tom = (x, y, r) =>
-        `<circle cx="${x}" cy="${y}" r="${r}" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
-        `<path d="M${x-3} ${y-r+1} q3 -4 6 0" fill="none" stroke="${STEM}" stroke-width="1.8" stroke-linecap="round"/>`;
-      const bud = (y, r) =>
-        `<circle cx="60" cy="${y}" r="${r}" fill="${LEAF}" stroke="${INK}" stroke-width="2.6"/>`;
-      return def([
-        stem('M60 106 V100', 3.2) + bud(96, 6),
-        stem('M60 106 V96',  3.2) + fleaf(60, 96, -46, 0.72) + fleaf(60, 96,  46, 0.72) + bud(89, 7),
-        stem('M60 106 V92',  3.3) + fleaf(60, 93, -48, 0.86) + fleaf(60, 93,  48, 0.86) + bud(83, 8),
-        stem('M60 106 V90',  3.4) + fleaf(60, 92, -50, 0.92) + fleaf(60, 92,  50, 0.92) + tom(60, 80, 9.5),
-        stem('M60 106 V88',  3.4) + fleaf(60, 91, -52, 0.96) + fleaf(60, 91,  52, 0.96) + tom(51, 82, 7.5) + tom(69, 82, 7.5) + tom(60, 73, 11),
-        stem('M60 106 V86',  3.4) + fleaf(60, 90, -54, 1.00) + fleaf(60, 90,  54, 1.00) + tom(50, 82, 7.5) + tom(70, 82, 7.5) + tom(60, 71, 12),
-      ], [[60,96,0.66],[60,89,0.74],[60,83,0.82],[60,80,0.90],[60,73,1.00],[60,71,1.05]]);
-    })();
+    /* ---- approved final designs (stage 10) ---- */
+    const F = {};
+    F.tulip = () => `<path d="M58.2 102 C57.4 90 57.4 76 58.2 66 L61.8 66 C62.6 76 62.6 90 61.8 102Z" ${fO()}/>` + armL(50, 92) + armR(70, 92) + `<path d="M46 54 C44 47 44 41 49 39 C53 38 55 42 56 46 C57 41 58 38 60 38 C62 38 63 41 64 46 C65 42 67 38 71 39 C76 41 76 47 74 54 C73 62 67 67 60 67 C53 67 47 62 46 54Z" ${fO()}/>` + face(60, 53, 1.15);
+    F.cactus = () => cactusBody + cactusFlower + face(60, 72, 1.25);
+    F.clover = () => stemLine('M60 106 V86', 3.2) + `<path d="${cloverPolar(60, 78, 15.5, 1.8, 4, 45)}" ${fO(FILL)}/>` + face(60, 79, 0.95);
+    F.monstera = () => monsteraLeaf + hole(49, 67) + hole(71, 67) + hole(60, 59) + `<path d="M45 106 C38 104 38 91.5 40.1 85 C42.2 77 43.6 76 45 76 C46.4 76 47.8 77 49.9 85 C52 91.5 52 104 45 106Z" ${fO()}/>` + face(60, 84, 1.0);
+    F.tomato = () => stemLine('M60 106 C61 96 58 90 58 82 C57 74 60 68 60 60', 3.2) + stemLine('M58 84 C52 82 46 80 42 77', 2.6) + stemLine('M59 76 C66 76 73 74 78 71', 2.6) + armL(49, 97) + armR(71, 96) + tomFruit(42, 73, 10) + tomFruit(78, 67, 10) + tomFruit(60, 54, 11);
+    F.bamboo = () => `<path d="M47 106 C46 96 46 64 47 54 C48 49 72 49 73 54 C74 64 74 96 73 106Z" ${fO()}/>` + `<path d="M45 70 Q60 73 75 70 M45 88 Q60 91 75 88" ${oO('opacity="0.45"')}/>` + `<path d="M66 49 C74 39 86 39 87 46 C82 53 72 53 66 50Z" ${fO(LEAF)}/>` + `<path d="M54 49 C46 39 34 39 33 46 C38 53 48 53 54 50Z" ${fO(LEAF)}/>` + `<path d="M60 47 C58 38 60 30 62 27 C64 32 63 41 60 47Z" ${fO(LEAF)}/>` + face(60, 81, 1.2);
+    F.cherry = () => `<path d="M53 106 C52 94 53 80 55 74 L65 74 C67 80 68 94 67 106Z" ${fO()}/>` + `<path d="${scallop(60, 50, 24, 11)}" ${fO()}/>` + blossom(56, 36, 0.72) + blossom(43, 44, 0.6) + blossom(72, 40, 0.66) + blossom(78, 52, 0.56) + blossom(46, 57, 0.5) + face(60, 58, 1.15);
+    F.sunflower = () => `<path d="M58.2 106 C57.4 96 57.4 76 58.2 66 L61.8 66 C62.6 76 62.6 96 61.8 106Z" ${fO(STEM)}/>` + armL(50, 90) + armR(70, 90) + petalRing(60, 52, 1.25, 12) + `<circle cx="60" cy="52" r="15" ${fO()}/>` + face(60, 52, 1.2);
+    F.mushroom = () => mushStem + mushCap + `<circle cx="46" cy="48" r="5.5" ${fO(WHITE)}/>` + `<circle cx="66" cy="44" r="6.5" ${fO(WHITE)}/>` + `<circle cx="77" cy="55" r="4.5" ${fO(WHITE)}/>` + face(60, 88, 1.05);
+    F.oldtree = () => oldTrunk + oldCrown + face(60, 86, 1.3);
 
-    /* V1 cherry tree: fat trunk grows, round blossom canopy appears + fills with flowers */
-    const P_cherry = (() => {
-      const trunk = (top, w) =>
-        `<path d="M${60-w} 106 Q${60-w*0.5} ${(top+106)/2} ${60-w*0.5} ${top} L${60+w*0.5} ${top} Q${60+w*0.5} ${(top+106)/2} ${60+w} 106 Z" fill="${FILL}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>`;
-      const canopy = (cy, r) =>
-        `<circle cx="60" cy="${cy}" r="${r}" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
-        [[0,0],[-0.5,-0.25],[0.5,-0.15],[-0.28,0.45],[0.34,0.4]].map(o => blossom(60 + o[0]*r, cy + o[1]*r, 0.62)).join('');
-      return def([
-        trunk(88, 5) + canopy(80, 12),
-        trunk(82, 6) + canopy(73, 15),
-        trunk(76, 7) + canopy(65, 18),
-        trunk(72, 8) + canopy(58, 21),
-        trunk(68, 9) + canopy(53, 23),
-        trunk(64,10) + canopy(49, 25),
-      ], [[60,98,0.52],[60,96,0.60],[60,94,0.66],[60,92,0.72],[60,90,0.78],[60,88,0.82]]);
-    })();
-
-    /* V1 sunflower: bud on stem → 10-petal head grows taller and brighter */
-    const P_sunflower = (() => {
-      const headF = (cy, s) =>
-        `<g transform="translate(60,${cy}) scale(${s})">`
-        + Array.from({length:10}, (_, i) =>
-          `<ellipse cx="0" cy="-17" rx="5.6" ry="9" fill="${FILL}" stroke="${INK}" stroke-width="2.2" transform="rotate(${i*36})"/>`
-        ).join('')
-        + `<circle r="15" fill="${LEAF}" stroke="${INK}" stroke-width="2.8"/></g>`;
-      return def([
-        stem('M60 106 V99', 3.4) + bulb(95, 5, 5),
-        stem('M60 106 V92', 3.5) + fleaf(60, 95, 56, 0.72) + bulb(87, 7, 7),
-        stem('M60 106 V82', 3.6) + fleaf(60, 92, 58, 0.85) + headF(73, 0.62),
-        stem('M60 106 V72', 3.7) + fleaf(60, 90, 60, 0.95) + headF(62, 0.82),
-        stem('M60 106 V64', 3.8) + fleaf(60, 88, 60, 1.00) + headF(54, 0.95),
-        stem('M60 106 V60', 3.8) + fleaf(60, 86, 62, 1.00) + headF(50, 1.05),
-      ], [[60,95,0.55],[60,87,0.66],[60,73,0.78],[60,62,1.00],[60,54,1.20],[60,50,1.35]]);
-    })();
-
-    /* V1 mushroom: one big chunky cap + stout stem; small satellites appear */
-    const P_mushroom = (() => {
-      const mush = (cx, s) =>
-        `<g transform="translate(${cx},106) scale(${s})">` +
-        `<rect x="-9" y="-26" width="18" height="26" rx="9" fill="hsl(220 10% 90%)" stroke="${INK}" stroke-width="2.6"/>` +
-        `<path d="M-28 -24 Q-28 -56 0 -56 Q28 -56 28 -24 Q0 -14 -28 -24Z" fill="${FILL}" stroke="${INK}" stroke-width="2.6"/>` +
-        `<circle cx="-14" cy="-36" r="3.6" fill="#fff" stroke="${INK}" stroke-width="1.4"/>` +
-        `<circle cx="11"  cy="-40" r="2.8" fill="#fff" stroke="${INK}" stroke-width="1.4"/></g>`;
-      return def([
-        mush(60, 0.50),
-        mush(60, 0.72),
-        mush(60, 0.95),
-        mush(57, 1.05) + mush(76, 0.58),
-        mush(56, 1.12) + mush(77, 0.66) + mush(44, 0.50),
-        mush(56, 1.18) + mush(77, 0.72) + mush(44, 0.56),
-      ], [[60,90,0.50],[60,84,0.72],[60,78,0.95],[57,76,1.00],[56,74,1.05],[56,72,1.10]]);
-    })();
+    /* dispatch: stages 1..9 grow, stage 10 = approved final (n is clamped defensively) */
+    function draw(id, n) { n = Math.max(1, Math.min(10, Math.floor(n) || 1)); return n >= 10 ? F[id]() : P[id](n); }
 
     const PLANTS = [
-      { id: 'tulip',     name: '튤립',       ...P_tulip },
-      { id: 'cactus',    name: '선인장',     ...P_cactus },
-      { id: 'clover',    name: '클로버',     ...P_clover },
-      { id: 'monstera',  name: '몬스테라',   ...P_monstera },
-      { id: 'tomato',    name: '토마토',     ...P_tomato },
-      { id: 'bamboo',    name: '대나무',     ...P_bamboo },
-      { id: 'cherry',    name: '벚꽃나무',   ...P_cherry },
-      { id: 'sunflower', name: '해바라기',   ...P_sunflower },
-      { id: 'mushroom',  name: '버섯',       ...P_mushroom },
-      { id: 'oldtree',   name: '고목',       ...P_oldtree },
+      { id: 'tulip',     name: '튤립' },
+      { id: 'cactus',    name: '선인장' },
+      { id: 'clover',    name: '클로버' },
+      { id: 'monstera',  name: '몬스테라' },
+      { id: 'tomato',    name: '토마토' },
+      { id: 'bamboo',    name: '대나무' },
+      { id: 'cherry',    name: '벚꽃나무' },
+      { id: 'sunflower', name: '해바라기' },
+      { id: 'mushroom',  name: '버섯' },
+      { id: 'oldtree',   name: '고목' },
     ];
 
     const TOTAL = PLANTS.length;
-    const STAGE_THRESHOLDS = [0, 2, 5, 9, 15, 22, 30]; // water count → stage 1..7
+    const STAGE_THRESHOLDS = [0, 2, 4, 7, 10, 13, 17, 21, 25, 30]; // water count → stage 1..10
     const MAX_WATER = 30;
+    const MAX_STAGE = STAGE_THRESHOLDS.length; // 10
 
     function stageOf(w) {
       let s = 1;
       for (let i = 0; i < STAGE_THRESHOLDS.length; i++) if (w >= STAGE_THRESHOLDS[i]) s = i + 1;
-      return Math.min(7, s);
+      return Math.min(MAX_STAGE, s);
     }
 
     /* ============ State ============ */
@@ -635,16 +629,15 @@
 
     /* ============ Build SVG ============ */
     function buildPlantSVG(plantId, stage, wilted, svgId = 'plantSvg') {
-      const plant = PLANTS.find(p => p.id === plantId);
-      const body = (plant.stages[stage - 1] || '');
-      const hp = plant.head[stage - 1];
-      const faceSvg = hp ? face(hp[0], hp[1], hp[2], wilted ? 'sad' : 'happy') : '';
+      FACE_MOOD = wilted ? 'sad' : 'happy';
+      const body = draw(plantId, stage); // faces are baked in and follow FACE_MOOD
+      FACE_MOOD = 'happy';
       const idAttr = svgId ? ` id="${svgId}"` : '';
       return `<svg class="plant-svg ${wilted ? 'wilted' : ''}"${idAttr} viewBox="0 0 120 150"
                 preserveAspectRatio="xMidYMax meet">
         <g filter="url(#rough)">
           ${POT_BACK}
-          <g class="plant-body">${body}${faceSvg}</g>
+          <g class="plant-body">${body}</g>
           ${POT_FRONT}
           ${DROP}
         </g>
@@ -656,7 +649,6 @@
     const plantStage = document.getElementById('plantStage');
     const plantName = document.getElementById('plantName');
     const plantMeta = document.getElementById('plantMeta');
-    const progressFill = document.getElementById('progressFill');
     const waterBtn = document.getElementById('waterBtn');
     const waterBtnLabel = document.getElementById('waterBtnLabel');
 
@@ -666,10 +658,6 @@
     function wateredToday() {
       return state.lastWater === todayStr();
     }
-    // streak is broken the moment a full day is missed (gap >= 2)
-    function effectiveStreak() {
-      return daysBetween(state.lastWater, todayStr()) >= 2 ? 0 : state.streak;
-    }
 
     function render() {
       const plant = PLANTS.find(p => p.id === state.current);
@@ -677,23 +665,16 @@
       const stage = stageOf(w);
       const wilted = isWilted() && w > 0;
       const done = w >= MAX_WATER;
-      const streak = effectiveStreak();
 
       plantStage.innerHTML = buildPlantSVG(state.current, stage, wilted);
 
       plantName.textContent = plant.name;
-      plantMeta.textContent = done
-        ? '🏆 완성!'
-        : `${stage}단계 · ${w}/${MAX_WATER}${streak > 0 ? ' · 🔥' + streak + '일' : ''}`;
-      progressFill.style.width = Math.min(100, (w / MAX_WATER) * 100) + '%';
+      plantMeta.textContent = done ? '🏆 완성!' : ''; // no numeric progress — keep growth a surprise
 
-      if (done) {
-        // completed: button guides to picking a new plant (no more watering)
-        waterBtn.classList.remove('done');
-        waterBtnLabel.textContent = '새 식물 선택';
-      } else if (wateredToday()) {
+      // completed plants stay waterable daily (new plant is chosen via the collection panel)
+      if (wateredToday()) {
         waterBtn.classList.add('done');
-        waterBtnLabel.textContent = '오늘 완료 ✓';
+        waterBtnLabel.textContent = '오늘 완료';
       } else {
         waterBtn.classList.remove('done');
         waterBtnLabel.textContent = wilted ? '물주기 (시듦)' : '물주기';
@@ -703,7 +684,8 @@
     /* ============ Watering ============ */
     function water() {
       if (wateredToday()) return;
-      if (state.water[state.current] >= MAX_WATER) return; // already complete
+      // completed plants (30/30) can still be watered daily — count stays capped at MAX_WATER,
+      // so the plant keeps its final form while daily care/streak continues.
       const today = todayStr();
       const gap = daysBetween(state.lastWater, today);
       state.streak = (gap === 1) ? state.streak + 1 : 1;
@@ -721,11 +703,11 @@
         svg.classList.remove('wilted');   // reviving look
         svg.classList.add('watering');
       }
-      setTimeout(render, 720);
+      setTimeout(render, 1250); // let the droplets land + ripple finish before re-rendering (anim ≈1.16s)
 
       if (before < MAX_WATER && state.water[id] >= MAX_WATER) {
         // only celebrate if this plant is still complete & still selected
-        setTimeout(() => { if (state.current === id && state.water[id] >= MAX_WATER) celebrate(); }, 760);
+        setTimeout(() => { if (state.current === id && state.water[id] >= MAX_WATER) celebrate(); }, 1300);
       }
     }
 
@@ -735,8 +717,7 @@
 
     waterBtn.addEventListener('click', e => {
       e.stopPropagation();
-      if (state.water[state.current] >= MAX_WATER) { openCollection(false); return; }
-      water();
+      water(); // completed plants are still waterable; new plant is chosen via the collection panel
     });
 
     /* ============ Collection gallery ============ */
@@ -760,17 +741,25 @@
         const isCurrent = p.id === state.current;
         const slot = document.createElement('div');
         slot.className = 'slot' + (done ? ' done' : (started ? '' : ' locked')) + (isCurrent ? ' current' : '');
+        // keyboard-accessible: behaves like a button
+        slot.setAttribute('role', 'button');
+        slot.setAttribute('tabindex', '0');
+        slot.setAttribute('aria-label', `${p.name}${done ? ' · 완성' : (started ? ' · 키우는 중' : '')}`);
         // show final form if done, else current grown stage (or silhouette final stage if untouched)
-        const showStage = done ? 7 : (started ? stageOf(w) : 7);
+        const showStage = done ? MAX_STAGE : (started ? stageOf(w) : MAX_STAGE);
         slot.innerHTML = buildPlantSVG(p.id, showStage, false, '')
-          + `<span class="badge">${done ? '✓' : (started ? stageOf(w) + '단계' : '')}</span>`
+          + `<span class="badge">${done ? '✓' : ''}</span>`
           + `<span class="slot-name">${p.name}</span>`;
-        slot.addEventListener('click', e => {
+        const pick = e => {
           e.stopPropagation();
           state.current = p.id;
           save();
           closeCollection();
           render();
+        };
+        slot.addEventListener('click', pick);
+        slot.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(e); }
         });
         galleryGrid.appendChild(slot);
       });
