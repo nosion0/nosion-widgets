@@ -726,6 +726,8 @@
         widgetEl.style.left = wr.left + 'px';
         widgetEl.style.top = wr.top + 'px';
         widgetEl.style.transform = 'none';
+        // fixed left/top에 translate가 반영됐으므로 offset을 0으로 정렬(드래그 stale offset 방지)
+        offsetX = 0; offsetY = 0;
       }
       startLeft = parseFloat(widgetEl.style.left) || 0;
       startTop = parseFloat(widgetEl.style.top) || 0;
@@ -743,7 +745,7 @@
       }
       if (dir === 'bottom' || dir === 'top') {
         const delta = dir === 'bottom' ? dy : -dy;
-        cardHeight = Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta);
+        cardHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta));
         const actual = cardHeight - resizeDrag.startHeight;
         if (widgetEl.style.position === 'fixed') widgetEl.style.top = (startTop - actual / 2) + 'px';
       }
