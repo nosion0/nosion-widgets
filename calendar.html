@@ -53,7 +53,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.75rem 1.75rem 1.5rem;
-      width: 360px;
+      width: 300px;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -70,7 +70,7 @@
       flex-direction: column;
       gap: 1.25rem;
       width: 100%;
-      max-width: 304px;
+      max-width: 244px;
     }
 
     .card.dragging { cursor: grabbing; }
@@ -103,7 +103,7 @@
       border: none;
       background: transparent;
       border-radius: 0.4rem;
-      color: var(--muted-foreground);
+      color: hsl(220 9% 75%);   /* 연한 회색 화살표 */
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -112,7 +112,7 @@
       transition: background var(--transition), color var(--transition);
     }
 
-    .nav-btn:hover { background: var(--muted); color: var(--foreground); }
+    .nav-btn:hover { background: var(--muted); color: var(--foreground); }  /* 오버 시 진하게 */
     .nav-btn svg { width: 14px; height: 14px; stroke-width: 2; }
 
     /* === Day of week row === */
@@ -479,7 +479,7 @@
     /* ===== Resize reset ===== */
     document.getElementById('resizeResetBtn').addEventListener('click', () => {
       const card = document.getElementById('card');
-      card.style.width  = '360px';
+      card.style.width  = '300px';
       card.style.height = '';
       try { localStorage.removeItem(KEY_SIZE); } catch (e) {}
     });
