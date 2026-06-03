@@ -142,8 +142,9 @@
       const yStart = new Date(y, 0, 1).getTime();
       const yEnd = new Date(y + 1, 0, 1).getTime();
       const yPct = (now.getTime() - yStart) / (yEnd - yStart);
-      const totalDays = Math.round((yEnd - yStart) / 86400000);
-      const dayOfYear = Math.floor((now.getTime() - yStart) / 86400000) + 1;
+      // 일수는 달력 날짜 기반(UTC 자정 차)으로 계산해 DST 영향 제거
+      const totalDays = Math.round((Date.UTC(y + 1, 0, 1) - Date.UTC(y, 0, 1)) / 86400000);
+      const dayOfYear = Math.round((Date.UTC(y, now.getMonth(), now.getDate()) - Date.UTC(y, 0, 1)) / 86400000) + 1;
       const daysLeft = totalDays - dayOfYear;
 
       // 이번 달
@@ -153,7 +154,7 @@
 
       // 오늘 (하루 중 경과 시간)
       const dStart = new Date(y, now.getMonth(), now.getDate()).getTime();
-      const dPct = (now.getTime() - dStart) / 86400000;
+      const dPct = Math.min(1, Math.max(0, (now.getTime() - dStart) / 86400000));
 
       document.getElementById('yearCaption').textContent = `${y}년`;
       document.getElementById('yearPct').textContent = (yPct * 100).toFixed(1) + '%';

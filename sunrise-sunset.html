@@ -270,7 +270,6 @@
     const citySelectorEl = document.getElementById('citySelector');
     const cityDropdownEl = document.getElementById('cityDropdown');
     const footerDateEl = document.getElementById('footerDate');
-    const WEEKDAY = ['일','월','화','수','목','금','토'];
 
     function fmtTime(date, tz) {
       if (!date) return '—';
@@ -330,7 +329,11 @@
       }
 
       citySelectorEl.innerHTML = (currentCity.auto ? PIN_SVG : '') + escapeHtml(currentCity.name);
-      footerDateEl.textContent = `${now.getMonth() + 1}월 ${now.getDate()}일 (${WEEKDAY[now.getDay()]})`;
+      // 푸터 날짜도 선택 도시 시간대 기준
+      const fm = +new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'numeric' }).format(now);
+      const fd = +new Intl.DateTimeFormat('en-US', { timeZone: tz, day: 'numeric' }).format(now);
+      const fw = new Intl.DateTimeFormat('ko-KR', { timeZone: tz, weekday: 'short' }).format(now);
+      footerDateEl.textContent = `${fm}월 ${fd}일 (${fw})`;
     }
 
     /* ===== 드롭다운 ===== */
