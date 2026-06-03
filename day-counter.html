@@ -132,6 +132,7 @@
       position: relative;
       display: flex;
       flex-direction: column;
+      justify-content: safe center;
       align-items: center;
       gap: 1.5rem;
       overflow-x: hidden;
@@ -181,8 +182,8 @@
     .dot:hover       { transform: scale(1.25); }
     .dot.today       { background: var(--day-today); }
     .dot.future      { background: var(--day-future); }
-    .dot.weekend     { background: var(--day-weekend); }
-    .dot.future.weekend { background: var(--day-weekend); }
+    .dot.weekend     { background: var(--day-passed); }   /* 지나간 휴일도 검정(지난날과 동일) */
+    .dot.future.weekend { background: var(--day-weekend); } /* 다가올 휴일만 연한 회색 */
 
     /* ===== Year view ===== */
     .year-sections {

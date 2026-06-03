@@ -59,8 +59,18 @@
       box-shadow: none;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: safe center;
+      align-items: safe center;
       overflow: hidden;
+    }
+    /* inner holder keeps content fixed-width; resizing only grows the surrounding space */
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 296px;
+      min-height: 156px;
     }
 
     .card.dragging { cursor: grabbing; }
@@ -154,7 +164,7 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
-      opacity: 0.25;
+      opacity: 0;
       transition: opacity var(--transition);
       padding-top: 0.25rem;
     }
@@ -264,6 +274,7 @@
 <body>
   <div class="widget-wrapper" id="widget">
     <div class="card" id="card">
+      <div class="card-body">
 
       <!-- 명언 본문 -->
       <div class="quote-body">
@@ -284,6 +295,8 @@
             <polyline points="9 18 15 12 9 6"/>
           </svg>
         </button>
+      </div>
+
       </div>
 
       <!-- 4방향 리사이즈 핸들 -->

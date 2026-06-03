@@ -66,6 +66,7 @@
       box-shadow: none;
       display: flex;
       flex-direction: column;
+      justify-content: safe center;
       box-sizing: border-box;
       overflow: hidden;
       min-width: 0;
@@ -296,7 +297,7 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
-      opacity: 0.25;
+      opacity: 0;
       transition: opacity var(--transition);
       padding-top: 0.25rem;
     }
@@ -435,11 +436,23 @@
     }
     .handle-right .bar { width: 1px; height: 36px; }
     .handle-right:hover .bar { width: 3px; }
+      /* unify-resize: 내용은 고정폭, 카드를 키우면 바깥 여백만 늘어남 */
+    .card {
+      align-items: safe center;
+    }
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: inherit;
+      width: 100%;
+      max-width: 296px;
+    }
   </style>
 </head>
 <body>
   <div class="widget-wrapper" id="widget">
     <div class="card" id="card">
+      <div class="card-body">
 
       <!-- 달 시각화 + 위상 이름 (카드의 주인공) -->
       <div class="moon-display">
@@ -508,6 +521,8 @@
       </div>
 
       <!-- 리사이즈 핸들 -->
+      </div>
+
       <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
       <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
       <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
