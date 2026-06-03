@@ -238,6 +238,17 @@
       margin: 0 0.25rem;
       opacity: 0.6;
     }
+    .pin {
+      width: 0.85em; height: 0.85em;
+      display: inline-block;
+      vertical-align: -1.5px;
+      margin-right: 3px;
+      stroke: var(--foreground);
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
 
     /* 드롭다운 메뉴 — 푸터 위쪽으로 떠오름 */
     .city-dropdown {
@@ -777,29 +788,66 @@
     // 위상은 전 세계 동일하고, 월출·월몰만 위치/타임존에 따라 달라짐
     // ※ 미국·호주처럼 여러 타임존에 걸친 나라는 중심부 기준 대표 tz 사용
     const COUNTRIES = [
-      { name: '대한민국', lat: 36.5,  lng: 127.8,  tz: 'Asia/Seoul' },
-      { name: '일본',     lat: 36.2,  lng: 138.3,  tz: 'Asia/Tokyo' },
-      { name: '중국',     lat: 35.9,  lng: 104.2,  tz: 'Asia/Shanghai' },
-      { name: '미국',     lat: 39.8,  lng: -98.6,  tz: 'America/Chicago' },
-      { name: '영국',     lat: 54.0,  lng:  -2.0,  tz: 'Europe/London' },
-      { name: '프랑스',   lat: 46.6,  lng:   2.4,  tz: 'Europe/Paris' },
-      { name: '독일',     lat: 51.2,  lng:  10.4,  tz: 'Europe/Berlin' },
-      { name: '호주',     lat: -25.7, lng: 134.5,  tz: 'Australia/Darwin' }
+      { name: '대한민국', code: 'KR', lat: 36.5,  lng: 127.8,  tz: 'Asia/Seoul' },
+      { name: '일본',     code: 'JP', lat: 36.2,  lng: 138.3,  tz: 'Asia/Tokyo' },
+      { name: '중국',     code: 'CN', lat: 35.9,  lng: 104.2,  tz: 'Asia/Shanghai' },
+      { name: '미국',     code: 'US', lat: 39.8,  lng: -98.6,  tz: 'America/Chicago' },
+      { name: '영국',     code: 'GB', lat: 54.0,  lng:  -2.0,  tz: 'Europe/London' },
+      { name: '프랑스',   code: 'FR', lat: 46.6,  lng:   2.4,  tz: 'Europe/Paris' },
+      { name: '독일',     code: 'DE', lat: 51.2,  lng:  10.4,  tz: 'Europe/Berlin' },
+      { name: '호주',     code: 'AU', lat: -25.7, lng: 134.5,  tz: 'Australia/Darwin' }
     ];
     const CITY_KEY = 'nosion-moon-phase-country-v1';
 
-    // 저장된 나라 복원 (없으면 대한민국 기본)
-    let currentCountry = COUNTRIES[0];
-    try {
-      const saved = localStorage.getItem(CITY_KEY);
-      if (saved) {
-        const found = COUNTRIES.find(c => c.name === saved);
-        if (found) currentCountry = found;
-      }
-    } catch (e) {}
+    // 검정 라인 핀 아이콘 + HTML 이스케이프
+    const PIN_SVG = '<svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>';
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
 
-    function saveCity() {
-      try { localStorage.setItem(CITY_KEY, currentCountry.name); } catch (e) {}
+    // manualName: 사용자가 직접 고른 나라명(없으면 자동 모드)
+    let manualName = null;
+    try { manualName = localStorage.getItem(CITY_KEY); } catch (e) {}
+    let autoCountry = null;             // IP로 감지한 나라
+    let currentCountry = COUNTRIES[0];  // 실제 적용 나라
+
+    function resolveActive() {
+      if (manualName) {
+        const f = COUNTRIES.find(c => c.name === manualName);
+        if (f) return f;
+      }
+      return autoCountry || COUNTRIES[0];
+    }
+    function applyActive() {
+      currentCountry = resolveActive();
+      buildCityDropdown();
+      update();
+    }
+
+    // 외부 fetch 타임아웃
+    function fetchJSON(url, ms) {
+      let ctrl = null, to = null;
+      try { ctrl = new AbortController(); to = setTimeout(() => ctrl.abort(), ms || 4500); } catch (e) {}
+      return fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+        .then(r => (r && r.ok) ? r.json() : null)
+        .then(d => { if (to) clearTimeout(to); return d; })
+        .catch(() => { if (to) clearTimeout(to); return null; });
+    }
+    // 좌표 → 한글 나라명 (BigDataCloud)
+    function reverseCountryKo(lat, lng) {
+      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ko`;
+      return fetchJSON(url, 4500).then(d => (d && d.countryName) ? d.countryName : null);
+    }
+    // IP 기반 나라 자동 감지 (실패 시 null). 목록에 있으면 그 나라, 없으면 감지 좌표+한글 나라명.
+    function getAutoCountry() {
+      return fetchJSON('https://ipapi.co/json/', 4500).then(d => {
+        if (!d || typeof d.latitude !== 'number' || typeof d.longitude !== 'number') return null;
+        const code = (d.country_code || d.country || '').toUpperCase();
+        const known = COUNTRIES.find(c => c.code === code);
+        if (known) return Object.assign({}, known, { auto: true });
+        const base = { name: d.country_name || '현재 위치', lat: d.latitude, lng: d.longitude, tz: d.timezone || undefined, auto: true };
+        return reverseCountryKo(base.lat, base.lng).then(ko => { if (ko) base.name = ko; return base; }).catch(() => base);
+      });
     }
 
     const phaseNameEl = document.getElementById('phaseName');
@@ -944,28 +992,45 @@
       } else {
         cityWrapEl.style.display = '';
         demoTextEl.style.display = 'none';
-        citySelectorEl.textContent = currentCountry.name;
+        citySelectorEl.innerHTML = (currentCountry.auto ? PIN_SVG : '') + escapeHtml(currentCountry.name);
         footerDateEl.textContent = formatDate(today, currentCountry.tz);
       }
     }
 
-    /* ----- 도시 선택 드롭다운 ----- */
+    /* ----- 나라 선택 드롭다운 ----- */
     function buildCityDropdown() {
       cityDropdownEl.innerHTML = '';
-      COUNTRIES.forEach(city => {
+      // 자동(현재 위치) 옵션 — 전체 폭
+      const autoBtn = document.createElement('button');
+      autoBtn.className = 'city-option';
+      autoBtn.type = 'button';
+      autoBtn.innerHTML = PIN_SVG + '현재 위치';
+      autoBtn.setAttribute('role', 'menuitem');
+      autoBtn.style.gridColumn = '1 / -1';
+      if (!manualName) autoBtn.classList.add('selected');
+      autoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        manualName = null;
+        try { localStorage.removeItem(CITY_KEY); } catch (er) {}
+        closeCityDropdown();
+        applyActive();
+        if (!autoCountry) getAutoCountry().then(loc => { if (loc && !manualName) { autoCountry = loc; applyActive(); } });
+      });
+      cityDropdownEl.appendChild(autoBtn);
+      // 나라 목록
+      COUNTRIES.forEach(country => {
         const btn = document.createElement('button');
         btn.className = 'city-option';
         btn.type = 'button';
-        btn.textContent = city.name;
+        btn.textContent = country.name;
         btn.setAttribute('role', 'menuitem');
-        if (city.name === currentCountry.name) btn.classList.add('selected');
+        if (manualName === country.name) btn.classList.add('selected');
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          currentCountry = city;
-          saveCity();
+          manualName = country.name;
+          try { localStorage.setItem(CITY_KEY, country.name); } catch (er) {}
           closeCityDropdown();
-          buildCityDropdown(); // selected 마크 갱신
-          update();            // 위치 변경 → 월출/월몰 다시 계산
+          applyActive();   // 위치 변경 → 월출/월몰 다시 계산
         });
         cityDropdownEl.appendChild(btn);
       });
@@ -1002,8 +1067,10 @@
       if (e.key === 'Escape') closeCityDropdown();
     });
 
-    buildCityDropdown();
-    update();
+    applyActive();                 // 즉시 표시 (수동값 또는 기본 대한민국)
+    if (!manualName) {             // 자동 모드면 IP로 나라 감지 후 갱신
+      getAutoCountry().then(loc => { if (loc && !manualName) { autoCountry = loc; applyActive(); } });
+    }
     // 자정 넘어가면 "오늘"이 바뀌므로 매 시간 체크 (날짜 변경 감지용)
     setInterval(update, 3600000);
 

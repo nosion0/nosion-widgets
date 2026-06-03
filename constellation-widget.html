@@ -227,6 +227,17 @@
     .city-selector:hover { color: var(--foreground); background: var(--muted); }
     .city-selector.open { color: var(--foreground); }
     .city-sep { margin: 0 0.25rem; opacity: 0.6; }
+    .pin {
+      width: 0.85em; height: 0.85em;
+      display: inline-block;
+      vertical-align: -1.5px;
+      margin-right: 3px;
+      stroke: var(--foreground);
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
 
     .city-dropdown {
       position: absolute;
@@ -433,6 +444,12 @@
     'use strict';
     const rad = Math.PI / 180;
 
+    // 검정 라인 핀 아이콘 + HTML 이스케이프
+    const PIN_SVG = '<svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>';
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
     /* ============================================
        별자리 데이터
        ra: 적경(시간 0~24), dec: 적위(도)
@@ -561,18 +578,27 @@
       update();
     }
 
-    // IP 기반 위치 자동 감지 (권한 팝업 없음, 실패 시 null)
-    function fetchIPLocation() {
+    // 외부 fetch에 타임아웃 적용
+    function fetchJSON(url, ms) {
       let ctrl = null, to = null;
-      try { ctrl = new AbortController(); to = setTimeout(() => ctrl.abort(), 4500); } catch (e) {}
-      return fetch('https://ipapi.co/json/', ctrl ? { signal: ctrl.signal } : undefined)
+      try { ctrl = new AbortController(); to = setTimeout(() => ctrl.abort(), ms || 4500); } catch (e) {}
+      return fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
         .then(r => (r && r.ok) ? r.json() : null)
-        .then(d => {
-          if (to) clearTimeout(to);
-          if (!d || typeof d.latitude !== 'number' || typeof d.longitude !== 'number') return null;
-          return { name: d.city || '현재 위치', lat: d.latitude, lng: d.longitude, tz: d.timezone || undefined, auto: true };
-        })
+        .then(d => { if (to) clearTimeout(to); return d; })
         .catch(() => { if (to) clearTimeout(to); return null; });
+    }
+    // 좌표 → 한글 지명 (권한 불필요, BigDataCloud)
+    function reverseKo(lat, lng) {
+      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ko`;
+      return fetchJSON(url, 4500).then(d => d ? (d.city || d.locality || d.principalSubdivision || null) : null);
+    }
+    // IP 기반 위치 자동 감지 + 한글 지명 (권한 팝업 없음, 실패 시 null)
+    function getAutoLocation() {
+      return fetchJSON('https://ipapi.co/json/', 4500).then(d => {
+        if (!d || typeof d.latitude !== 'number' || typeof d.longitude !== 'number') return null;
+        const base = { name: d.city || '현재 위치', lat: d.latitude, lng: d.longitude, tz: d.timezone || undefined, auto: true };
+        return reverseKo(base.lat, base.lng).then(ko => { if (ko) base.name = ko; return base; }).catch(() => base);
+      });
     }
 
     /* ============================================
@@ -657,7 +683,7 @@
       constStarEl.textContent = c.star;
       constAltEl.textContent = `약 ${altitude}°`;
 
-      citySelectorEl.textContent = (currentCity.auto ? '📍 ' : '') + currentCity.name;
+      citySelectorEl.innerHTML = (currentCity.auto ? PIN_SVG : '') + escapeHtml(currentCity.name);
       footerTimeEl.textContent = formatLocalTime(now, currentCity.tz);
     }
 
@@ -668,7 +694,7 @@
       const autoBtn = document.createElement('button');
       autoBtn.className = 'city-option';
       autoBtn.type = 'button';
-      autoBtn.textContent = '📍 현재 위치';
+      autoBtn.innerHTML = PIN_SVG + '현재 위치';
       autoBtn.setAttribute('role', 'menuitem');
       autoBtn.style.gridColumn = '1 / -1';
       if (!manualName) autoBtn.classList.add('selected');
@@ -678,7 +704,7 @@
         try { localStorage.removeItem(CITY_KEY); } catch (er) {}
         closeCityDropdown();
         applyActive();
-        if (!autoLoc) fetchIPLocation().then(loc => { if (loc && !manualName) { autoLoc = loc; applyActive(); } });
+        if (!autoLoc) getAutoLocation().then(loc => { if (loc && !manualName) { autoLoc = loc; applyActive(); } });
       });
       cityDropdownEl.appendChild(autoBtn);
       // 도시 목록
@@ -721,7 +747,7 @@
 
     applyActive();                 // 즉시 표시 (수동값 또는 기본 서울)
     if (!manualName) {             // 자동 모드면 IP로 위치 감지 후 갱신
-      fetchIPLocation().then(loc => { if (loc && !manualName) { autoLoc = loc; applyActive(); } });
+      getAutoLocation().then(loc => { if (loc && !manualName) { autoLoc = loc; applyActive(); } });
     }
     // 1분마다 갱신 (시간이 지나면 머리 위 별자리도 서서히 바뀜)
     setInterval(update, 60 * 1000);
