@@ -293,8 +293,8 @@
 
     .fc-icon { font-size: 1rem; line-height: 0; user-select: none; }
     .weather-icon svg {
-      width: 52px; height: 52px; display: block; overflow: visible;
-      stroke: var(--foreground); stroke-width: 1.5; fill: none;
+      width: 70px; height: 70px; display: block; overflow: visible;
+      stroke: var(--foreground); stroke-width: 1.4; fill: none;
       stroke-linecap: round; stroke-linejoin: round;
     }
     .fc-icon svg {
@@ -445,10 +445,6 @@
           <span class="detail-label">습도</span>
         </div>
         <div class="detail-item">
-          <span class="detail-value" id="windSpeed">—m/s</span>
-          <span class="detail-label">풍속</span>
-        </div>
-        <div class="detail-item">
           <span class="detail-value" id="tempRange">—/—°</span>
           <span class="detail-label">최고/최저</span>
         </div>
@@ -574,9 +570,9 @@
         // 2) 현재 날씨 + 6일 일별 예보
         const url = 'https://api.open-meteo.com/v1/forecast'
           + `?latitude=${latitude}&longitude=${longitude}`
-          + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m'
+          + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code'
           + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
-          + '&timezone=auto&forecast_days=6&wind_speed_unit=ms';
+          + '&timezone=auto&forecast_days=6';
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -593,7 +589,6 @@
       const temp  = Math.round(c.temperature_2m);
       const feels = Math.round(c.apparent_temperature);
       const hum   = Math.round(c.relative_humidity_2m);
-      const wind  = Number(c.wind_speed_10m).toFixed(1);
       const code  = c.weather_code;
       const now   = new Date();
       const isDay = now.getHours() >= 6 && now.getHours() < 19;
@@ -607,7 +602,6 @@
       document.getElementById('tempFeels').textContent    = `체감 ${feels}°`;
       document.getElementById('weatherIcon').innerHTML     = wmoIcon(code, isDay);
       document.getElementById('humidity').textContent     = `${hum}%`;
-      document.getElementById('windSpeed').textContent    = `${wind}m/s`;
       document.getElementById('tempRange').textContent    = `${high}/${low}°`;
 
       const { icon, text } = outfitAdvice(temp);
@@ -620,7 +614,7 @@
       list.innerHTML = '';
       for (let i = 1; i <= 5 && i < d.time.length; i++) {
         const dt   = new Date(d.time[i] + 'T00:00:00');
-        const day  = DAY_KO[dt.getDay()] + '요일';
+        const day  = DAY_KO[dt.getDay()];
         const icon = wmoIcon(d.weather_code[i], true);
         const desc = wmoDesc(d.weather_code[i]);
         const hi   = Math.round(d.temperature_2m_max[i]);
