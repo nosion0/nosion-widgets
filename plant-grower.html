@@ -125,6 +125,7 @@
       align-items: center;
       justify-content: center;
       min-height: 0;
+      padding-bottom: 2rem; /* lift the plant up so the pot isn't flush with the bottom */
     }
 
     .plant-svg {
@@ -233,45 +234,31 @@
       letter-spacing: 0.01em;
     }
 
-    /* progress bar */
-    .progress {
-      width: 120px;
-      height: 4px;
-      border-radius: 99px;
-      background: var(--muted);
-      overflow: hidden;
-      margin-top: 0.35rem;
-    }
-    .progress-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 99px;
-      transition: width 0.4s ease;
-    }
-
     .water-btn {
       display: flex;
       align-items: center;
       gap: 0.4rem;
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      background: var(--foreground);
-      color: hsl(0 0% 100%);
+      background: hsl(0 0% 100%);
+      color: var(--foreground);
       padding: 0.5rem 1.1rem;
       font-size: 0.875rem;
       font-weight: 500;
       font-family: inherit;
       cursor: pointer;
-      transition: opacity 0.15s ease, background 0.15s ease;
+      transition: background 0.15s ease;
     }
-    .water-btn:hover { opacity: 0.88; }
+    .water-btn:hover { background: var(--muted); }
+    /* watered today: still a white button, but the droplet icon fills in */
     .water-btn.done {
-      background: hsl(0 0% 100%);
       color: var(--muted-foreground);
       cursor: default;
     }
-    .water-btn.done:hover { opacity: 1; }
+    .water-btn.done:hover { background: hsl(0 0% 100%); }
     .water-btn svg { width: 15px; height: 15px; }
+    .water-btn svg path { fill: none; transition: fill 0.2s ease; }
+    .water-btn.done svg path { fill: currentColor; }
 
     /* ===== Collection gallery ===== */
     .gallery {
@@ -392,7 +379,7 @@
     <div class="card" id="card">
       <div class="info-top">
         <div class="plant-name" id="plantName">새싹</div>
-        <div class="plant-meta" id="plantMeta">1단계 · 0/30</div>
+        <div class="plant-meta" id="plantMeta"></div>
       </div>
 
       <div class="plant-stage" id="plantStage"></div>
@@ -405,7 +392,6 @@
           </svg>
           <span id="waterBtnLabel">물주기</span>
         </button>
-        <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
       </div>
 
       <!-- Collection gallery -->
@@ -663,7 +649,6 @@
     const plantStage = document.getElementById('plantStage');
     const plantName = document.getElementById('plantName');
     const plantMeta = document.getElementById('plantMeta');
-    const progressFill = document.getElementById('progressFill');
     const waterBtn = document.getElementById('waterBtn');
     const waterBtnLabel = document.getElementById('waterBtnLabel');
 
@@ -684,23 +669,16 @@
       const stage = stageOf(w);
       const wilted = isWilted() && w > 0;
       const done = w >= MAX_WATER;
-      const streak = effectiveStreak();
 
       plantStage.innerHTML = buildPlantSVG(state.current, stage, wilted);
 
       plantName.textContent = plant.name;
-      plantMeta.textContent = done
-        ? '🏆 완성!'
-        : `${stage}단계 · ${w}/${MAX_WATER}${streak > 0 ? ' · 🔥' + streak + '일' : ''}`;
-      progressFill.style.width = Math.min(100, (w / MAX_WATER) * 100) + '%';
+      plantMeta.textContent = done ? '🏆 완성!' : ''; // no numeric progress — keep growth a surprise
 
-      if (done) {
-        // completed: button guides to picking a new plant (no more watering)
-        waterBtn.classList.remove('done');
-        waterBtnLabel.textContent = '새 식물 선택';
-      } else if (wateredToday()) {
+      // completed plants stay waterable daily (new plant is chosen via the collection panel)
+      if (wateredToday()) {
         waterBtn.classList.add('done');
-        waterBtnLabel.textContent = '오늘 완료 ✓';
+        waterBtnLabel.textContent = '오늘 완료';
       } else {
         waterBtn.classList.remove('done');
         waterBtnLabel.textContent = wilted ? '물주기 (시듦)' : '물주기';
@@ -710,7 +688,8 @@
     /* ============ Watering ============ */
     function water() {
       if (wateredToday()) return;
-      if (state.water[state.current] >= MAX_WATER) return; // already complete
+      // completed plants (30/30) can still be watered daily — count stays capped at MAX_WATER,
+      // so the plant keeps its final form while daily care/streak continues.
       const today = todayStr();
       const gap = daysBetween(state.lastWater, today);
       state.streak = (gap === 1) ? state.streak + 1 : 1;
@@ -742,8 +721,7 @@
 
     waterBtn.addEventListener('click', e => {
       e.stopPropagation();
-      if (state.water[state.current] >= MAX_WATER) { openCollection(false); return; }
-      water();
+      water(); // completed plants are still waterable; new plant is chosen via the collection panel
     });
 
     /* ============ Collection gallery ============ */
@@ -770,11 +748,11 @@
         // keyboard-accessible: behaves like a button
         slot.setAttribute('role', 'button');
         slot.setAttribute('tabindex', '0');
-        slot.setAttribute('aria-label', `${p.name}${done ? ' · 완성' : (started ? ' · ' + stageOf(w) + '단계' : '')}`);
+        slot.setAttribute('aria-label', `${p.name}${done ? ' · 완성' : (started ? ' · 키우는 중' : '')}`);
         // show final form if done, else current grown stage (or silhouette final stage if untouched)
         const showStage = done ? MAX_STAGE : (started ? stageOf(w) : MAX_STAGE);
         slot.innerHTML = buildPlantSVG(p.id, showStage, false, '')
-          + `<span class="badge">${done ? '✓' : (started ? stageOf(w) + '단계' : '')}</span>`
+          + `<span class="badge">${done ? '✓' : ''}</span>`
           + `<span class="slot-name">${p.name}</span>`;
         const pick = e => {
           e.stopPropagation();
