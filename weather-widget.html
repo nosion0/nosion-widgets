@@ -368,11 +368,23 @@
       transition: opacity 0.15s ease;
     }
     .control-btn[data-tooltip]:hover::after { opacity: 1; }
+      /* unify-resize: 내용은 고정폭, 카드를 키우면 바깥 여백만 늘어남 */
+    .card {
+      align-items: safe center;
+    }
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: inherit;
+      width: 100%;
+      max-width: 296px;
+    }
   </style>
 </head>
 <body>
   <div class="widget-wrapper" id="widget">
     <div class="card" id="card">
+      <div class="card-body">
 
       <!-- API key setup overlay -->
       <div class="overlay" id="setupOverlay">
@@ -431,6 +443,8 @@
             <span style="font-size:0.8125rem;color:var(--muted-foreground)">로딩 중...</span>
           </div>
         </div>
+      </div>
+
       </div>
 
       <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>

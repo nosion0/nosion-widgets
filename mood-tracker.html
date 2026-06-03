@@ -573,11 +573,24 @@
     }
 
     .reset-confirm button.danger:hover { opacity: 0.85; }
+      /* unify-resize: 내용은 고정폭, 카드를 키우면 바깥 여백만 늘어남 */
+    .card {
+      justify-content: safe center;
+      align-items: safe center;
+    }
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: inherit;
+      width: 100%;
+      max-width: 304px;
+    }
   </style>
 </head>
 <body>
   <div class="widget-wrapper" id="widget">
     <div class="card" id="card">
+      <div class="card-body">
 
       <!-- 헤더: 좌(기록 N/7) | 중앙(트렌드) | 우(평균/5) -->
       <div class="header">
@@ -615,6 +628,8 @@
           <button id="cancelReset" type="button">취소</button>
           <button class="danger" id="confirmReset" type="button">초기화</button>
         </div>
+      </div>
+
       </div>
 
       <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>

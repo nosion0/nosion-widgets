@@ -399,11 +399,23 @@
     }
     .handle-right .bar { width: 1px; height: 36px; }
     .handle-right:hover .bar { width: 3px; }
+      /* unify-resize: 내용은 고정폭, 카드를 키우면 바깥 여백만 늘어남 */
+    .card {
+      align-items: safe center;
+    }
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: inherit;
+      width: 100%;
+      max-width: 304px;
+    }
   </style>
 </head>
 <body>
   <div class="widget-wrapper" id="widget">
     <div class="card" id="card">
+      <div class="card-body">
 
       <!-- 모드 탭 -->
       <div class="mode-tabs">
@@ -450,6 +462,8 @@
       </div>
 
       <!-- 4방향 리사이즈 핸들 -->
+      </div>
+
       <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
       <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
       <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
