@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>물 마시기</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 13% 18%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
+      background: var(--background); color: var(--foreground);
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; word-break: keep-all;
+    }
+    body { padding: 1rem; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+    .widget-wrapper { display: flex; align-items: flex-start; gap: 0.5rem; position: relative; width: fit-content; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 2.25rem 2.25rem 2rem; width: 320px; position: relative; box-shadow: none;
+      display: flex; flex-direction: column; align-items: safe center; justify-content: safe center;
+      box-sizing: border-box; overflow: hidden; min-width: 0; min-height: 0;
+    }
+    .card.dragging { cursor: grabbing; }
+    .card-body { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; width: 100%; max-width: 272px; }
+
+    .head { display: flex; align-items: baseline; justify-content: space-between; width: 100%; }
+    .title { font-size: 1.0625rem; font-weight: 600; color: var(--foreground); letter-spacing: -0.01em; }
+    .goal-sel { display: inline-flex; gap: 0; border: 1px solid var(--border); border-radius: 99px; padding: 2px; }
+    .goal-btn { font-family: inherit; font-size: 0.6875rem; color: var(--muted-foreground); background: none; border: none; cursor: pointer; padding: 0.2rem 0.5rem; border-radius: 99px; transition: background var(--transition), color var(--transition); }
+    .goal-btn.active { background: var(--foreground); color: var(--card); }
+
+    .hero { text-align: center; }
+    .hero-count { font-size: 2.5rem; font-weight: 600; color: var(--foreground); line-height: 1; font-variant-numeric: tabular-nums; }
+    .hero-count .goal { font-size: 1.25rem; color: var(--muted-foreground); font-weight: 500; }
+    .hero-sub { font-size: 0.75rem; color: var(--muted-foreground); margin-top: 0.4rem; font-variant-numeric: tabular-nums; }
+
+    .cups { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; width: 100%; }
+    .cup { width: 30px; height: 34px; cursor: pointer; flex-shrink: 0; }
+    .cup svg { width: 30px; height: 34px; display: block; overflow: visible; stroke: var(--border); stroke-width: 1.6; fill: none; stroke-linejoin: round; transition: stroke var(--transition); }
+    .cup.full svg { stroke: var(--foreground); fill: var(--foreground); }
+    .cup:hover svg { stroke: var(--muted-foreground); }
+
+    .add-btn { font-family: inherit; font-size: 0.875rem; font-weight: 500; color: var(--card); background: var(--foreground); border: none; border-radius: 99px; padding: 0.6rem 1.5rem; cursor: pointer; transition: opacity var(--transition); }
+    .add-btn:hover { opacity: 0.85; }
+    .add-btn:disabled { opacity: 0.4; cursor: default; }
+
+    .footer { font-size: 0.6875rem; color: var(--muted-foreground); opacity: 0.6; letter-spacing: 0.03em; text-align: center; user-select: none; }
+
+    /* 컨트롤 */
+    .controls { display: flex; flex-direction: column; gap: 2px; opacity: 0; transition: opacity var(--transition); padding-top: 0.25rem; }
+    .widget-wrapper:hover .controls { opacity: 1; }
+    .control-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: rgba(115,115,115,0.5); cursor: pointer; transition: color var(--transition); border-radius: 4px; position: relative; }
+    .control-btn:hover:not(:disabled) { color: var(--foreground); }
+    .control-btn svg { width: 13px; height: 13px; stroke-width: 2; }
+    .control-btn[data-tooltip]::before, .control-btn[data-tooltip]::after { position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); opacity: 0; pointer-events: none; transition: opacity 0.15s ease 0s; z-index: 50; }
+    .control-btn[data-tooltip]::before { content: attr(data-tooltip); background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.3125rem 0.625rem; font-size: 0.6875rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .control-btn[data-tooltip]::after { content: ''; right: calc(100% + 3px); width: 5px; height: 5px; background: var(--card); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); transform: translateY(-50%) rotate(-45deg); }
+    .control-btn[data-tooltip]:hover::before, .control-btn[data-tooltip]:hover::after { opacity: 1; transition-delay: 0.4s; }
+
+    /* 리사이즈 */
+    .resize-handle { position: absolute; display: flex; align-items: center; justify-content: center; user-select: none; z-index: 20; }
+    .resize-handle .bar { background: var(--border); transition: opacity var(--transition), background var(--transition), width 0.15s ease, height 0.15s ease; border-radius: 999px; opacity: 0; }
+    .widget-wrapper:hover .resize-handle .bar { opacity: 1; }
+    .resize-handle:hover .bar { background: var(--muted-foreground); }
+    .handle-top { top: 0; left: 50%; transform: translate(-50%,-50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-top .bar { width: 36px; height: 1px; } .handle-top:hover .bar { height: 3px; }
+    .handle-bottom { bottom: 0; left: 50%; transform: translate(-50%,50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-bottom .bar { width: 36px; height: 1px; } .handle-bottom:hover .bar { height: 3px; }
+    .handle-left { left: 0; top: 50%; transform: translate(-50%,-50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-left .bar { width: 1px; height: 36px; } .handle-left:hover .bar { width: 3px; }
+    .handle-right { right: 0; top: 50%; transform: translate(50%,-50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-right .bar { width: 1px; height: 36px; } .handle-right:hover .bar { width: 3px; }
+  </style>
+</head>
+<body>
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
+      <div class="card-body">
+        <div class="head">
+          <span class="title">물 마시기</span>
+          <span class="goal-sel" id="goalSel">
+            <button class="goal-btn" data-goal="6" type="button">6잔</button>
+            <button class="goal-btn" data-goal="8" type="button">8잔</button>
+            <button class="goal-btn" data-goal="10" type="button">10잔</button>
+          </span>
+        </div>
+
+        <div class="hero">
+          <div class="hero-count"><span id="count">0</span><span class="goal"> / <span id="goalNum">8</span>잔</span></div>
+          <div class="hero-sub" id="sub">—</div>
+        </div>
+
+        <div class="cups" id="cups"></div>
+
+        <button class="add-btn" id="addBtn" type="button">＋ 한 잔</button>
+
+        <div class="footer" id="footer">한 잔 = 250㎖</div>
+      </div>
+
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="resizeResetBtn" data-tooltip="크기 초기화" title="크기 초기화" type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+    const CUP_ML = 250;
+    const GOALS = [6, 8, 10];
+    const STORE_KEY = 'nosion-water-v1';
+
+    const countEl = document.getElementById('count');
+    const goalNumEl = document.getElementById('goalNum');
+    const subEl = document.getElementById('sub');
+    const cupsEl = document.getElementById('cups');
+    const addBtn = document.getElementById('addBtn');
+
+    const CUP_PATH = 'M6 4 h12 l-1.3 16.2 a1.2 1.2 0 0 1 -1.2 1.1 h-7 a1.2 1.2 0 0 1 -1.2 -1.1 z';
+
+    function todayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    }
+
+    let goal = 8, count = 0;
+    try {
+      const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+      if (s) {
+        if (GOALS.indexOf(s.goal) >= 0) goal = s.goal;
+        if (s.date === todayStr() && typeof s.count === 'number') count = s.count; // 날짜 다르면 0으로 리셋
+      }
+    } catch (e) {}
+
+    function save() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify({ date: todayStr(), count, goal })); } catch (e) {}
+    }
+
+    function render() {
+      if (count > goal) count = goal;
+      countEl.textContent = count;
+      goalNumEl.textContent = goal;
+      const liters = (count * CUP_ML / 1000).toFixed(2).replace(/0$/, '');
+      const left = goal - count;
+      subEl.textContent = left > 0 ? `${liters} L · 목표까지 ${left}잔` : `${liters} L · 목표 달성! 🎉`;
+
+      cupsEl.innerHTML = '';
+      for (let i = 0; i < goal; i++) {
+        const cup = document.createElement('div');
+        cup.className = 'cup' + (i < count ? ' full' : '');
+        cup.setAttribute('role', 'button');
+        cup.setAttribute('aria-label', `${i + 1}잔`);
+        cup.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${CUP_PATH}"/></svg>`;
+        cup.addEventListener('click', () => {
+          // 마지막으로 채워진 잔을 다시 누르면 하나 줄이기, 아니면 그 잔까지 채우기
+          count = (count === i + 1) ? i : i + 1;
+          save(); render();
+        });
+        cupsEl.appendChild(cup);
+      }
+      addBtn.disabled = count >= goal;
+
+      document.querySelectorAll('.goal-btn').forEach(b => b.classList.toggle('active', +b.dataset.goal === goal));
+    }
+
+    addBtn.addEventListener('click', () => { if (count < goal) { count += 1; save(); render(); } });
+    document.getElementById('goalSel').addEventListener('click', (e) => {
+      const b = e.target.closest('.goal-btn');
+      if (!b) return;
+      goal = +b.dataset.goal;
+      if (count > goal) count = goal;
+      save(); render();
+    });
+
+    render();
+    // 자정 넘어가면 자동 리셋 감지 (열어둔 채로 날짜가 바뀌는 경우)
+    setInterval(() => {
+      try {
+        const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+        if (s && s.date !== todayStr()) { count = 0; save(); render(); }
+      } catch (e) {}
+    }, 60 * 1000);
+
+    /* ===== 리사이즈 ===== */
+    const SIZE_KEY = 'nosion-water-size-v1';
+    const MIN_WIDTH = 280, MAX_WIDTH = 520, MIN_HEIGHT = 320, MAX_HEIGHT = 560, DEFAULT_WIDTH = 320;
+    const cardEl = document.getElementById('card');
+    const widgetEl = document.getElementById('widget');
+    let cardWidth = DEFAULT_WIDTH, cardHeight = null;
+    try {
+      const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null');
+      if (s) { if (typeof s.width === 'number') cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width)); if (typeof s.height === 'number' && s.height > 0) cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height)); }
+    } catch (e) {}
+    function applyCardSize() { cardEl.style.width = cardWidth + 'px'; cardEl.style.height = cardHeight !== null ? cardHeight + 'px' : ''; }
+    function saveSize() { try { localStorage.setItem(SIZE_KEY, JSON.stringify({ width: cardWidth, height: cardHeight })); } catch (e) {} }
+    let resizeDrag = null, startLeft = 0, startTop = 0;
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = { direction, startX: x, startY: y, startWidth: rect.width, startHeight: rect.height };
+      if (getComputedStyle(widgetEl).position !== 'fixed') {
+        const wr = widgetEl.getBoundingClientRect();
+        widgetEl.style.position = 'fixed'; widgetEl.style.left = wr.left + 'px'; widgetEl.style.top = wr.top + 'px'; widgetEl.style.transform = 'none';
+        offsetX = 0; offsetY = 0;
+      }
+      startLeft = parseFloat(widgetEl.style.left) || 0; startTop = parseFloat(widgetEl.style.top) || 0;
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX, dy = y - resizeDrag.startY, dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
+        const actual = cardWidth - resizeDrag.startWidth;
+        if (widgetEl.style.position === 'fixed') widgetEl.style.left = (startLeft - actual / 2) + 'px';
+      }
+      if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta));
+        const actual = cardHeight - resizeDrag.startHeight;
+        if (widgetEl.style.position === 'fixed') widgetEl.style.top = (startTop - actual / 2) + 'px';
+      }
+      applyCardSize();
+    }
+    function endResize() { if (!resizeDrag) return; saveSize(); resizeDrag = null; document.body.style.userSelect = ''; document.body.style.cursor = ''; }
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+      const direction = handle.dataset.direction;
+      handle.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); startResize(direction, e.clientX, e.clientY); });
+      handle.addEventListener('touchstart', (e) => { e.preventDefault(); const t = e.touches[0]; startResize(direction, t.clientX, t.clientY); }, { passive: false });
+    });
+    document.addEventListener('mousemove', (e) => { if (resizeDrag) { e.preventDefault(); moveResize(e.clientX, e.clientY); } });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('touchmove', (e) => { if (resizeDrag) { const t = e.touches[0]; moveResize(t.clientX, t.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+    applyCardSize();
+
+    /* ===== 드래그 이동 ===== */
+    const POS_KEY = 'nosion-water-pos-v1';
+    let offsetX = 0, offsetY = 0, moveDrag = null;
+    try { const p = JSON.parse(localStorage.getItem(POS_KEY) || 'null'); if (p) { if (typeof p.x === 'number') offsetX = p.x; if (typeof p.y === 'number') offsetY = p.y; } } catch (e) {}
+    function applyPosition() { widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`; }
+    function savePosition() { try { localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY })); } catch (e) {} }
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input', '.cups', '.goal-sel'];
+      for (const sel of blocked) if (target.closest(sel)) return false;
+      return true;
+    }
+    function startMove(x, y) { moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY }; document.body.style.userSelect = 'none'; cardEl.classList.add('dragging'); }
+    function doMove(x, y) { if (!moveDrag) return; offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); applyPosition(); }
+    function endMove() { if (!moveDrag) return; savePosition(); moveDrag = null; document.body.style.userSelect = ''; cardEl.classList.remove('dragging'); }
+    applyPosition();
+    cardEl.addEventListener('mousedown', (e) => { if (!isDraggableTarget(e.target)) return; e.preventDefault(); startMove(e.clientX, e.clientY); });
+    cardEl.addEventListener('touchstart', (e) => { if (!isDraggableTarget(e.target)) return; const t = e.touches[0]; startMove(t.clientX, t.clientY); }, { passive: true });
+    document.addEventListener('mousemove', (e) => { if (moveDrag) { e.preventDefault(); doMove(e.clientX, e.clientY); } });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('touchmove', (e) => { if (moveDrag) { const t = e.touches[0]; doMove(t.clientX, t.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    document.getElementById('resizeResetBtn').addEventListener('click', () => {
+      cardWidth = DEFAULT_WIDTH; cardHeight = null; applyCardSize(); saveSize();
+      offsetX = 0; offsetY = 0; applyPosition(); savePosition();
+    });
+  </script>
+</body>
+</html>
