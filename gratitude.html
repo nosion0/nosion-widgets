@@ -134,7 +134,7 @@
 
     function renderPast() {
       const tk = todayKey();
-      const keys = Object.keys(entries).filter(k => k !== tk && entries[k] && String(entries[k]).trim());
+      const keys = Object.keys(entries).filter(k => /^\d{4}-\d{1,2}-\d{1,2}$/.test(k) && k !== tk && entries[k] && String(entries[k]).trim());
       keys.sort((a, b) => {
         const pa = a.split('-').map(Number), pb = b.split('-').map(Number);
         return new Date(pb[0], pb[1] - 1, pb[2]) - new Date(pa[0], pa[1] - 1, pa[2]);

@@ -188,10 +188,11 @@
       stTotalEl.textContent = done.size;
 
       // 최장 연속 (전체 기록 중)
-      const sorted = Array.from(done).map(k => { const p = k.split('-'); return midnight(new Date(+p[0], +p[1] - 1, +p[2])).getTime(); }).sort((a, b) => a - b);
+      // UTC 일(day) 번호로 비교 → DST 무관
+      const days = Array.from(done).map(k => { const p = k.split('-'); return Math.floor(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }).filter(n => !isNaN(n)).sort((a, b) => a - b);
       let best = 0, run = 0, prev = null;
-      for (const t of sorted) {
-        if (prev !== null && t - prev === 86400000) run++; else run = 1;
+      for (const t of days) {
+        if (prev !== null && t - prev === 1) run++; else run = 1;
         if (run > best) best = run;
         prev = t;
       }

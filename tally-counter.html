@@ -117,7 +117,7 @@
       const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
       if (s) {
         if (typeof s.label === 'string' && s.label.trim()) label = s.label;
-        if (typeof s.count === 'number' && isFinite(s.count)) count = Math.round(s.count);
+        if (typeof s.count === 'number' && isFinite(s.count)) count = Math.max(0, Math.round(s.count));
       }
     } catch (e) {}
     labelEl.textContent = label;

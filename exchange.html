@@ -149,18 +149,21 @@
       if (!krwToForeign) return null;
       // 1 외화 = 1 / (1 KRW = r 외화) 원
       const won = {};
-      CURRENCIES.forEach(c => { if (krwToForeign[c.code]) won[c.code] = 1 / krwToForeign[c.code]; });
+      CURRENCIES.forEach(c => {
+        const r = krwToForeign[c.code];
+        if (Number.isFinite(r) && r > 0) won[c.code] = 1 / r;
+      });
       return { won, date };
     }
 
     function render(data) {
       listEl.innerHTML = '';
       CURRENCIES.forEach(c => {
-        const w = data && data.won[c.code];
+        const w = (data && data.won) ? data.won[c.code] : undefined;
         const row = document.createElement('div');
         row.className = 'fx-row';
         const label = c.per === 100 ? `100 ${c.code}` : `1 ${c.code}`;
-        const valTxt = (typeof w === 'number')
+        const valTxt = (Number.isFinite(w) && w > 0)
           ? `${(w * c.per).toLocaleString('en-US', { maximumFractionDigits: 1 })}<span class="won">원</span>`
           : '<span style="color:var(--muted-foreground);font-weight:400">—</span>';
         row.innerHTML = `<div class="fx-left"><span class="fx-cur">${label}</span><span class="fx-name">${c.name}</span></div><span class="fx-val">${valTxt}</span>`;
