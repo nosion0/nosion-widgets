@@ -53,7 +53,8 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.75rem 1.75rem 1.5rem;
-      width: 300px;
+      width: 380px;
+      height: 440px;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -479,8 +480,8 @@
     /* ===== Resize reset ===== */
     document.getElementById('resizeResetBtn').addEventListener('click', () => {
       const card = document.getElementById('card');
-      card.style.width  = '300px';
-      card.style.height = '';
+      card.style.width  = '380px';
+      card.style.height = '440px';
       try { localStorage.removeItem(KEY_SIZE); } catch (e) {}
     });
 
