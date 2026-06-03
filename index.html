@@ -58,6 +58,65 @@
       margin-bottom: 0.875rem;
     }
 
+    /* ===== 사용법 (3단계 그림 가이드) ===== */
+    .guide {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.625rem;
+      margin-bottom: 2.25rem;
+    }
+    .guide-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0 0 2.25rem;
+    }
+    .guide-step {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1rem 1.25rem;
+      text-align: center;
+    }
+    .guide-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      margin-bottom: 0.75rem;
+    }
+    .guide-art {
+      display: flex;
+      justify-content: center;
+      line-height: 0;
+      margin-bottom: 0.75rem;
+    }
+    .guide-art svg {
+      width: 52px;
+      height: 42px;
+      overflow: visible;
+      stroke: var(--foreground);
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .guide-title {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--foreground);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.2rem;
+    }
+    .guide-sub {
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+      line-height: 1.45;
+    }
+
     .widget-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -147,6 +206,30 @@
     <div class="logo">노시언 위젯</div>
     <p class="desc">노션 임베드용 미니멀 위젯 모음 — 각 위젯을 클릭해 미리보기하거나 URL을 노션에 붙여넣으세요.</p>
   </div>
+
+  <div class="section-label">사용법</div>
+  <div class="guide">
+    <div class="guide-step">
+      <span class="guide-num">1</span>
+      <div class="guide-art"><svg viewBox="0 0 48 40" fill="none" aria-hidden="true"><g filter="url(#rough)"><rect x="11" y="14" width="16" height="19" rx="3"/><rect x="20" y="7" width="16" height="19" rx="3" fill="#fff"/></g></svg></div>
+      <div class="guide-title">위젯 주소 복사</div>
+      <div class="guide-sub">원하는 위젯을 열고 URL을 복사</div>
+    </div>
+    <div class="guide-step">
+      <span class="guide-num">2</span>
+      <div class="guide-art"><svg viewBox="0 0 48 40" fill="none" aria-hidden="true"><g filter="url(#rough)"><rect x="11" y="6" width="26" height="28" rx="3"/><rect x="16" y="22" width="16" height="8" rx="2"/><path d="M24 11.5v7.5M20.5 15.5l3.5 3.5 3.5-3.5"/></g></svg></div>
+      <div class="guide-title">노션에 붙여넣기</div>
+      <div class="guide-sub">페이지에 붙여넣고 ‘임베드 생성’ 선택</div>
+    </div>
+    <div class="guide-step">
+      <span class="guide-num">3</span>
+      <div class="guide-art"><svg viewBox="0 0 48 40" fill="none" aria-hidden="true"><g filter="url(#rough)"><rect x="9" y="9" width="22" height="18" rx="3"/><path d="M14 15.5h12M14 19.5h7"/><path d="M27 23l8 8"/><path d="M35 26.5V31h-4.5"/></g></svg></div>
+      <div class="guide-title">완성, 크기 조절</div>
+      <div class="guide-sub">모서리를 끌어 크기 조절</div>
+    </div>
+  </div>
+
+  <hr class="guide-divider">
 
   <div class="section-label">위젯 목록</div>
   <div class="widget-grid">
