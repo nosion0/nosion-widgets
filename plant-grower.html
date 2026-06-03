@@ -252,7 +252,7 @@
     .water-btn:hover { background: var(--muted); }
     /* watered today: still a white button, but the droplet icon fills in */
     .water-btn.done {
-      color: var(--muted-foreground);
+      color: var(--foreground);
       cursor: default;
     }
     .water-btn.done:hover { background: hsl(0 0% 100%); }
@@ -657,10 +657,6 @@
     }
     function wateredToday() {
       return state.lastWater === todayStr();
-    }
-    // streak is broken the moment a full day is missed (gap >= 2)
-    function effectiveStreak() {
-      return daysBetween(state.lastWater, todayStr()) >= 2 ? 0 : state.streak;
     }
 
     function render() {
