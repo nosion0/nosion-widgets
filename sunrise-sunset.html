@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>일출·일몰</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 13% 18%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --track: hsl(220 14% 90%);
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
+      background: var(--background); color: var(--foreground);
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; word-break: keep-all;
+    }
+    body { padding: 1rem; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+    .widget-wrapper { display: flex; align-items: flex-start; gap: 0.5rem; position: relative; width: fit-content; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 2.5rem 2.5rem 2rem; width: 340px; position: relative; box-shadow: none;
+      display: flex; flex-direction: column; align-items: safe center;
+      box-sizing: border-box; overflow: hidden; min-width: 0; min-height: 0;
+    }
+    .card.dragging { cursor: grabbing; }
+    .card-body { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; width: 100%; max-width: 280px; }
+
+    .caption { font-size: 0.6875rem; color: var(--muted-foreground); letter-spacing: 0.08em; text-transform: uppercase; user-select: none; }
+
+    .arc-wrap { width: 100%; }
+    .arc-svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .arc-svg .horizon { stroke: var(--border); stroke-width: 1.2; }
+    .arc-svg .arc-base { fill: none; stroke: var(--track); stroke-width: 2.5; stroke-linecap: round; }
+    .arc-svg .arc-prog { fill: none; stroke: var(--foreground); stroke-width: 2.5; stroke-linecap: round; }
+    .arc-svg .sun-c { fill: var(--card); stroke: var(--foreground); stroke-width: 1.6; }
+    .arc-svg .sun-ray { stroke: var(--foreground); stroke-width: 1.6; stroke-linecap: round; }
+    .arc-svg .moon-c { fill: none; stroke: var(--muted-foreground); stroke-width: 1.6; stroke-linejoin: round; }
+
+    .ends { display: flex; justify-content: space-between; width: 100%; margin-top: -0.25rem; }
+    .end { display: flex; flex-direction: column; gap: 0.15rem; }
+    .end.right { align-items: flex-end; }
+    .end-label { font-size: 0.6875rem; color: var(--muted-foreground); letter-spacing: 0.02em; }
+    .end-time { font-size: 1.0625rem; font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+    .status { font-size: 0.9375rem; color: var(--foreground); font-weight: 500; text-align: center; }
+    .status .accent { font-variant-numeric: tabular-nums; }
+
+    .divider { height: 1px; width: 100%; background: var(--border); opacity: 0.5; }
+
+    .info-grid { display: flex; flex-direction: column; gap: 0.875rem; width: 100%; }
+    .info-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+    .info-label { font-size: 0.8125rem; color: var(--muted-foreground); }
+    .info-value { font-size: 0.8125rem; color: var(--foreground); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+    .footer { font-size: 0.6875rem; color: var(--muted-foreground); opacity: 0.6; letter-spacing: 0.03em; text-align: center; user-select: none; position: relative; }
+    .footer:hover { opacity: 0.8; }
+    .city-selector { font: inherit; letter-spacing: inherit; background: none; border: none; color: inherit; cursor: pointer; padding: 0 2px; border-radius: 3px; transition: background var(--transition), color var(--transition); }
+    .city-selector:hover { color: var(--foreground); background: var(--muted); }
+    .city-selector.open { color: var(--foreground); }
+    .city-sep { margin: 0 0.25rem; opacity: 0.6; }
+    .pin { width: 0.85em; height: 0.85em; display: inline-block; vertical-align: -1.5px; margin-right: 3px; stroke: var(--foreground); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    .city-dropdown { position: absolute; bottom: calc(100% + 0.25rem); left: 50%; transform: translateX(-50%) translateY(4px); background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.3125rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; min-width: 150px; z-index: 100; opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s; }
+    .city-dropdown.show { opacity: 1; pointer-events: auto; visibility: visible; transform: translateX(-50%) translateY(0); }
+    .city-option { font-family: inherit; font-size: 0.75rem; color: var(--muted-foreground); background: none; border: none; cursor: pointer; padding: 0.375rem 0.625rem; border-radius: 0.25rem; text-align: center; transition: background var(--transition), color var(--transition); }
+    .city-option:hover { background: var(--muted); color: var(--foreground); }
+    .city-option.selected { color: var(--foreground); font-weight: 500; background: var(--muted); }
+
+    /* 컨트롤 */
+    .controls { display: flex; flex-direction: column; gap: 2px; opacity: 0; transition: opacity var(--transition); padding-top: 0.25rem; }
+    .widget-wrapper:hover .controls { opacity: 1; }
+    .control-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: rgba(115,115,115,0.5); cursor: pointer; transition: color var(--transition); border-radius: 4px; position: relative; }
+    .control-btn:hover:not(:disabled) { color: var(--foreground); }
+    .control-btn svg { width: 13px; height: 13px; stroke-width: 2; }
+    .control-btn[data-tooltip]::before, .control-btn[data-tooltip]::after { position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); opacity: 0; pointer-events: none; transition: opacity 0.15s ease 0s; z-index: 50; }
+    .control-btn[data-tooltip]::before { content: attr(data-tooltip); background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.3125rem 0.625rem; font-size: 0.6875rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .control-btn[data-tooltip]::after { content: ''; right: calc(100% + 3px); width: 5px; height: 5px; background: var(--card); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); transform: translateY(-50%) rotate(-45deg); }
+    .control-btn[data-tooltip]:hover::before, .control-btn[data-tooltip]:hover::after { opacity: 1; transition-delay: 0.4s; }
+
+    /* 리사이즈 */
+    .resize-handle { position: absolute; display: flex; align-items: center; justify-content: center; user-select: none; z-index: 20; }
+    .resize-handle .bar { background: var(--border); transition: opacity var(--transition), background var(--transition), width 0.15s ease, height 0.15s ease; border-radius: 999px; opacity: 0; }
+    .widget-wrapper:hover .resize-handle .bar { opacity: 1; }
+    .resize-handle:hover .bar { background: var(--muted-foreground); }
+    .handle-top { top: 0; left: 50%; transform: translate(-50%,-50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-top .bar { width: 36px; height: 1px; } .handle-top:hover .bar { height: 3px; }
+    .handle-bottom { bottom: 0; left: 50%; transform: translate(-50%,50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-bottom .bar { width: 36px; height: 1px; } .handle-bottom:hover .bar { height: 3px; }
+    .handle-left { left: 0; top: 50%; transform: translate(-50%,-50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-left .bar { width: 1px; height: 36px; } .handle-left:hover .bar { width: 3px; }
+    .handle-right { right: 0; top: 50%; transform: translate(50%,-50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-right .bar { width: 1px; height: 36px; } .handle-right:hover .bar { width: 3px; }
+  </style>
+</head>
+<body>
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
+      <div class="card-body">
+        <div class="caption">오늘의 해</div>
+
+        <div class="arc-wrap">
+          <svg class="arc-svg" viewBox="0 0 200 118" aria-hidden="true">
+            <path class="arc-base" d="M20 100 A80 80 0 0 1 180 100"/>
+            <path class="arc-prog" id="arcProg" d="M20 100 A80 80 0 0 1 180 100"/>
+            <line class="horizon" x1="10" y1="100" x2="190" y2="100"/>
+            <g id="sunMarker" style="display:none">
+              <circle class="sun-c" cx="0" cy="0" r="6.5"/>
+              <line class="sun-ray" x1="0" y1="-10.5" x2="0" y2="-13.5"/>
+              <line class="sun-ray" x1="0" y1="10.5" x2="0" y2="13.5"/>
+              <line class="sun-ray" x1="-10.5" y1="0" x2="-13.5" y2="0"/>
+              <line class="sun-ray" x1="10.5" y1="0" x2="13.5" y2="0"/>
+              <line class="sun-ray" x1="-7.6" y1="-7.6" x2="-9.7" y2="-9.7"/>
+              <line class="sun-ray" x1="7.6" y1="7.6" x2="9.7" y2="9.7"/>
+              <line class="sun-ray" x1="7.6" y1="-7.6" x2="9.7" y2="-9.7"/>
+              <line class="sun-ray" x1="-7.6" y1="7.6" x2="-9.7" y2="9.7"/>
+            </g>
+            <path class="moon-c" id="nightMoon" style="display:none" d="M106 32a11 11 0 1 1-9-17 8.5 8.5 0 0 0 9 17z"/>
+          </svg>
+        </div>
+
+        <div class="ends">
+          <div class="end left">
+            <span class="end-label">일출</span>
+            <span class="end-time" id="sunriseTime">—</span>
+          </div>
+          <div class="end right">
+            <span class="end-label">일몰</span>
+            <span class="end-time" id="sunsetTime">—</span>
+          </div>
+        </div>
+
+        <div class="status" id="status">—</div>
+
+        <div class="divider"></div>
+
+        <div class="info-grid">
+          <div class="info-row"><span class="info-label">낮 길이</span><span class="info-value" id="dayLength">—</span></div>
+          <div class="info-row"><span class="info-label">남중 시각</span><span class="info-value" id="solarNoon">—</span></div>
+        </div>
+
+        <div class="footer">
+          <button class="city-selector" id="citySelector" type="button" aria-haspopup="true" aria-expanded="false" aria-label="도시 선택">서울</button>
+          <span class="city-sep">·</span>
+          <span id="footerDate">—</span>
+          <div class="city-dropdown" id="cityDropdown" role="menu"></div>
+        </div>
+      </div>
+
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="resizeResetBtn" data-tooltip="크기 초기화" title="크기 초기화" type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+    const rad = Math.PI / 180;
+    const ARC_R = 80, ARC_CX = 100, ARC_CY = 100, ARC_LEN = Math.PI * 80;
+
+    const PIN_SVG = '<svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>';
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+    /* ===== 태양 일출/일몰 (SunCalc 알고리즘, MIT) ===== */
+    const dayMs = 86400000, J1970 = 2440588, J2000 = 2451545;
+    const e = rad * 23.4397;
+    function toJulian(d) { return d.valueOf() / dayMs - 0.5 + J1970; }
+    function fromJulian(j) { return new Date((j + 0.5 - J1970) * dayMs); }
+    function toDays(d) { return toJulian(d) - J2000; }
+    function declination(l, b) { return Math.asin(Math.sin(b) * Math.cos(e) + Math.cos(b) * Math.sin(e) * Math.sin(l)); }
+    function solarMeanAnomaly(d) { return rad * (357.5291 + 0.98560028 * d); }
+    function eclipticLongitude(M) {
+      const C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+      return M + C + rad * 102.9372 + Math.PI;
+    }
+    const J0 = 0.0009;
+    function julianCycle(d, lw) { return Math.round(d - J0 - lw / (2 * Math.PI)); }
+    function approxTransit(Ht, lw, n) { return J0 + (Ht + lw) / (2 * Math.PI) + n; }
+    function solarTransitJ(ds, M, L) { return J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L); }
+    function hourAngle(h, phi, dec) { return Math.acos((Math.sin(h) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec))); }
+
+    function getSunTimes(date, lat, lng) {
+      const lw = rad * -lng, phi = rad * lat, d = toDays(date);
+      const n = julianCycle(d, lw);
+      const ds = approxTransit(0, lw, n);
+      const M = solarMeanAnomaly(ds);
+      const L = eclipticLongitude(M);
+      const dec = declination(L, 0);
+      const Jnoon = solarTransitJ(ds, M, L);
+      const h0 = -0.833 * rad;
+      const w0 = hourAngle(h0, phi, dec);  // NaN이면 백야/극야
+      if (isNaN(w0)) {
+        const sunHigh = dec > 0 ? (lat > 0) : (lat < 0); // 태양이 늘 떠 있는지 대략 판단
+        return { sunrise: null, sunset: null, solarNoon: fromJulian(Jnoon), polar: sunHigh ? 'day' : 'night' };
+      }
+      const Jset = solarTransitJ(approxTransit(w0, lw, n), M, L);
+      const Jrise = Jnoon - (Jset - Jnoon);
+      return { sunrise: fromJulian(Jrise), sunset: fromJulian(Jset), solarNoon: fromJulian(Jnoon), polar: null };
+    }
+
+    /* ===== 도시 / 위치 자동감지 ===== */
+    const CITIES = [
+      { name: '서울', lat: 37.57, lng: 126.98, tz: 'Asia/Seoul' },
+      { name: '도쿄', lat: 35.68, lng: 139.65, tz: 'Asia/Tokyo' },
+      { name: '뉴욕', lat: 40.71, lng: -74.01, tz: 'America/New_York' },
+      { name: '런던', lat: 51.51, lng: -0.13, tz: 'Europe/London' },
+      { name: '파리', lat: 48.86, lng: 2.35, tz: 'Europe/Paris' },
+      { name: '두바이', lat: 25.20, lng: 55.27, tz: 'Asia/Dubai' },
+      { name: '시드니', lat: -33.87, lng: 151.21, tz: 'Australia/Sydney' },
+      { name: '상파울루', lat: -23.55, lng: -46.63, tz: 'America/Sao_Paulo' }
+    ];
+    const CITY_KEY = 'nosion-sun-city-v1';
+    let manualName = null;
+    try { manualName = localStorage.getItem(CITY_KEY); } catch (e) {}
+    let autoLoc = null;
+    let currentCity = CITIES[0];
+
+    function resolveActive() {
+      if (manualName) { const f = CITIES.find(c => c.name === manualName); if (f) return f; }
+      return autoLoc || CITIES[0];
+    }
+    function applyActive() { currentCity = resolveActive(); buildCityDropdown(); update(); }
+
+    function fetchJSON(url, ms) {
+      let ctrl = null, to = null;
+      try { ctrl = new AbortController(); to = setTimeout(() => ctrl.abort(), ms || 4500); } catch (e) {}
+      return fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+        .then(r => (r && r.ok) ? r.json() : null)
+        .then(d => { if (to) clearTimeout(to); return d; })
+        .catch(() => { if (to) clearTimeout(to); return null; });
+    }
+    function reverseKo(lat, lng) {
+      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ko`;
+      return fetchJSON(url, 4500).then(d => d ? (d.city || d.locality || d.principalSubdivision || null) : null);
+    }
+    function getAutoLocation() {
+      return fetchJSON('https://ipapi.co/json/', 4500).then(d => {
+        if (!d || typeof d.latitude !== 'number' || typeof d.longitude !== 'number') return null;
+        const base = { name: d.city || '현재 위치', lat: d.latitude, lng: d.longitude, tz: d.timezone || undefined, auto: true };
+        return reverseKo(base.lat, base.lng).then(ko => { if (ko) base.name = ko; return base; }).catch(() => base);
+      });
+    }
+
+    /* ===== 렌더링 ===== */
+    const arcProg = document.getElementById('arcProg');
+    const sunMarker = document.getElementById('sunMarker');
+    const nightMoon = document.getElementById('nightMoon');
+    const sunriseTimeEl = document.getElementById('sunriseTime');
+    const sunsetTimeEl = document.getElementById('sunsetTime');
+    const statusEl = document.getElementById('status');
+    const dayLengthEl = document.getElementById('dayLength');
+    const solarNoonEl = document.getElementById('solarNoon');
+    const citySelectorEl = document.getElementById('citySelector');
+    const cityDropdownEl = document.getElementById('cityDropdown');
+    const footerDateEl = document.getElementById('footerDate');
+    const WEEKDAY = ['일','월','화','수','목','금','토'];
+
+    function fmtTime(date, tz) {
+      if (!date) return '—';
+      return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz });
+    }
+    function fmtDur(ms) {
+      if (ms < 0) ms = 0;
+      const m = Math.round(ms / 60000);
+      const h = Math.floor(m / 60);
+      return `${h}시간 ${m % 60}분`;
+    }
+    function sunXY(f) {
+      const theta = f * Math.PI;
+      return { x: ARC_CX - ARC_R * Math.cos(theta), y: ARC_CY - ARC_R * Math.sin(theta) };
+    }
+
+    function update() {
+      const now = new Date();
+      const tz = currentCity.tz;
+      const t = getSunTimes(now, currentCity.lat, currentCity.lng);
+
+      sunriseTimeEl.textContent = fmtTime(t.sunrise, tz);
+      sunsetTimeEl.textContent = fmtTime(t.sunset, tz);
+      solarNoonEl.textContent = fmtTime(t.solarNoon, tz);
+
+      // 극지 백야/극야
+      if (!t.sunrise || !t.sunset) {
+        sunMarker.style.display = 'none';
+        nightMoon.style.display = t.polar === 'night' ? '' : 'none';
+        arcProg.setAttribute('stroke-dasharray', `0 ${ARC_LEN}`);
+        dayLengthEl.textContent = t.polar === 'day' ? '하루 종일 낮' : '하루 종일 밤';
+        statusEl.textContent = t.polar === 'day' ? '해가 지지 않아요' : '해가 뜨지 않아요';
+      } else {
+        const sr = t.sunrise.getTime(), ss = t.sunset.getTime(), nw = now.getTime();
+        dayLengthEl.textContent = fmtDur(ss - sr);
+
+        if (nw >= sr && nw <= ss) {
+          // 낮
+          const f = (nw - sr) / (ss - sr);
+          const p = sunXY(f);
+          sunMarker.setAttribute('transform', `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`);
+          sunMarker.style.display = '';
+          nightMoon.style.display = 'none';
+          arcProg.setAttribute('stroke-dasharray', `${(f * ARC_LEN).toFixed(1)} ${ARC_LEN}`);
+          statusEl.innerHTML = `일몰까지 <span class="accent">${escapeHtml(fmtDur(ss - nw))}</span>`;
+        } else {
+          // 밤
+          sunMarker.style.display = 'none';
+          nightMoon.style.display = '';
+          arcProg.setAttribute('stroke-dasharray', `0 ${ARC_LEN}`);
+          let nextRise;
+          if (nw < sr) nextRise = sr;
+          else nextRise = getSunTimes(new Date(nw + dayMs), currentCity.lat, currentCity.lng).sunrise;
+          const diff = nextRise ? (nextRise.getTime() - nw) : -1;
+          statusEl.innerHTML = diff >= 0 ? `일출까지 <span class="accent">${escapeHtml(fmtDur(diff))}</span>` : '해가 졌어요';
+        }
+      }
+
+      citySelectorEl.innerHTML = (currentCity.auto ? PIN_SVG : '') + escapeHtml(currentCity.name);
+      footerDateEl.textContent = `${now.getMonth() + 1}월 ${now.getDate()}일 (${WEEKDAY[now.getDay()]})`;
+    }
+
+    /* ===== 드롭다운 ===== */
+    function buildCityDropdown() {
+      cityDropdownEl.innerHTML = '';
+      const autoBtn = document.createElement('button');
+      autoBtn.className = 'city-option';
+      autoBtn.type = 'button';
+      autoBtn.innerHTML = PIN_SVG + '현재 위치';
+      autoBtn.setAttribute('role', 'menuitem');
+      autoBtn.style.gridColumn = '1 / -1';
+      if (!manualName) autoBtn.classList.add('selected');
+      autoBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        manualName = null;
+        try { localStorage.removeItem(CITY_KEY); } catch (er) {}
+        closeCityDropdown();
+        applyActive();
+        if (!autoLoc) getAutoLocation().then(loc => { if (loc && !manualName) { autoLoc = loc; applyActive(); } });
+      });
+      cityDropdownEl.appendChild(autoBtn);
+      CITIES.forEach(city => {
+        const btn = document.createElement('button');
+        btn.className = 'city-option';
+        btn.type = 'button';
+        btn.textContent = city.name;
+        btn.setAttribute('role', 'menuitem');
+        if (manualName === city.name) btn.classList.add('selected');
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          manualName = city.name;
+          try { localStorage.setItem(CITY_KEY, city.name); } catch (er) {}
+          closeCityDropdown();
+          applyActive();
+        });
+        cityDropdownEl.appendChild(btn);
+      });
+    }
+    function openCityDropdown() { cityDropdownEl.classList.add('show'); citySelectorEl.classList.add('open'); citySelectorEl.setAttribute('aria-expanded', 'true'); }
+    function closeCityDropdown() { cityDropdownEl.classList.remove('show'); citySelectorEl.classList.remove('open'); citySelectorEl.setAttribute('aria-expanded', 'false'); }
+    citySelectorEl.addEventListener('click', (ev) => { ev.stopPropagation(); if (cityDropdownEl.classList.contains('show')) closeCityDropdown(); else openCityDropdown(); });
+    document.addEventListener('click', (ev) => { if (!cityDropdownEl.contains(ev.target) && ev.target !== citySelectorEl) closeCityDropdown(); });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeCityDropdown(); });
+
+    applyActive();
+    if (!manualName) getAutoLocation().then(loc => { if (loc && !manualName) { autoLoc = loc; applyActive(); } });
+    setInterval(update, 60 * 1000);
+
+    /* ===== 리사이즈 ===== */
+    const SIZE_KEY = 'nosion-sun-size-v1';
+    const MIN_WIDTH = 290, MAX_WIDTH = 560, MIN_HEIGHT = 340, MAX_HEIGHT = 640, DEFAULT_WIDTH = 340;
+    const cardEl = document.getElementById('card');
+    const widgetEl = document.getElementById('widget');
+    let cardWidth = DEFAULT_WIDTH, cardHeight = null;
+    try {
+      const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null');
+      if (s) { if (typeof s.width === 'number') cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width)); if (typeof s.height === 'number' && s.height > 0) cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height)); }
+    } catch (e) {}
+    function applyCardSize() { cardEl.style.width = cardWidth + 'px'; cardEl.style.height = cardHeight !== null ? cardHeight + 'px' : ''; }
+    function saveSize() { try { localStorage.setItem(SIZE_KEY, JSON.stringify({ width: cardWidth, height: cardHeight })); } catch (e) {} }
+    let resizeDrag = null, startLeft = 0, startTop = 0;
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = { direction, startX: x, startY: y, startWidth: rect.width, startHeight: rect.height };
+      if (getComputedStyle(widgetEl).position !== 'fixed') {
+        const wr = widgetEl.getBoundingClientRect();
+        widgetEl.style.position = 'fixed'; widgetEl.style.left = wr.left + 'px'; widgetEl.style.top = wr.top + 'px'; widgetEl.style.transform = 'none';
+        offsetX = 0; offsetY = 0;
+      }
+      startLeft = parseFloat(widgetEl.style.left) || 0; startTop = parseFloat(widgetEl.style.top) || 0;
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX, dy = y - resizeDrag.startY, dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
+        const actual = cardWidth - resizeDrag.startWidth;
+        if (widgetEl.style.position === 'fixed') widgetEl.style.left = (startLeft - actual / 2) + 'px';
+      }
+      if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta));
+        const actual = cardHeight - resizeDrag.startHeight;
+        if (widgetEl.style.position === 'fixed') widgetEl.style.top = (startTop - actual / 2) + 'px';
+      }
+      applyCardSize();
+    }
+    function endResize() { if (!resizeDrag) return; saveSize(); resizeDrag = null; document.body.style.userSelect = ''; document.body.style.cursor = ''; }
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+      const direction = handle.dataset.direction;
+      handle.addEventListener('mousedown', (ev) => { ev.preventDefault(); ev.stopPropagation(); startResize(direction, ev.clientX, ev.clientY); });
+      handle.addEventListener('touchstart', (ev) => { ev.preventDefault(); const tt = ev.touches[0]; startResize(direction, tt.clientX, tt.clientY); }, { passive: false });
+    });
+    document.addEventListener('mousemove', (ev) => { if (resizeDrag) { ev.preventDefault(); moveResize(ev.clientX, ev.clientY); } });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('touchmove', (ev) => { if (resizeDrag) { const tt = ev.touches[0]; moveResize(tt.clientX, tt.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+    applyCardSize();
+
+    /* ===== 드래그 이동 ===== */
+    const POS_KEY = 'nosion-sun-pos-v1';
+    let offsetX = 0, offsetY = 0, moveDrag = null;
+    try { const p = JSON.parse(localStorage.getItem(POS_KEY) || 'null'); if (p) { if (typeof p.x === 'number') offsetX = p.x; if (typeof p.y === 'number') offsetY = p.y; } } catch (e) {}
+    function applyPosition() { widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`; }
+    function savePosition() { try { localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY })); } catch (e) {} }
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input', '.city-dropdown'];
+      for (const sel of blocked) if (target.closest(sel)) return false;
+      return true;
+    }
+    function startMove(x, y) { moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY }; document.body.style.userSelect = 'none'; cardEl.classList.add('dragging'); }
+    function doMove(x, y) { if (!moveDrag) return; offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); applyPosition(); }
+    function endMove() { if (!moveDrag) return; savePosition(); moveDrag = null; document.body.style.userSelect = ''; cardEl.classList.remove('dragging'); }
+    applyPosition();
+    cardEl.addEventListener('mousedown', (ev) => { if (!isDraggableTarget(ev.target)) return; ev.preventDefault(); startMove(ev.clientX, ev.clientY); });
+    cardEl.addEventListener('touchstart', (ev) => { if (!isDraggableTarget(ev.target)) return; const tt = ev.touches[0]; startMove(tt.clientX, tt.clientY); }, { passive: true });
+    document.addEventListener('mousemove', (ev) => { if (moveDrag) { ev.preventDefault(); doMove(ev.clientX, ev.clientY); } });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('touchmove', (ev) => { if (moveDrag) { const tt = ev.touches[0]; doMove(tt.clientX, tt.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    document.getElementById('resizeResetBtn').addEventListener('click', () => {
+      cardWidth = DEFAULT_WIDTH; cardHeight = null; applyCardSize(); saveSize();
+      offsetX = 0; offsetY = 0; applyPosition(); savePosition();
+    });
+  </script>
+</body>
+</html>
