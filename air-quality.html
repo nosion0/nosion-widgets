@@ -213,17 +213,20 @@
       fetchJSON(url, 5000).then(d => {
         if (my !== fetchSeq) return; // 더 최근 요청이 있으면 무시
         if (!d || !d.current || typeof d.current.pm2_5 !== 'number') { renderError(); return; }
-        renderAir(Math.round(d.current.pm2_5), Math.round(d.current.pm10), c.tz);
+        const pm10 = (typeof d.current.pm10 === 'number') ? Math.round(d.current.pm10) : null;
+        renderAir(Math.round(d.current.pm2_5), pm10, c.tz);
       });
     }
     function renderAir(pm25, pm10, tz) {
-      const g25 = pm25Grade(pm25), g10 = pm10Grade(pm10);
-      const overall = Math.max(g25, g10);
+      const g25 = pm25Grade(pm25);
+      const hasPm10 = (pm10 !== null);
+      const g10 = hasPm10 ? pm10Grade(pm10) : 0;
+      const overall = hasPm10 ? Math.max(g25, g10) : g25;
       faceEl.innerHTML = faceSVG(overall);
       gradeEl.textContent = GRADES[overall];
       gradeSubEl.textContent = '지금 우리 동네 공기';
       pm25El.innerHTML = `${pm25} ㎍/㎥<span class="g">${GRADES[g25]}</span>`;
-      pm10El.innerHTML = `${pm10} ㎍/㎥<span class="g">${GRADES[g10]}</span>`;
+      pm10El.innerHTML = hasPm10 ? `${pm10} ㎍/㎥<span class="g">${GRADES[g10]}</span>` : '—';
       const t = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz });
       footerTimeEl.textContent = `${t} 기준`;
     }

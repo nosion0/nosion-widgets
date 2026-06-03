@@ -146,7 +146,8 @@
       const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
       if (s) {
         if (GOALS.indexOf(s.goal) >= 0) goal = s.goal;
-        if (s.date === todayStr() && typeof s.count === 'number') count = s.count; // 날짜 다르면 0으로 리셋
+        // 날짜 다르면 0으로 리셋, 이상값(음수/소수)은 방어
+        if (s.date === todayStr() && typeof s.count === 'number' && isFinite(s.count)) count = Math.max(0, Math.floor(s.count));
       }
     } catch (e) {}
 
