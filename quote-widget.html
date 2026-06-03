@@ -53,7 +53,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 2.5rem 2rem 1.5rem;
-      width: 360px;
+      width: 520px;
       min-height: 220px;
       position: relative;
       box-shadow: none;
@@ -131,7 +131,7 @@
       justify-content: center;
       background: transparent;
       border: none;
-      color: var(--muted-foreground);
+      color: hsl(220 9% 75%);   /* 연한 화살표 (오버 시 진하게) */
       cursor: pointer;
       border-radius: 50%;
       transition: background var(--transition), color var(--transition);
@@ -150,6 +150,7 @@
     }
 
     .pagination-info {
+      display: none;   /* 가운데 페이지 숫자 숨김 */
       font-size: 0.6875rem;
       color: var(--muted-foreground);
       opacity: 0.6;
@@ -501,8 +502,8 @@
     const MAX_HEIGHT = 500;
 
     const cardEl = document.getElementById('card');
-    let cardWidth = 360;
-    let cardHeight = null;
+    let cardWidth = 520;
+    let cardHeight = 330;
 
     try {
       const savedSize = localStorage.getItem(SIZE_KEY);
@@ -675,11 +676,12 @@
     document.addEventListener('touchcancel', endMove);
 
     // 크기 초기화 — 크기 + 위치 모두 원복
-    const DEFAULT_WIDTH = 360;
+    const DEFAULT_WIDTH = 520;
+    const DEFAULT_HEIGHT = 330;
     document.getElementById('resizeResetBtn').addEventListener('click', (e) => {
       e.stopPropagation();
       cardWidth = DEFAULT_WIDTH;
-      cardHeight = null;
+      cardHeight = DEFAULT_HEIGHT;
       applyCardSize();
       saveSize();
       offsetX = 0; offsetY = 0;
