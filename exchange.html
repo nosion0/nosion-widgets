@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>환율</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(220 13% 18%);
+      --card: hsl(0 0% 100%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+      --transition: 0.2s ease;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
+      background: var(--background); color: var(--foreground);
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; word-break: keep-all;
+    }
+    body { padding: 1rem; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+    .widget-wrapper { display: flex; align-items: flex-start; gap: 0.5rem; position: relative; width: fit-content; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 2rem 2.25rem 1.75rem; width: 330px; position: relative; box-shadow: none;
+      display: flex; flex-direction: column; align-items: safe center;
+      box-sizing: border-box; overflow: hidden; min-width: 0; min-height: 0;
+    }
+    .card.dragging { cursor: grabbing; }
+    .card-body { display: flex; flex-direction: column; gap: 1rem; width: 100%; max-width: 286px; }
+
+    .head { display: flex; align-items: baseline; justify-content: space-between; }
+    .title { font-size: 1.0625rem; font-weight: 600; color: var(--foreground); letter-spacing: -0.01em; }
+    .head-sub { font-size: 0.6875rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+
+    .fx-list { display: flex; flex-direction: column; }
+    .fx-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0; }
+    .fx-row + .fx-row { border-top: 1px solid hsl(220 14% 93%); }
+    .fx-left { display: flex; flex-direction: column; gap: 0.1rem; }
+    .fx-cur { font-size: 0.875rem; color: var(--foreground); font-weight: 500; }
+    .fx-name { font-size: 0.625rem; color: var(--muted-foreground); letter-spacing: 0.02em; }
+    .fx-val { font-size: 1.0625rem; font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+    .fx-val .won { font-size: 0.75rem; color: var(--muted-foreground); font-weight: 400; margin-left: 0.15rem; }
+
+    .foot { font-size: 0.625rem; color: var(--muted-foreground); opacity: 0.6; text-align: center; min-height: 14px; }
+
+    /* 컨트롤 */
+    .controls { display: flex; flex-direction: column; gap: 2px; opacity: 0; transition: opacity var(--transition); padding-top: 0.25rem; }
+    .widget-wrapper:hover .controls { opacity: 1; }
+    .control-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: rgba(115,115,115,0.5); cursor: pointer; transition: color var(--transition); border-radius: 4px; position: relative; }
+    .control-btn:hover:not(:disabled) { color: var(--foreground); }
+    .control-btn svg { width: 13px; height: 13px; stroke-width: 2; }
+    .control-btn[data-tooltip]::before, .control-btn[data-tooltip]::after { position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%); opacity: 0; pointer-events: none; transition: opacity 0.15s ease 0s; z-index: 50; }
+    .control-btn[data-tooltip]::before { content: attr(data-tooltip); background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-radius: 0.375rem; padding: 0.3125rem 0.625rem; font-size: 0.6875rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .control-btn[data-tooltip]::after { content: ''; right: calc(100% + 3px); width: 5px; height: 5px; background: var(--card); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); transform: translateY(-50%) rotate(-45deg); }
+    .control-btn[data-tooltip]:hover::before, .control-btn[data-tooltip]:hover::after { opacity: 1; transition-delay: 0.4s; }
+
+    /* 리사이즈 */
+    .resize-handle { position: absolute; display: flex; align-items: center; justify-content: center; user-select: none; z-index: 20; }
+    .resize-handle .bar { background: var(--border); transition: opacity var(--transition), background var(--transition), width 0.15s ease, height 0.15s ease; border-radius: 999px; opacity: 0; }
+    .widget-wrapper:hover .resize-handle .bar { opacity: 1; }
+    .resize-handle:hover .bar { background: var(--muted-foreground); }
+    .handle-top { top: 0; left: 50%; transform: translate(-50%,-50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-top .bar { width: 36px; height: 1px; } .handle-top:hover .bar { height: 3px; }
+    .handle-bottom { bottom: 0; left: 50%; transform: translate(-50%,50%); width: 36px; height: 16px; cursor: ns-resize; }
+    .handle-bottom .bar { width: 36px; height: 1px; } .handle-bottom:hover .bar { height: 3px; }
+    .handle-left { left: 0; top: 50%; transform: translate(-50%,-50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-left .bar { width: 1px; height: 36px; } .handle-left:hover .bar { width: 3px; }
+    .handle-right { right: 0; top: 50%; transform: translate(50%,-50%); width: 16px; height: 36px; cursor: ew-resize; }
+    .handle-right .bar { width: 1px; height: 36px; } .handle-right:hover .bar { width: 3px; }
+  </style>
+</head>
+<body>
+  <div class="widget-wrapper" id="widget">
+    <div class="card" id="card">
+      <div class="card-body">
+        <div class="head">
+          <span class="title">환율</span>
+          <span class="head-sub" id="headSub">원(KRW) 기준</span>
+        </div>
+        <div class="fx-list" id="list"></div>
+        <div class="foot" id="foot">불러오는 중...</div>
+      </div>
+
+      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
+      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
+      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
+      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="refreshBtn" data-tooltip="새로고침" title="새로고침" type="button" aria-label="새로고침">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.5 9a9 9 0 0 1 14.8-3.4L23 10M1 14l4.7 4.4A9 9 0 0 0 20.5 15"/></svg>
+      </button>
+      <button class="control-btn" id="resizeResetBtn" data-tooltip="크기 초기화" title="크기 초기화" type="button" aria-label="카드 크기 초기화">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+    // 표시 통화 (per: 1 또는 100 단위)
+    const CURRENCIES = [
+      { code: 'USD', name: '미국 달러', per: 1 },
+      { code: 'EUR', name: '유럽 유로', per: 1 },
+      { code: 'JPY', name: '일본 엔', per: 100 },
+      { code: 'CNY', name: '중국 위안', per: 1 },
+      { code: 'GBP', name: '영국 파운드', per: 1 }
+    ];
+    const CACHE_KEY = 'nosion-fx-cache-v1';
+    const listEl = document.getElementById('list');
+    const footEl = document.getElementById('foot');
+
+    let cache = null;
+    try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) {}
+
+    function fetchJSON(url, ms) {
+      let ctrl = null, to = null;
+      try { ctrl = new AbortController(); to = setTimeout(() => ctrl.abort(), ms || 6000); } catch (e) {}
+      return fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+        .then(r => (r && r.ok) ? r.json() : null)
+        .then(d => { if (to) clearTimeout(to); return d; })
+        .catch(() => { if (to) clearTimeout(to); return null; });
+    }
+
+    // 1 외화 = ? 원  (KRW 기준 환율을 가져와 역수)
+    async function loadRates() {
+      const syms = CURRENCIES.map(c => c.code).join(',');
+      // 1차: frankfurter.dev (base=KRW → 1 KRW = r 외화)
+      let krwToForeign = null, date = null;
+      const f = await fetchJSON('https://api.frankfurter.dev/v1/latest?base=KRW&symbols=' + syms, 6000);
+      if (f && f.rates) { krwToForeign = f.rates; date = f.date; }
+      if (!krwToForeign) {
+        // 2차 폴백: open.er-api.com (base=USD)
+        const e = await fetchJSON('https://open.er-api.com/v6/latest/USD', 6000);
+        if (e && e.rates && e.rates.KRW) {
+          krwToForeign = {};
+          CURRENCIES.forEach(c => { if (e.rates[c.code]) krwToForeign[c.code] = e.rates[c.code] / e.rates.KRW; });
+          date = e.time_last_update_utc ? e.time_last_update_utc.slice(0, 16) : null;
+        }
+      }
+      if (!krwToForeign) return null;
+      // 1 외화 = 1 / (1 KRW = r 외화) 원
+      const won = {};
+      CURRENCIES.forEach(c => { if (krwToForeign[c.code]) won[c.code] = 1 / krwToForeign[c.code]; });
+      return { won, date };
+    }
+
+    function render(data) {
+      listEl.innerHTML = '';
+      CURRENCIES.forEach(c => {
+        const w = data && data.won[c.code];
+        const row = document.createElement('div');
+        row.className = 'fx-row';
+        const label = c.per === 100 ? `100 ${c.code}` : `1 ${c.code}`;
+        const valTxt = (typeof w === 'number')
+          ? `${(w * c.per).toLocaleString('en-US', { maximumFractionDigits: 1 })}<span class="won">원</span>`
+          : '<span style="color:var(--muted-foreground);font-weight:400">—</span>';
+        row.innerHTML = `<div class="fx-left"><span class="fx-cur">${label}</span><span class="fx-name">${c.name}</span></div><span class="fx-val">${valTxt}</span>`;
+        listEl.appendChild(row);
+      });
+    }
+
+    function refresh() {
+      footEl.textContent = '불러오는 중...';
+      loadRates().then(data => {
+        if (data) {
+          cache = { won: data.won, date: data.date, fetched: Date.now() };
+          try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch (e) {}
+          render(cache);
+          footEl.textContent = (data.date ? data.date : '') + ' 고시 기준';
+        } else if (cache) {
+          render(cache);
+          footEl.textContent = '갱신 실패 · ' + (cache.date || '') + ' 기준(저장값)';
+        } else {
+          render(null);
+          footEl.textContent = '환율을 불러올 수 없어요';
+        }
+      });
+    }
+
+    if (cache) render(cache);
+    refresh();
+    setInterval(refresh, 60 * 60 * 1000); // 1시간마다
+
+    document.getElementById('refreshBtn').addEventListener('click', refresh);
+
+    /* ===== 리사이즈 ===== */
+    const SIZE_KEY = 'nosion-fx-size-v1';
+    const MIN_WIDTH = 280, MAX_WIDTH = 520, MIN_HEIGHT = 280, MAX_HEIGHT = 560, DEFAULT_WIDTH = 330;
+    const cardEl = document.getElementById('card');
+    const widgetEl = document.getElementById('widget');
+    let cardWidth = DEFAULT_WIDTH, cardHeight = null;
+    try {
+      const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null');
+      if (s) { if (typeof s.width === 'number') cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width)); if (typeof s.height === 'number' && s.height > 0) cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height)); }
+    } catch (e) {}
+    function applyCardSize() { cardEl.style.width = cardWidth + 'px'; cardEl.style.height = cardHeight !== null ? cardHeight + 'px' : ''; }
+    function saveSize() { try { localStorage.setItem(SIZE_KEY, JSON.stringify({ width: cardWidth, height: cardHeight })); } catch (e) {} }
+    let resizeDrag = null, startLeft = 0, startTop = 0;
+    function startResize(direction, x, y) {
+      const rect = cardEl.getBoundingClientRect();
+      resizeDrag = { direction, startX: x, startY: y, startWidth: rect.width, startHeight: rect.height };
+      if (getComputedStyle(widgetEl).position !== 'fixed') {
+        const wr = widgetEl.getBoundingClientRect();
+        widgetEl.style.position = 'fixed'; widgetEl.style.left = wr.left + 'px'; widgetEl.style.top = wr.top + 'px'; widgetEl.style.transform = 'none';
+        offsetX = 0; offsetY = 0;
+      }
+      startLeft = parseFloat(widgetEl.style.left) || 0; startTop = parseFloat(widgetEl.style.top) || 0;
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
+    }
+    function moveResize(x, y) {
+      if (!resizeDrag) return;
+      const dx = x - resizeDrag.startX, dy = y - resizeDrag.startY, dir = resizeDrag.direction;
+      if (dir === 'right' || dir === 'left') {
+        const delta = dir === 'right' ? dx : -dx;
+        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
+        const actual = cardWidth - resizeDrag.startWidth;
+        if (widgetEl.style.position === 'fixed') widgetEl.style.left = (startLeft - actual / 2) + 'px';
+      }
+      if (dir === 'bottom' || dir === 'top') {
+        const delta = dir === 'bottom' ? dy : -dy;
+        cardHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta));
+        const actual = cardHeight - resizeDrag.startHeight;
+        if (widgetEl.style.position === 'fixed') widgetEl.style.top = (startTop - actual / 2) + 'px';
+      }
+      applyCardSize();
+    }
+    function endResize() { if (!resizeDrag) return; saveSize(); resizeDrag = null; document.body.style.userSelect = ''; document.body.style.cursor = ''; }
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+      const direction = handle.dataset.direction;
+      handle.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); startResize(direction, e.clientX, e.clientY); });
+      handle.addEventListener('touchstart', (e) => { e.preventDefault(); const t = e.touches[0]; startResize(direction, t.clientX, t.clientY); }, { passive: false });
+    });
+    document.addEventListener('mousemove', (e) => { if (resizeDrag) { e.preventDefault(); moveResize(e.clientX, e.clientY); } });
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('touchmove', (e) => { if (resizeDrag) { const t = e.touches[0]; moveResize(t.clientX, t.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endResize);
+    document.addEventListener('touchcancel', endResize);
+    applyCardSize();
+
+    /* ===== 드래그 이동 ===== */
+    const POS_KEY = 'nosion-fx-pos-v1';
+    let offsetX = 0, offsetY = 0, moveDrag = null;
+    try { const p = JSON.parse(localStorage.getItem(POS_KEY) || 'null'); if (p) { if (typeof p.x === 'number') offsetX = p.x; if (typeof p.y === 'number') offsetY = p.y; } } catch (e) {}
+    function applyPosition() { widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`; }
+    function savePosition() { try { localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY })); } catch (e) {} }
+    function isDraggableTarget(target) {
+      if (!target.closest) return false;
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input', '.fx-list'];
+      for (const sel of blocked) if (target.closest(sel)) return false;
+      return true;
+    }
+    function startMove(x, y) { moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY }; document.body.style.userSelect = 'none'; cardEl.classList.add('dragging'); }
+    function doMove(x, y) { if (!moveDrag) return; offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); applyPosition(); }
+    function endMove() { if (!moveDrag) return; savePosition(); moveDrag = null; document.body.style.userSelect = ''; cardEl.classList.remove('dragging'); }
+    applyPosition();
+    cardEl.addEventListener('mousedown', (e) => { if (!isDraggableTarget(e.target)) return; e.preventDefault(); startMove(e.clientX, e.clientY); });
+    cardEl.addEventListener('touchstart', (e) => { if (!isDraggableTarget(e.target)) return; const t = e.touches[0]; startMove(t.clientX, t.clientY); }, { passive: true });
+    document.addEventListener('mousemove', (e) => { if (moveDrag) { e.preventDefault(); doMove(e.clientX, e.clientY); } });
+    document.addEventListener('mouseup', endMove);
+    document.addEventListener('touchmove', (e) => { if (moveDrag) { const t = e.touches[0]; doMove(t.clientX, t.clientY); } }, { passive: true });
+    document.addEventListener('touchend', endMove);
+    document.addEventListener('touchcancel', endMove);
+
+    document.getElementById('resizeResetBtn').addEventListener('click', () => {
+      cardWidth = DEFAULT_WIDTH; cardHeight = null; applyCardSize(); saveSize();
+      offsetX = 0; offsetY = 0; applyPosition(); savePosition();
+    });
+  </script>
+</body>
+</html>
