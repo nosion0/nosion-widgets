@@ -1242,7 +1242,7 @@
       if (!target.closest) return false;
       // 헤더가 없어졌으므로 카드 빈 영역 전체에서 드래그 가능
       // (인터랙티브 요소는 제외)
-      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input'];
+      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input', '.city-dropdown'];
       for (const sel of blocked) {
         if (target.closest(sel)) return false;
       }
