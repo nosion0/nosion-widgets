@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이용약관 — 노시언 위젯</title>
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --background: hsl(0 0% 100%);
+      --card: hsl(0 0% 100%);
+      --foreground: hsl(220 13% 18%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+    }
+    html[data-theme="dark"] {
+      --background: hsl(220 13% 10%);
+      --card: hsl(220 13% 14%);
+      --foreground: hsl(0 0% 92%);
+      --border: hsl(220 9% 28%);
+      --muted: hsl(220 13% 18%);
+      --muted-foreground: hsl(215 10% 65%);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+                   system-ui, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+      word-break: keep-all;
+    }
+    body {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem 6rem;
+      line-height: 1.7;
+    }
+    .breadcrumb {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      margin-bottom: 1rem;
+    }
+    .breadcrumb a { color: inherit; text-decoration: none; }
+    .breadcrumb a:hover { color: var(--foreground); }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .updated {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      margin-bottom: 2.5rem;
+    }
+    h2 {
+      font-size: 1.0625rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-top: 2.25rem;
+      margin-bottom: 0.75rem;
+    }
+    p, li {
+      font-size: 0.875rem;
+      color: var(--foreground);
+      margin-bottom: 0.625rem;
+    }
+    ul { padding-left: 1.25rem; }
+    code {
+      font-family: 'Menlo', 'Monaco', monospace;
+      font-size: 0.8125rem;
+      background: var(--muted);
+      padding: 0.05rem 0.35rem;
+      border-radius: 0.25rem;
+    }
+    .note {
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      background: var(--muted);
+      border-left: 2px solid var(--border);
+      padding: 0.75rem 1rem;
+      border-radius: 0.4rem;
+      margin: 1rem 0;
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.25rem;
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+    .theme-toggle:hover { color: var(--foreground); background: var(--muted); }
+    .theme-toggle svg { width: 14px; height: 14px; stroke-width: 2; }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeBtn" type="button" aria-label="테마 전환">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+
+  <div class="breadcrumb"><a href="index.html">노시언 위젯</a> / 이용약관</div>
+  <h1>이용약관</h1>
+  <div class="updated">시행일: 2026-06-05 · 최종 개정: 2026-06-05</div>
+
+  <p>본 약관은 노시언 위젯(이하 "서비스")의 이용에 관한 조건을 규정합니다. 사용자는 서비스를 이용함으로써 본 약관에 동의하는 것으로 간주됩니다.</p>
+
+  <h2>1. 서비스의 성격</h2>
+  <ul>
+    <li>서비스는 노션(Notion) 및 유사 환경에 임베드 가능한 정적 HTML 위젯 모음입니다.</li>
+    <li>서비스는 별도 회원가입 없이 임베드 URL만으로 동작합니다.</li>
+  </ul>
+
+  <h2>2. 라이센스</h2>
+  <p>구매하신 라이센스의 범위 안에서 서비스를 이용할 수 있습니다. 별도 합의가 없는 한 다음을 포함합니다:</p>
+  <ul>
+    <li><strong>허용</strong>: 본인의 노션/웹 페이지에 임베드, 디자인 토큰(CSS 변수)을 통한 색상 조정.</li>
+    <li><strong>제한</strong>: 위젯 코드의 재배포·재판매, 도메인 우회 또는 라이센스 검증 회피, 위젯을 자신의 상품으로 표시하는 행위.</li>
+  </ul>
+
+  <h2>3. 외부 서비스 의존성과 한계</h2>
+  <p>일부 위젯은 외부 API(예: Open-Meteo, Yahoo Finance, ipapi 등)에 의존합니다. 이들 서비스의 가용성·정확성은 서비스 운영자의 통제를 벗어나며, 다음 사항에 대해 책임을 지지 않습니다:</p>
+  <ul>
+    <li>외부 API 중단·변경·정확성 문제로 인한 위젯 표시 오류</li>
+    <li>주식 위젯의 CORS 프록시 운영사 정책 변경 또는 중단</li>
+    <li>외부 API의 요청 한도 초과로 인한 일시적 차단(IP 단위)</li>
+  </ul>
+  <p>서비스 운영자는 합리적 범위에서 외부 의존성을 다양화하고 캐시를 적용해 안정성을 높이도록 노력합니다.</p>
+
+  <h2>4. 데이터 책임</h2>
+  <ul>
+    <li>위젯 데이터(루틴, 무드, 일정 등)는 사용자 브라우저에 저장됩니다.</li>
+    <li>서비스 운영자는 사용자 데이터를 백업·복구할 의무가 없으며, 브라우저 데이터 손실에 책임을 지지 않습니다. 중요 데이터는 별도로 보관하시기 바랍니다.</li>
+  </ul>
+
+  <h2>5. 환불</h2>
+  <p>디지털 콘텐츠의 특성상 다운로드/임베드가 시작된 이후의 환불은 원칙적으로 제한됩니다. 다만 다음의 경우 환불을 검토합니다:</p>
+  <ul>
+    <li>위젯이 광고된 핵심 기능을 수행하지 않으며, 7일 이내 운영자가 해결하지 못한 경우.</li>
+    <li>중복 결제 등 명백한 오류.</li>
+  </ul>
+
+  <h2>6. 보증의 한계</h2>
+  <p>서비스는 "있는 그대로(as is)" 제공되며, 특정 목적 적합성·정확성·중단 없는 동작을 보증하지 않습니다. 서비스 이용으로 인한 직간접 손해(데이터 손실, 영업 손실 등)에 대해 운영자는 책임을 지지 않습니다.</p>
+
+  <h2>7. 약관 변경</h2>
+  <p>본 약관은 사전 안내 후 변경될 수 있으며, 변경 후 서비스를 계속 이용하는 것은 변경된 약관에 동의한 것으로 간주됩니다.</p>
+
+  <h2>8. 준거법 및 분쟁 해결</h2>
+  <p>본 약관은 대한민국 법령에 따라 해석되며, 서비스 이용으로 발생한 분쟁은 운영자의 주된 영업소 관할 법원을 1심 전속관할로 합니다.</p>
+
+  <div class="note">
+    본 약관은 일반적인 안내이며, 법률 자문을 대체하지 않습니다. 사업적 활용 시 변호사의 검토를 받으시기 바랍니다.
+  </div>
+
+  <p style="margin-top:2rem; font-size:0.75rem; color:var(--muted-foreground);">
+    함께 보기: <a href="privacy.html" style="color:inherit;">개인정보 처리방침</a>
+  </p>
+
+  <script>
+    (function() {
+      const THEME_KEY = 'nosion-theme-v1';
+      function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; } }
+      function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+      applyTheme(getTheme());
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.addEventListener('click', () => applyTheme(getTheme() === 'light' ? 'dark' : 'light'));
+      });
+    })();
+  </script>
+</body>
+</html>

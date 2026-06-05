@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>개인정보 처리방침 — 노시언 위젯</title>
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --background: hsl(0 0% 100%);
+      --card: hsl(0 0% 100%);
+      --foreground: hsl(220 13% 18%);
+      --border: hsl(220 9% 84%);
+      --muted: hsl(210 20% 96%);
+      --muted-foreground: hsl(215 14% 50%);
+      --radius: 0.75rem;
+    }
+    html[data-theme="dark"] {
+      --background: hsl(220 13% 10%);
+      --card: hsl(220 13% 14%);
+      --foreground: hsl(0 0% 92%);
+      --border: hsl(220 9% 28%);
+      --muted: hsl(220 13% 18%);
+      --muted-foreground: hsl(215 10% 65%);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+                   system-ui, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      -webkit-font-smoothing: antialiased;
+      word-break: keep-all;
+    }
+    body {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem 6rem;
+      line-height: 1.7;
+    }
+    .breadcrumb {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      margin-bottom: 1rem;
+    }
+    .breadcrumb a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .breadcrumb a:hover { color: var(--foreground); }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .updated {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      margin-bottom: 2.5rem;
+    }
+    h2 {
+      font-size: 1.0625rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-top: 2.25rem;
+      margin-bottom: 0.75rem;
+    }
+    h3 {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    p, li {
+      font-size: 0.875rem;
+      color: var(--foreground);
+      margin-bottom: 0.625rem;
+    }
+    ul {
+      padding-left: 1.25rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      margin: 0.5rem 0 1rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.5rem 0.625rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      font-weight: 500;
+      color: var(--muted-foreground);
+      background: var(--muted);
+    }
+    code {
+      font-family: 'Menlo', 'Monaco', monospace;
+      font-size: 0.8125rem;
+      background: var(--muted);
+      padding: 0.05rem 0.35rem;
+      border-radius: 0.25rem;
+    }
+    .note {
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      background: var(--muted);
+      border-left: 2px solid var(--border);
+      padding: 0.75rem 1rem;
+      border-radius: 0.4rem;
+      margin: 1rem 0;
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.25rem;
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+    .theme-toggle:hover { color: var(--foreground); background: var(--muted); }
+    .theme-toggle svg { width: 14px; height: 14px; stroke-width: 2; }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeBtn" type="button" aria-label="테마 전환">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+
+  <div class="breadcrumb"><a href="index.html">노시언 위젯</a> / 개인정보 처리방침</div>
+  <h1>개인정보 처리방침</h1>
+  <div class="updated">시행일: 2026-06-05 · 최종 개정: 2026-06-05</div>
+
+  <p>노시언 위젯(이하 "서비스")은 노션(Notion) 임베드용 미니멀 HTML 위젯 모음입니다. 본 방침은 서비스 이용 과정에서 수집·처리되는 정보와 그 보호 방법을 안내합니다.</p>
+
+  <h2>1. 데이터 처리 원칙</h2>
+  <ul>
+    <li><strong>저장 위치</strong>: 모든 위젯 설정·데이터는 <strong>사용자 브라우저의 localStorage</strong>에만 저장되며, 자체 서버를 운영하지 않습니다.</li>
+    <li><strong>회원가입·로그인 없음</strong>: 별도 계정 시스템이 없으며, 이메일·전화번호·이름 등의 신원 정보를 수집하지 않습니다.</li>
+    <li><strong>광고·추적 없음</strong>: 광고 식별자, 분석 스크립트, 추적 쿠키를 사용하지 않습니다.</li>
+  </ul>
+
+  <h2>2. 처리 정보 및 외부 송신</h2>
+  <p>서비스는 위젯 기능 제공을 위해 다음의 외부 API를 호출하며, 이때 일부 정보가 해당 제공자에게 전송될 수 있습니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>위젯</th><th>외부 도메인</th><th>전송되는 정보</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>날씨</td><td>api.open-meteo.com<br>geocoding-api.open-meteo.com</td><td>위도/경도, 도시명</td></tr>
+      <tr><td>공기질</td><td>air-quality-api.open-meteo.com</td><td>위도/경도</td></tr>
+      <tr><td>달 위상·별자리·일출일몰·공기질 (자동 위치)</td><td>ipapi.co</td><td><strong>사용자 IP 주소</strong> (대략적 위치 자동 감지용)</td></tr>
+      <tr><td>달 위상·별자리·일출일몰·공기질 (지명 변환)</td><td>api.bigdatacloud.net</td><td>위도/경도</td></tr>
+      <tr><td>환율</td><td>api.frankfurter.dev<br>open.er-api.com</td><td>통화 코드(예: USD, EUR)</td></tr>
+      <tr><td>주식</td><td>query1.finance.yahoo.com<br>(CORS 프록시: api.codetabs.com, api.allorigins.win, r.jina.ai)</td><td>티커 기호(예: AAPL, 005930.KS)</td></tr>
+      <tr><td>모든 페이지</td><td>cdn.jsdelivr.net</td><td>CDN 폰트(Pretendard) 로드 — IP 외 정보 없음</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.1. IP 주소에 관하여</h3>
+  <p><strong>달 위상·별자리·일출일몰·공기질 위젯</strong>이 "현재 위치" 자동 감지를 시도할 때 사용자 IP가 <code>ipapi.co</code>로 전송되며, 그 결과 대략적인 도시 단위 위치만 사용합니다. 사용자가 직접 도시를 선택하면 IP는 더 이상 전송되지 않습니다. 결과는 <strong>12시간 동안 브라우저에 캐시</strong>되어 요청 빈도를 최소화합니다.</p>
+
+  <h3>2.2. CORS 프록시 안내 (주식 위젯)</h3>
+  <p>주식 위젯은 Yahoo Finance 데이터를 받기 위해 외부 CORS 프록시(<code>codetabs.com</code>, <code>allorigins.win</code>, <code>r.jina.ai</code>)를 경유합니다. 전송되는 정보는 티커 기호뿐이며 개인 식별 정보는 포함되지 않으나, <strong>해당 프록시 운영사의 정책</strong>에 의해 IP가 로깅될 수 있습니다.</p>
+
+  <h2>3. 보관 및 삭제</h2>
+  <ul>
+    <li>위젯 데이터는 사용자 브라우저에 저장되며, 서비스가 별도로 수집·보관하지 않습니다.</li>
+    <li>외부 API 제공자의 보관 정책은 각 제공자의 약관을 따릅니다.</li>
+    <li>브라우저의 사이트 데이터 삭제(쿠키 및 사이트 데이터 삭제) 또는 시크릿/프라이빗 창 사용으로 데이터를 즉시 제거할 수 있습니다.</li>
+  </ul>
+
+  <h2>4. 사용자 권리</h2>
+  <ul>
+    <li>저장된 데이터에 대한 열람·정정·삭제 권리를 가집니다(브라우저 개발자 도구의 <code>Application → Local Storage</code>에서 확인 가능).</li>
+    <li>일부 위젯(달 위상·별자리·일출일몰·공기질)은 사용자가 도시를 직접 선택해 IP 자동 감지 없이 사용할 수 있습니다.</li>
+    <li>주식 위젯을 사용하지 않으면 CORS 프록시 의존 우려를 회피할 수 있습니다.</li>
+  </ul>
+
+  <h2>5. 미성년자</h2>
+  <p>서비스는 만 14세 미만 아동을 표적으로 하지 않으며, 의도적으로 아동의 개인정보를 수집하지 않습니다. 보호자의 안내하에 이용을 권장합니다.</p>
+
+  <h2>6. 보안</h2>
+  <ul>
+    <li>서비스는 자체 서버 없이 정적 호스팅(예: GitHub Pages)으로 배포되며, 모든 외부 통신은 HTTPS로 이루어집니다.</li>
+    <li>외부 의존성(CDN, API) 침해로 인한 위험을 완전히 배제할 수 없으며, 합리적 수준의 방어 코딩(입력 검증, 출력 이스케이프 등)을 적용합니다.</li>
+  </ul>
+
+  <h2>7. 정책 변경</h2>
+  <p>본 처리방침이 변경되는 경우 본 페이지 상단의 "최종 개정일"이 갱신되며, 중요한 변경 시 별도 안내를 제공합니다.</p>
+
+  <h2>8. 문의</h2>
+  <p>처리방침에 관한 문의는 서비스 운영자에게 GitHub Issue를 통해 전달해 주시기 바랍니다.</p>
+
+  <div class="note">
+    본 처리방침은 일반적인 안내이며, 법률 자문을 대체하지 않습니다. 사업적 활용 시 변호사의 검토를 받으시기 바랍니다.
+  </div>
+
+  <script>
+    (function() {
+      const THEME_KEY = 'nosion-theme-v1';
+      function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; } }
+      function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+      applyTheme(getTheme());
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.addEventListener('click', () => applyTheme(getTheme() === 'light' ? 'dark' : 'light'));
+      });
+    })();
+  </script>
+</body>
+</html>
