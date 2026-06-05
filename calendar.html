@@ -390,8 +390,17 @@
     const KEY_POS  = 'nosion-calendar-pos-v1';
 
     /* ===== State ===== */
-    const todayDate = new Date();
+    let todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
+
+    // 자정 넘어가면 today 강조 갱신
+    setInterval(() => {
+      const t = new Date(); t.setHours(0, 0, 0, 0);
+      if (t.getTime() !== todayDate.getTime()) {
+        todayDate = t;
+        render();
+      }
+    }, 60000);
 
     let viewYear  = todayDate.getFullYear();
     let viewMonth = todayDate.getMonth();

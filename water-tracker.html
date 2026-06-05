@@ -165,7 +165,8 @@
 
     function todayStr() {
       const d = new Date();
-      return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     }
 
     let goal = 8, count = 0;
@@ -296,7 +297,7 @@
       return true;
     }
     function startMove(x, y) { moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY }; document.body.style.userSelect = 'none'; cardEl.classList.add('dragging'); }
-    function doMove(x, y) { if (!moveDrag) return; offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); applyPosition(); }
+    function doMove(x, y) { if (!moveDrag) return; offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); { const __r = cardEl.getBoundingClientRect(); const __bL = __r.left - offsetX; const __bT = __r.top - offsetY; const __MIN = 40; offsetX = Math.max(-__bL - __r.width + __MIN, Math.min(window.innerWidth - __bL - __MIN, offsetX)); offsetY = Math.max(-__bT - __r.height + __MIN, Math.min(window.innerHeight - __bT - __MIN, offsetY)); } applyPosition(); }
     function endMove() { if (!moveDrag) return; savePosition(); moveDrag = null; document.body.style.userSelect = ''; cardEl.classList.remove('dragging'); }
     applyPosition();
     cardEl.addEventListener('mousedown', (e) => { if (!isDraggableTarget(e.target)) return; e.preventDefault(); startMove(e.clientX, e.clientY); });

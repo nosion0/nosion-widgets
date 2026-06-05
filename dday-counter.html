@@ -97,7 +97,7 @@
     .event-title {
       font-size: 1.125rem;
       font-weight: 500;
-      color: hsl(220 10% 42%);
+      color: var(--foreground);
       margin-bottom: 1.75rem;
       letter-spacing: -0.015em;
       line-height: 1.3;
@@ -149,7 +149,7 @@
 
     .target-date-display {
       font-size: 0.8125rem;
-      color: hsl(220 10% 55%);
+      color: var(--muted-foreground);
       margin-bottom: 1.125rem;
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.005em;
@@ -878,9 +878,7 @@
     }
     function doMove(x, y) {
       if (!moveDrag) return;
-      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
-      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
-      applyPosition();
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); { const __r = cardEl.getBoundingClientRect(); const __bL = __r.left - offsetX; const __bT = __r.top - offsetY; const __MIN = 40; offsetX = Math.max(-__bL - __r.width + __MIN, Math.min(window.innerWidth - __bL - __MIN, offsetX)); offsetY = Math.max(-__bT - __r.height + __MIN, Math.min(window.innerHeight - __bT - __MIN, offsetY)); } applyPosition();
     }
     function endMove() {
       if (moveDrag) {

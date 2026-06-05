@@ -1158,9 +1158,7 @@
 
     function doMove(x, y) {
       if (!moveDrag) return;
-      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
-      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
-      applyPosition();
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); { const __r = cardEl.getBoundingClientRect(); const __bL = __r.left - offsetX; const __bT = __r.top - offsetY; const __MIN = 40; offsetX = Math.max(-__bL - __r.width + __MIN, Math.min(window.innerWidth - __bL - __MIN, offsetX)); offsetY = Math.max(-__bT - __r.height + __MIN, Math.min(window.innerHeight - __bT - __MIN, offsetY)); } applyPosition();
     }
 
     function endMove() {

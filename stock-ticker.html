@@ -114,8 +114,8 @@
         </div>
         <div class="list" id="list"></div>
         <div class="add-row">
-          <input class="add-input" id="addSym" type="text" placeholder="티커 (예: 005930.KS, AAPL)" autocomplete="off" />
-          <input class="add-input" id="addName" type="text" placeholder="이름(선택)" autocomplete="off" style="max-width:84px" />
+          <input class="add-input" id="addSym" type="text" placeholder="티커 (예: 005930.KS, AAPL)" autocomplete="off" maxlength="20" />
+          <input class="add-input" id="addName" type="text" placeholder="이름(선택)" autocomplete="off" style="max-width:84px" maxlength="30" />
           <button class="add-go" id="addGo" type="button">추가</button>
         </div>
         <div class="hint">티커 예: 코스피 ^KS11 · 코스닥 ^KQ11 · 삼성전자 005930.KS · 애플 AAPL · 비트코인 BTC-USD</div>
@@ -318,11 +318,11 @@
       document.getElementById('editBtn').textContent = on ? '완료' : '편집';
     });
     function addSymbol() {
-      const sym = document.getElementById('addSym').value.trim();
+      const sym = document.getElementById('addSym').value.trim().slice(0, 20);
       if (!sym) return;
       if (symbols.length >= MAX_SYMBOLS) { footEl.textContent = `최대 ${MAX_SYMBOLS}개까지 추가할 수 있어요`; return; }
       if (symbols.some(x => x.sym.toLowerCase() === sym.toLowerCase())) return;
-      const name = document.getElementById('addName').value.trim() || sym.toUpperCase();
+      const name = document.getElementById('addName').value.trim().slice(0, 30) || sym.toUpperCase();
       symbols.push({ sym: sym, name: name });
       saveSymbols();
       document.getElementById('addSym').value = '';
@@ -406,7 +406,7 @@
       return true;
     }
     function startMove(x, y) { moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY }; document.body.style.userSelect = 'none'; cardEl.classList.add('dragging'); }
-    function doMove(x, y) { if (!moveDrag) return; offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); applyPosition(); }
+    function doMove(x, y) { if (!moveDrag) return; offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); { const __r = cardEl.getBoundingClientRect(); const __bL = __r.left - offsetX; const __bT = __r.top - offsetY; const __MIN = 40; offsetX = Math.max(-__bL - __r.width + __MIN, Math.min(window.innerWidth - __bL - __MIN, offsetX)); offsetY = Math.max(-__bT - __r.height + __MIN, Math.min(window.innerHeight - __bT - __MIN, offsetY)); } applyPosition(); }
     function endMove() { if (!moveDrag) return; savePosition(); moveDrag = null; document.body.style.userSelect = ''; cardEl.classList.remove('dragging'); }
     applyPosition();
     cardEl.addEventListener('mousedown', (e) => { if (!isDraggableTarget(e.target)) return; e.preventDefault(); startMove(e.clientX, e.clientY); });
