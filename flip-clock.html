@@ -60,13 +60,14 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 1.5rem 1.5rem 1.25rem;
+      padding: 1.5rem;
       width: 360px;
       position: relative;
       box-shadow: none;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       box-sizing: border-box;
       overflow: hidden;
       min-width: 0;
@@ -83,26 +84,12 @@
       user-select: none;
     }
 
-    /* 콜론 — TWEMCO 스타일 점 두 개 (셀 위/아래 절반의 시각 중심에 정렬) */
+    /* 콜론 자리 — 점 없이 시·분 사이 간격만 유지 */
     .colon {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 44px;
-      padding: 0 8px;
+      width: 14px;
       height: 104px;
-      animation: blink 2s steps(2, end) infinite;
-    }
-    .colon::before, .colon::after {
-      content: '';
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--muted-foreground);
       flex-shrink: 0;
     }
-    @keyframes blink { 50% { opacity: 0.35; } }
 
     /* 셀: 한 자리 숫자 (TWEMCO 비율 2:3) */
     .cell {
@@ -220,6 +207,31 @@
       background: var(--foreground);
       border-color: var(--foreground);
       color: var(--card);
+    }
+
+    /* === 색상 선택 (카드 바깥, 호버 시) === */
+    .color-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .widget-wrapper:hover .color-toggle { opacity: 1; }
+    .color-chip {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      padding: 0;
+      background: var(--chip);
+      transition: transform 0.12s ease, border-color var(--transition);
+    }
+    .color-chip:hover { transform: scale(1.15); }
+    .color-chip.active {
+      border-color: var(--foreground);
+      box-shadow: 0 0 0 1.5px var(--card), 0 0 0 2.5px var(--foreground);
     }
 
     /* AM/PM 표시 (12H일 때만) */
@@ -345,6 +357,12 @@
         <button class="toggle-btn" type="button" data-format="24">24H</button>
         <button class="toggle-btn" type="button" data-format="12">12H</button>
       </div>
+      <div class="color-toggle">
+        <button class="color-chip" type="button" data-color="black" style="--chip: hsl(220 13% 18%);" aria-label="검정"></button>
+        <button class="color-chip" type="button" data-color="dark"  style="--chip: hsl(220 10% 38%);" aria-label="진한 회색"></button>
+        <button class="color-chip" type="button" data-color="mid"   style="--chip: hsl(220 10% 60%);" aria-label="중간 회색"></button>
+        <button class="color-chip" type="button" data-color="light" style="--chip: hsl(220 10% 82%);" aria-label="옅은 회색"></button>
+      </div>
     </div>
 
     <div class="controls">
@@ -365,8 +383,36 @@
     'use strict';
 
     const FORMAT_KEY = 'nosion-flip-clock-format-v1';
+    const COLOR_KEY  = 'nosion-flip-clock-color-v1';
     const SIZE_KEY   = 'nosion-flip-clock-size-v1';
     const POS_KEY    = 'nosion-flip-clock-pos-v1';
+
+    /* ============================================
+       색상 테마 (플립 칸 배경 + 숫자색 + 분할선)
+       ============================================ */
+    const COLORS = {
+      black: { bg: 'hsl(220 13% 18%)', fg: 'hsl(0 0% 100%)',     gap: 'hsl(220 13% 11%)' },
+      dark:  { bg: 'hsl(220 10% 38%)', fg: 'hsl(0 0% 100%)',     gap: 'hsl(220 10% 30%)' },
+      mid:   { bg: 'hsl(220 10% 60%)', fg: 'hsl(0 0% 100%)',     gap: 'hsl(220 10% 52%)' },
+      light: { bg: 'hsl(220 10% 82%)', fg: 'hsl(220 13% 24%)',   gap: 'hsl(220 10% 74%)' }
+    };
+    let color = 'black';
+    try { color = COLORS[localStorage.getItem(COLOR_KEY)] ? localStorage.getItem(COLOR_KEY) : 'black'; } catch (e) {}
+    function applyColor() {
+      const c = COLORS[color] || COLORS.black;
+      document.documentElement.style.setProperty('--flap-bg', c.bg);
+      document.documentElement.style.setProperty('--flap-fg', c.fg);
+      document.documentElement.style.setProperty('--flap-gap', c.gap);
+      document.querySelectorAll('.color-chip').forEach(b => b.classList.toggle('active', b.dataset.color === color));
+    }
+    document.querySelectorAll('.color-chip').forEach(b => {
+      b.addEventListener('click', () => {
+        color = b.dataset.color;
+        try { localStorage.setItem(COLOR_KEY, color); } catch (e) {}
+        applyColor();
+      });
+    });
+    applyColor();
 
     /* ============================================
        플립 메커니즘 — 셀당 현재 값 추적, 변경 시 split-flap 애니메이션
