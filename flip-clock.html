@@ -53,7 +53,7 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 2rem 1.75rem 1.5rem;
+      padding: 1.75rem 1.5rem 1.5rem;
       width: 360px;
       position: relative;
       box-shadow: none;
@@ -72,28 +72,35 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.3rem;
+      gap: 4px;
       user-select: none;
     }
 
+    /* 콜론 — TWEMCO 스타일 작은 점 두 개 */
     .colon {
-      font-size: 1.75rem;
-      font-weight: 500;
-      color: var(--muted-foreground);
-      letter-spacing: -0.04em;
-      line-height: 1;
-      padding: 0 0.1rem;
-      font-variant-numeric: tabular-nums;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      padding: 0 6px;
       animation: blink 2s steps(2, end) infinite;
+    }
+    .colon::before, .colon::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--muted-foreground);
     }
     @keyframes blink { 50% { opacity: 0.35; } }
 
-    /* 셀: 한 자리 숫자 */
+    /* 셀: 한 자리 숫자 (TWEMCO 비율 2:3) */
     .cell {
       position: relative;
-      width: 44px;
-      height: 64px;
-      perspective: 240px;
+      width: 70px;
+      height: 104px;
+      perspective: 320px;
       flex-shrink: 0;
     }
 
@@ -107,26 +114,26 @@
     }
     .half.top {
       top: 0;
-      border-radius: 6px 6px 0 0;
+      border-radius: 8px 8px 0 0;
       border-bottom: 1px solid var(--flap-gap);
     }
     .half.bottom {
       bottom: 0;
-      border-radius: 0 0 6px 6px;
+      border-radius: 0 0 8px 8px;
     }
 
     .half .text,
     .flap .text {
       position: absolute;
       left: 0; right: 0;
-      height: 64px;            /* cell 전체 높이와 동일 → 윗/아랫쪽 절반만 보임 */
+      height: 104px;           /* cell 전체 높이와 동일 → 윗/아랫쪽 절반만 보임 */
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.6rem;       /* 약 42px */
+      font-size: 4rem;         /* 64px — 셀 높이의 약 61% */
       font-weight: 500;
       color: var(--flap-fg);
-      letter-spacing: -0.03em;
+      letter-spacing: -0.04em;
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
@@ -147,14 +154,14 @@
     .flap.top {
       top: 0;
       transform-origin: bottom;
-      border-radius: 6px 6px 0 0;
+      border-radius: 8px 8px 0 0;
       border-bottom: 1px solid var(--flap-gap);
       animation: flip-top 0.55s ease-in forwards;
     }
     .flap.bottom {
       bottom: 0;
       transform-origin: top;
-      border-radius: 0 0 6px 6px;
+      border-radius: 0 0 8px 8px;
       transform: rotateX(90deg);
       animation: flip-bottom 0.5s ease-out 0.55s forwards;
     }
@@ -460,7 +467,7 @@
     /* ============================================
        4방향 리사이즈
        ============================================ */
-    const MIN_WIDTH = 240, MAX_WIDTH = 600, MIN_HEIGHT = 160, MAX_HEIGHT = 420;
+    const MIN_WIDTH = 280, MAX_WIDTH = 600, MIN_HEIGHT = 200, MAX_HEIGHT = 420;
     const DEFAULT_WIDTH = 360;
     const cardEl = document.getElementById('card');
     const widgetEl = document.getElementById('widget');
