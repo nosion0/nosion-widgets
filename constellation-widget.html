@@ -107,13 +107,22 @@
     }
     .star-figure circle {
       fill: var(--foreground);
+      animation: twinkle 4s ease-in-out infinite;
     }
-    /* 가장 밝은 별 강조용 외곽 헤일로 */
+    /* 가장 밝은 별 강조용 외곽 헤일로 — 정적 */
     .star-figure circle.halo {
       fill: none;
       stroke: var(--foreground);
       stroke-width: 0.7;
       opacity: 0.35;
+      animation: none;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .star-figure circle { animation: none; }
     }
 
     /* 마우스오버 시 떠오르는 이야기 — sky + name/meta 영역까지 덮어 읽기 편하게 */
@@ -683,11 +692,13 @@
       }
       const brightIdx = c.bright || 0;
       c.stars.forEach((s, idx) => {
+        // 별마다 깜빡임 시작 시점 분산(0~4s, 결정론적)
+        const delay = ((idx * 0.73) % 4).toFixed(2);
         if (idx === brightIdx) {
           svg += `<circle class="halo" cx="${s[0]}" cy="${s[1]}" r="5.4"/>`;
-          svg += `<circle cx="${s[0]}" cy="${s[1]}" r="3.0"/>`;
+          svg += `<circle cx="${s[0]}" cy="${s[1]}" r="3.0" style="animation-delay:${delay}s"/>`;
         } else {
-          svg += `<circle cx="${s[0]}" cy="${s[1]}" r="1.9"/>`;
+          svg += `<circle cx="${s[0]}" cy="${s[1]}" r="1.9" style="animation-delay:${delay}s"/>`;
         }
       });
       svg += '</g>';
