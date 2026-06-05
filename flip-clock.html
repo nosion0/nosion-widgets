@@ -72,7 +72,9 @@
       overflow: hidden;
       min-width: 0;
       min-height: 0;
+      transition: padding-top 0.2s ease;
     }
+    .card.has-period { padding-top: 2.5rem; }
     .card.dragging { cursor: grabbing; }
 
     /* === 플립 디스플레이 === */
@@ -80,22 +82,22 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: calc(4px * var(--scale, 1));
       user-select: none;
     }
 
     /* 콜론 자리 — 점 없이 시·분 사이 간격만 유지 */
     .colon {
-      width: 14px;
-      height: 104px;
+      width: calc(14px * var(--scale, 1));
+      height: calc(104px * var(--scale, 1));
       flex-shrink: 0;
     }
 
-    /* 셀: 한 자리 숫자 (TWEMCO 비율 2:3) */
+    /* 셀: 한 자리 숫자 (TWEMCO 비율 2:3, --scale로 반응형) */
     .cell {
       position: relative;
-      width: 70px;
-      height: 104px;
+      width: calc(70px * var(--scale, 1));
+      height: calc(104px * var(--scale, 1));
       perspective: 320px;
       flex-shrink: 0;
     }
@@ -122,11 +124,11 @@
     .flap .text {
       position: absolute;
       left: 0; right: 0;
-      height: 104px;           /* cell 전체 높이와 동일 → 윗/아랫쪽 절반만 보임 */
+      height: calc(104px * var(--scale, 1));  /* cell 전체 높이와 동일 */
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 4rem;         /* 64px — 셀 높이의 약 61% */
+      font-size: calc(4rem * var(--scale, 1));
       font-weight: 500;
       color: var(--flap-fg);
       letter-spacing: -0.04em;
@@ -470,6 +472,7 @@
       document.querySelectorAll('.toggle-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.format === format);
       });
+      document.getElementById('card').classList.toggle('has-period', format === '12');
     }
     document.querySelectorAll('.toggle-btn').forEach(b => {
       b.addEventListener('click', () => {
@@ -545,6 +548,15 @@
       cardEl.style.width = cardWidth + 'px';
       cardEl.style.height = cardHeight !== null ? cardHeight + 'px' : '';
     }
+
+    /* 카드 width에 비례해 시계 크기 자동 조정 (0.75 ~ 1.6배 사이) */
+    function updateScale() {
+      const w = cardEl.getBoundingClientRect().width;
+      const scale = Math.max(0.75, Math.min(1.6, w / 360));
+      cardEl.style.setProperty('--scale', scale.toFixed(3));
+    }
+    new ResizeObserver(updateScale).observe(cardEl);
+    updateScale();
     function saveSize() {
       try { localStorage.setItem(SIZE_KEY, JSON.stringify({ width: cardWidth, height: cardHeight })); } catch (e) {}
     }
