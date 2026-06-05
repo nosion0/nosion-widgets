@@ -175,40 +175,12 @@
       .colon { animation: none; }
     }
 
-    /* === 날짜 === */
-    .divider {
-      height: 1px;
-      width: 60%;
-      background: var(--border);
-      opacity: 0.5;
-      margin: 1.25rem 0 1rem;
-      flex-shrink: 0;
-    }
-    .date-text {
-      font-size: 0.8125rem;
-      font-weight: 500;
-      color: hsl(220 10% 42%);
-      letter-spacing: -0.005em;
-      font-variant-numeric: tabular-nums;
-      user-select: none;
-    }
-    .day-text {
-      font-size: 0.6875rem;
-      font-weight: 500;
-      color: var(--muted-foreground);
-      opacity: 0.7;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-top: 0.375rem;
-      user-select: none;
-    }
-
     /* === 24H/12H 토글 (호버 시) === */
     .format-toggle {
       display: flex;
       justify-content: center;
       gap: 0.375rem;
-      margin-top: 1rem;
+      margin-top: 1.25rem;
       opacity: 0;
       transition: opacity var(--transition);
     }
@@ -345,15 +317,7 @@
         <div class="colon">:</div>
         <div class="cell" data-pos="m1"><div class="half top"><div class="text">0</div></div><div class="half bottom"><div class="text">0</div></div></div>
         <div class="cell" data-pos="m2"><div class="half top"><div class="text">0</div></div><div class="half bottom"><div class="text">0</div></div></div>
-        <div class="colon">:</div>
-        <div class="cell" data-pos="s1"><div class="half top"><div class="text">0</div></div><div class="half bottom"><div class="text">0</div></div></div>
-        <div class="cell" data-pos="s2"><div class="half top"><div class="text">0</div></div><div class="half bottom"><div class="text">0</div></div></div>
       </div>
-
-      <div class="divider"></div>
-
-      <div class="date-text" id="dateText">—</div>
-      <div class="day-text" id="dayText">—</div>
 
       <div class="format-toggle">
         <button class="toggle-btn" type="button" data-format="24">24H</button>
@@ -387,9 +351,6 @@
     const SIZE_KEY   = 'nosion-flip-clock-size-v1';
     const POS_KEY    = 'nosion-flip-clock-pos-v1';
 
-    const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
-
     /* ============================================
        플립 메커니즘 — 셀당 현재 값 추적, 변경 시 split-flap 애니메이션
        ============================================ */
@@ -398,6 +359,7 @@
       const pos = cell.dataset.pos;
       cells[pos] = { el: cell, value: '0' };
     });
+    const KEYS = Object.keys(cells);
 
     function flipCell(pos, newValue) {
       const cell = cells[pos];
@@ -457,8 +419,6 @@
        시각 갱신
        ============================================ */
     const periodEl = document.getElementById('period');
-    const dateTextEl = document.getElementById('dateText');
-    const dayTextEl = document.getElementById('dayText');
 
     function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -466,14 +426,11 @@
       const now = new Date();
       let h = now.getHours();
       const m = now.getMinutes();
-      const s = now.getSeconds();
 
-      let periodText = '';
       if (format === '12') {
-        periodText = h >= 12 ? 'PM' : 'AM';
+        periodEl.textContent = h >= 12 ? 'PM' : 'AM';
         h = h % 12;
         if (h === 0) h = 12;
-        periodEl.textContent = periodText;
         periodEl.classList.remove('hidden');
       } else {
         periodEl.textContent = '';
@@ -482,34 +439,28 @@
 
       const hh = pad(h);
       const mm = pad(m);
-      const ss = pad(s);
-
-      const next = { h1: hh[0], h2: hh[1], m1: mm[0], m2: mm[1], s1: ss[0], s2: ss[1] };
+      const next = { h1: hh[0], h2: hh[1], m1: mm[0], m2: mm[1] };
 
       if (silent) {
-        // 애니메이션 없이 즉시 값 적용
-        Object.keys(next).forEach(k => {
+        KEYS.forEach(k => {
           const cell = cells[k];
           cell.value = next[k];
           cell.el.querySelector('.half.top .text').textContent = next[k];
           cell.el.querySelector('.half.bottom .text').textContent = next[k];
         });
       } else {
-        Object.keys(next).forEach(k => flipCell(k, next[k]));
+        KEYS.forEach(k => flipCell(k, next[k]));
       }
-
-      // 날짜
-      dateTextEl.textContent = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
-      dayTextEl.textContent = DAYS[now.getDay()];
     }
 
-    update(true);   // 초기값 (애니 없이)
+    update(true);
+    // 분 단위로만 변하므로 매 초 호출해도 next 비교로 no-op
     setInterval(update, 1000);
 
     /* ============================================
        4방향 리사이즈
        ============================================ */
-    const MIN_WIDTH = 280, MAX_WIDTH = 600, MIN_HEIGHT = 220, MAX_HEIGHT = 500;
+    const MIN_WIDTH = 240, MAX_WIDTH = 600, MIN_HEIGHT = 160, MAX_HEIGHT = 420;
     const DEFAULT_WIDTH = 360;
     const cardEl = document.getElementById('card');
     const widgetEl = document.getElementById('widget');
