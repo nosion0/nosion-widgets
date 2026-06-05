@@ -234,18 +234,21 @@
       box-shadow: 0 0 0 1.5px var(--card), 0 0 0 2.5px var(--foreground);
     }
 
-    /* AM/PM 표시 (12H일 때만) */
+    /* AM/PM 표시 (12H일 때만) — layout에서 빠지게 절대 위치 */
     .period {
+      position: absolute;
+      top: 0.875rem;
+      left: 50%;
+      transform: translateX(-50%);
       font-size: 0.6875rem;
       font-weight: 500;
       color: var(--muted-foreground);
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 0.6rem;
       user-select: none;
-      min-height: 0.875rem;
+      pointer-events: none;
     }
-    .period.hidden { visibility: hidden; }
+    .period.hidden { display: none; }
 
     /* === 우측 컨트롤 === */
     .controls {
