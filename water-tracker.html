@@ -44,7 +44,7 @@
     .hero-count .goal { font-size: 1.25rem; color: var(--muted-foreground); font-weight: 500; }
     .hero-sub { font-size: 0.75rem; color: var(--muted-foreground); margin-top: 0.4rem; font-variant-numeric: tabular-nums; }
 
-    .cups { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; width: 100%; }
+    .cups { display: grid; justify-content: center; gap: 0.5rem; width: 100%; }
     .cup { width: 30px; height: 34px; cursor: pointer; flex-shrink: 0; }
     .cup svg { width: 30px; height: 34px; display: block; overflow: visible; stroke: var(--border); stroke-width: 1.6; fill: none; stroke-linejoin: round; transition: stroke var(--transition); }
     .cup.full svg { stroke: var(--foreground); fill: var(--foreground); }
@@ -164,6 +164,7 @@
       subEl.textContent = left > 0 ? `${liters} L · 목표까지 ${left}잔` : `${liters} L · 목표 달성! 🎉`;
 
       cupsEl.innerHTML = '';
+      cupsEl.style.gridTemplateColumns = `repeat(${Math.ceil(goal / 2)}, auto)`;
       for (let i = 0; i < goal; i++) {
         const cup = document.createElement('div');
         cup.className = 'cup' + (i < count ? ' full' : '');
