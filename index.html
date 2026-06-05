@@ -239,15 +239,10 @@
     }
     .brand-logo {
       display: inline-block;
-      border: 1.5px solid var(--foreground);
-      border-radius: 0.45rem;
-      padding: 0.2rem 0.625rem;
-      font-weight: 700;
-      font-size: 0.9375rem;
-      letter-spacing: -0.02em;
-      color: var(--foreground);
       margin-bottom: 1.25rem;
+      color: var(--foreground);
     }
+    .brand-logo svg { width: 100px; height: 40px; display: block; }
     .brand-name {
       display: inline-flex;
       align-items: center;
@@ -259,8 +254,8 @@
       margin-bottom: 1rem;
     }
     .brand-avatar {
-      width: 36px;
-      height: 42px;
+      width: 44px;
+      height: 52px;
       flex-shrink: 0;
       color: var(--foreground);
     }
@@ -514,29 +509,45 @@
   <footer class="nosion-footer">
     <div class="footer-top">
       <div class="footer-brand">
-        <div class="brand-logo">nosion</div>
+        <div class="brand-logo">
+          <svg viewBox="0 0 200 80" aria-label="nosion logo">
+            <!-- 그림자 -->
+            <path d="M14 22 L186 22 L196 44 L186 66 L14 66 L4 44 Z" fill="currentColor" opacity="0.2"/>
+            <!-- 메인 박스 -->
+            <path d="M10 18 L182 18 L192 40 L182 62 L10 62 L0 40 Z" fill="var(--card)" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/>
+            <!-- 텍스트 -->
+            <text x="96" y="49" text-anchor="middle" font-family="'Pretendard Variable','Pretendard',sans-serif" font-weight="800" font-size="26" fill="currentColor" letter-spacing="-0.04em">nosion</text>
+          </svg>
+        </div>
         <div class="brand-name">
           <svg class="brand-avatar" viewBox="0 0 100 120" aria-hidden="true">
-            <!-- 헤어 -->
-            <path d="M22 40 Q22 12 50 12 Q78 12 78 40 L78 50 Q78 36 64 30 Q56 27 50 27 Q44 27 36 30 Q22 36 22 50 Z" fill="currentColor"/>
-            <!-- 얼굴 -->
-            <path d="M28 40 L28 72 Q28 84 50 84 Q72 84 72 72 L72 40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+            <!-- 헤어 (단정한 머리, 왼쪽 위 삐친 부분) -->
+            <path d="M22 42 Q22 12 50 12 Q80 12 80 42 L80 52 Q78 38 64 32 Q56 28 50 28 Q44 28 36 32 Q22 38 22 52 Z" fill="currentColor"/>
+            <!-- 왼쪽 삐친 머리 -->
+            <path d="M22 28 L17 18 L26 22 Z" fill="currentColor"/>
+            <!-- 얼굴 윤곽 -->
+            <path d="M28 40 L28 70 Q28 84 50 84 Q72 84 72 70 L72 40" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/>
             <!-- 귀 안쪽 -->
-            <path d="M26 56 Q24 60 26 64" fill="none" stroke="currentColor" stroke-width="1" opacity="0.6"/>
-            <path d="M74 56 Q76 60 74 64" fill="none" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+            <path d="M26 54 Q23 60 26 66" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
+            <path d="M74 54 Q77 60 74 66" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.5"/>
+            <!-- 눈썹 -->
+            <path d="M29 49 Q34 46 41 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+            <path d="M59 48 Q66 46 71 49" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
             <!-- 안경 -->
-            <circle cx="38" cy="55" r="9.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
-            <circle cx="62" cy="55" r="9.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
-            <line x1="47.5" y1="55" x2="52.5" y2="55" stroke="currentColor" stroke-width="2"/>
-            <!-- 눈동자 -->
-            <circle cx="38" cy="56" r="3.2" fill="currentColor"/>
-            <circle cx="62" cy="56" r="3.2" fill="currentColor"/>
+            <circle cx="38" cy="57" r="10.5" fill="none" stroke="currentColor" stroke-width="2.8"/>
+            <circle cx="62" cy="57" r="10.5" fill="none" stroke="currentColor" stroke-width="2.8"/>
+            <line x1="48.5" y1="57" x2="51.5" y2="57" stroke="currentColor" stroke-width="2.5"/>
+            <!-- 눈동자 + 하이라이트 -->
+            <circle cx="38.5" cy="58" r="3.6" fill="currentColor"/>
+            <circle cx="62.5" cy="58" r="3.6" fill="currentColor"/>
+            <circle cx="40.2" cy="56.4" r="0.9" fill="#fff"/>
+            <circle cx="64.2" cy="56.4" r="0.9" fill="#fff"/>
             <!-- 코 -->
-            <path d="M50 64 L48 70 L52 70" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+            <path d="M49 67 Q47.5 72 49.5 73.5 Q52 72.5 51 67" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             <!-- 입 -->
-            <line x1="46" y1="76" x2="54" y2="76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M46 78 Q50 80 54 78" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <!-- 터틀넥 -->
-            <path d="M30 86 Q30 96 50 96 Q70 96 70 86 L77 100 L77 120 L23 120 L23 100 Z" fill="currentColor"/>
+            <path d="M30 86 Q30 96 50 96 Q70 96 70 86 Q72 95 76 100 L76 120 L24 120 L24 100 Q28 95 30 86 Z" fill="currentColor"/>
           </svg>
           노시언
         </div>
