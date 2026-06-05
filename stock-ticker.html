@@ -304,8 +304,8 @@
           done++;
           if (done === total) {
             const t = lastOk ? new Date(lastOk).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
-            if (lastOk) footEl.textContent = (anyFail ? '일부 갱신 실패 · ' : '') + `${t} 기준`;
-            else footEl.textContent = '주가를 불러올 수 없어요 · 잠시 후 자동 재시도';
+            if (lastOk) footEl.textContent = (anyFail ? '일부 갱신 실패 · ' : '') + `${t} 기준 · Yahoo Finance`;
+            else footEl.textContent = '주가를 불러올 수 없어요 · 5분 뒤 자동 재시도';
           }
         });
       });

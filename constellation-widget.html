@@ -654,7 +654,21 @@
     }
     // IP 기반 위치 자동 감지 + 한글 지명 (권한 팝업 없음, 실패 시 null)
     function getAutoLocation() {
-      return fetchJSON('https://ipapi.co/json/', 4500).then(d => {
+      return (function(){
+        try {
+          const __raw = localStorage.getItem('nosion-iploc-cache-v1');
+          if (__raw) {
+            const __c = JSON.parse(__raw);
+            if (__c && __c.ts && (Date.now() - __c.ts) < 43200000 && __c.data) return Promise.resolve(__c.data);
+          }
+        } catch (e) {}
+        return fetchJSON('https://ipapi.co/json/', 4500).then(__d => {
+          if (__d && typeof __d.latitude === 'number' && typeof __d.longitude === 'number') {
+            try { localStorage.setItem('nosion-iploc-cache-v1', JSON.stringify({ ts: Date.now(), data: __d })); } catch (e) {}
+          }
+          return __d;
+        });
+      })().then(d => {
         if (!d || typeof d.latitude !== 'number' || typeof d.longitude !== 'number') return null;
         const base = { name: d.city || '현재 위치', lat: d.latitude, lng: d.longitude, tz: d.timezone || undefined, auto: true };
         return reverseKo(base.lat, base.lng).then(ko => { if (ko) base.name = ko; return base; }).catch(() => base);
