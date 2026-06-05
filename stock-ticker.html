@@ -34,6 +34,8 @@
     }
     body { padding: 1rem; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
     .widget-wrapper { display: flex; align-items: flex-start; gap: 0.5rem; position: relative; width: fit-content; }
+    /* 검색 드롭다운이 카드 위쪽으로 펼쳐질 때 잘리지 않도록 편집 모드에선 overflow 허용 */
+    .card.editing { overflow: visible; }
     .card {
       background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.75rem 1.75rem 1.5rem; width: 350px; position: relative; box-shadow: none;
@@ -68,11 +70,44 @@
     .card.editing .spark { display: none; }
     .sdel:hover { color: var(--foreground); background: var(--muted); }
 
-    .add-row { display: none; gap: 0.4rem; padding-top: 0.5rem; }
+    .add-row { display: none; gap: 0.4rem; padding-top: 0.5rem; position: relative; }
     .card.editing .add-row { display: flex; }
     .add-input { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 0.4rem; outline: none; background: none; font-family: inherit; font-size: 0.8125rem; color: var(--foreground); padding: 0.4rem 0.6rem; }
     .add-input:focus { border-color: var(--foreground); }
-    .add-go { font-family: inherit; font-size: 0.8125rem; font-weight: 500; color: var(--card); background: var(--foreground); border: none; border-radius: 0.4rem; padding: 0.4rem 0.8rem; cursor: pointer; flex-shrink: 0; }
+
+    .search-results {
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+      max-height: 280px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+    }
+    .search-results.show { display: block; }
+    .search-item {
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      transition: background var(--transition);
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+    .search-item + .search-item { border-top: 1px solid var(--border); }
+    .search-item:hover, .search-item.focused { background: var(--muted); }
+    .search-item .sname { font-size: 0.8125rem; font-weight: 500; color: var(--foreground); letter-spacing: -0.01em; }
+    .search-item .smeta { font-size: 0.6875rem; color: var(--muted-foreground); display: flex; gap: 0.5rem; }
+    .search-item .smeta .ssym { font-family: 'Menlo','Monaco',monospace; }
+    .search-empty, .search-loading {
+      padding: 0.625rem 0.75rem;
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      text-align: center;
+    }
 
     .foot { font-size: 0.625rem; color: var(--muted-foreground); opacity: 0.6; text-align: center; min-height: 14px; }
     .hint { font-size: 0.625rem; color: var(--muted-foreground); opacity: 0.7; text-align: center; line-height: 1.5; display: none; }
@@ -114,11 +149,10 @@
         </div>
         <div class="list" id="list"></div>
         <div class="add-row">
-          <input class="add-input" id="addSym" type="text" placeholder="티커 (예: 005930.KS, AAPL)" autocomplete="off" maxlength="20" />
-          <input class="add-input" id="addName" type="text" placeholder="이름(선택)" autocomplete="off" style="max-width:84px" maxlength="30" />
-          <button class="add-go" id="addGo" type="button">추가</button>
+          <input class="add-input" id="searchInput" type="text" placeholder="회사명/티커 검색 (예: 삼성전자, AAPL)" autocomplete="off" maxlength="40" />
+          <div class="search-results" id="searchResults" role="listbox" aria-label="검색 결과"></div>
         </div>
-        <div class="hint">티커 예: 코스피 ^KS11 · 코스닥 ^KQ11 · 삼성전자 005930.KS · 애플 AAPL · 비트코인 BTC-USD</div>
+        <div class="hint">회사명을 입력하면 종목 후보가 나타나요 · 클릭하거나 Enter로 추가</div>
         <div class="foot" id="foot"></div>
       </div>
 
@@ -317,22 +351,137 @@
       const on = cardEl.classList.toggle('editing');
       document.getElementById('editBtn').textContent = on ? '완료' : '편집';
     });
-    function addSymbol() {
-      const sym = document.getElementById('addSym').value.trim().slice(0, 20);
+
+    /* ===== 종목 추가 (검색 결과 선택 시 호출) ===== */
+    function addSymbol(sym, name) {
       if (!sym) return;
       if (symbols.length >= MAX_SYMBOLS) { footEl.textContent = `최대 ${MAX_SYMBOLS}개까지 추가할 수 있어요`; return; }
-      if (symbols.some(x => x.sym.toLowerCase() === sym.toLowerCase())) return;
-      const name = document.getElementById('addName').value.trim().slice(0, 30) || sym.toUpperCase();
-      symbols.push({ sym: sym, name: name });
+      if (symbols.some(x => x.sym.toLowerCase() === sym.toLowerCase())) {
+        footEl.textContent = `이미 추가된 종목이에요 (${sym})`;
+        return;
+      }
+      const safeName = (name || sym).slice(0, 30);
+      symbols.push({ sym: sym, name: safeName });
       saveSymbols();
-      document.getElementById('addSym').value = '';
-      document.getElementById('addName').value = '';
       render();
-      fetchYahoo(sym).then(r => { if (r) { cache[sym] = parseResult(r, name); lastOk = Date.now(); saveCache(); render(); } });
+      fetchYahoo(sym).then(r => { if (r) { cache[sym] = parseResult(r, safeName); lastOk = Date.now(); saveCache(); render(); } });
     }
-    document.getElementById('addGo').addEventListener('click', addSymbol);
-    document.getElementById('addSym').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addSymbol(); } });
-    document.getElementById('addName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addSymbol(); } });
+
+    /* ===== Yahoo 검색 — 회사명/티커 → 후보 목록 ===== */
+    async function searchYahoo(q) {
+      const url = 'https://query1.finance.yahoo.com/v1/finance/search?q=' + encodeURIComponent(q) + '&quotesCount=8&newsCount=0';
+      for (let i = 0; i < 3; i++) {
+        const txt = await fetchText(proxify(url, i), 5000);
+        if (!txt) continue;
+        const a = txt.indexOf('{'), b = txt.lastIndexOf('}');
+        if (a < 0 || b < 0) continue;
+        try {
+          const data = JSON.parse(txt.slice(a, b + 1));
+          const arr = (data && Array.isArray(data.quotes)) ? data.quotes : [];
+          return arr.filter(x => x && typeof x.symbol === 'string').slice(0, 8);
+        } catch (e) {}
+      }
+      return null;
+    }
+
+    /* ===== 검색 UI ===== */
+    const searchInput = document.getElementById('searchInput');
+    const searchResultsEl = document.getElementById('searchResults');
+    let searchTimer = null;
+    let searchToken = 0;
+    let focusedIdx = -1;
+    let currentResults = [];
+
+    function closeResults() {
+      // 진행 중인 검색 무효화 — 늦게 도착한 응답이 드롭다운 되살리지 않게
+      searchToken++;
+      if (searchTimer) { clearTimeout(searchTimer); searchTimer = null; }
+      searchResultsEl.classList.remove('show');
+      searchResultsEl.innerHTML = '';
+      currentResults = [];
+      focusedIdx = -1;
+    }
+
+    function updateFocus() {
+      const items = searchResultsEl.querySelectorAll('.search-item');
+      items.forEach((el, i) => {
+        el.classList.toggle('focused', i === focusedIdx);
+        if (i === focusedIdx) el.scrollIntoView({ block: 'nearest' });
+      });
+    }
+
+    function renderResults(items, isError) {
+      currentResults = items || [];
+      focusedIdx = currentResults.length > 0 ? 0 : -1;
+      if (isError) {
+        searchResultsEl.innerHTML = '<div class="search-empty">검색 실패 — 잠시 후 다시 시도</div>';
+      } else if (currentResults.length === 0) {
+        searchResultsEl.innerHTML = '<div class="search-empty">검색 결과 없음</div>';
+      } else {
+        searchResultsEl.innerHTML = currentResults.map((it, i) => {
+          const name = it.shortname || it.longname || it.symbol;
+          const exch = it.exchDisp || '';
+          const type = it.typeDisp || '';
+          const metaParts = [`<span class="ssym">${escapeHtml(it.symbol)}</span>`];
+          if (exch) metaParts.push(`<span>${escapeHtml(exch)}</span>`);
+          if (type) metaParts.push(`<span>${escapeHtml(type)}</span>`);
+          return `<div class="search-item${i === focusedIdx ? ' focused' : ''}" data-idx="${i}" role="option">
+            <div class="sname">${escapeHtml(name)}</div>
+            <div class="smeta">${metaParts.join('')}</div>
+          </div>`;
+        }).join('');
+        Array.from(searchResultsEl.querySelectorAll('.search-item')).forEach(el => {
+          el.addEventListener('mousedown', (e) => { e.preventDefault(); selectResult(+el.dataset.idx); });
+          el.addEventListener('mouseenter', () => { focusedIdx = +el.dataset.idx; updateFocus(); });
+        });
+      }
+      searchResultsEl.classList.add('show');
+    }
+
+    function selectResult(idx) {
+      const it = currentResults[idx];
+      if (!it) return;
+      const sym = String(it.symbol).slice(0, 20);
+      const name = String(it.shortname || it.longname || sym).slice(0, 30);
+      addSymbol(sym, name);
+      searchInput.value = '';
+      closeResults();
+    }
+
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim();
+      if (searchTimer) clearTimeout(searchTimer);
+      if (q.length < 1) { closeResults(); return; }
+      searchResultsEl.innerHTML = '<div class="search-loading">검색 중...</div>';
+      searchResultsEl.classList.add('show');
+      const myToken = ++searchToken;
+      searchTimer = setTimeout(async () => {
+        const items = await searchYahoo(q);
+        if (myToken !== searchToken) return;  // stale 응답 무시
+        renderResults(items, items === null);
+      }, 300);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (!searchResultsEl.classList.contains('show')) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentResults.length > 0) { focusedIdx = Math.min(currentResults.length - 1, focusedIdx + 1); updateFocus(); }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentResults.length > 0) { focusedIdx = Math.max(0, focusedIdx - 1); updateFocus(); }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (focusedIdx >= 0) selectResult(focusedIdx);
+      } else if (e.key === 'Escape') {
+        closeResults();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!searchResultsEl.contains(e.target) && e.target !== searchInput) closeResults();
+    });
+
     document.getElementById('refreshBtn').addEventListener('click', refresh);
 
     render();
