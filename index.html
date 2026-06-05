@@ -249,11 +249,20 @@
       margin-bottom: 1.25rem;
     }
     .brand-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
       font-size: 1.125rem;
       font-weight: 600;
       color: var(--foreground);
       letter-spacing: -0.015em;
       margin-bottom: 1rem;
+    }
+    .brand-avatar {
+      width: 36px;
+      height: 42px;
+      flex-shrink: 0;
+      color: var(--foreground);
     }
     .brand-tags {
       list-style: none;
@@ -506,7 +515,31 @@
     <div class="footer-top">
       <div class="footer-brand">
         <div class="brand-logo">nosion</div>
-        <div class="brand-name">🧑🏻‍💼 노시언</div>
+        <div class="brand-name">
+          <svg class="brand-avatar" viewBox="0 0 100 120" aria-hidden="true">
+            <!-- 헤어 -->
+            <path d="M22 40 Q22 12 50 12 Q78 12 78 40 L78 50 Q78 36 64 30 Q56 27 50 27 Q44 27 36 30 Q22 36 22 50 Z" fill="currentColor"/>
+            <!-- 얼굴 -->
+            <path d="M28 40 L28 72 Q28 84 50 84 Q72 84 72 72 L72 40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+            <!-- 귀 안쪽 -->
+            <path d="M26 56 Q24 60 26 64" fill="none" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+            <path d="M74 56 Q76 60 74 64" fill="none" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+            <!-- 안경 -->
+            <circle cx="38" cy="55" r="9.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
+            <circle cx="62" cy="55" r="9.5" fill="none" stroke="currentColor" stroke-width="2.5"/>
+            <line x1="47.5" y1="55" x2="52.5" y2="55" stroke="currentColor" stroke-width="2"/>
+            <!-- 눈동자 -->
+            <circle cx="38" cy="56" r="3.2" fill="currentColor"/>
+            <circle cx="62" cy="56" r="3.2" fill="currentColor"/>
+            <!-- 코 -->
+            <path d="M50 64 L48 70 L52 70" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- 입 -->
+            <line x1="46" y1="76" x2="54" y2="76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <!-- 터틀넥 -->
+            <path d="M30 86 Q30 96 50 96 Q70 96 70 86 L77 100 L77 120 L23 120 L23 100 Z" fill="currentColor"/>
+          </svg>
+          노시언
+        </div>
         <ul class="brand-tags">
           <li>✏️ 노션템플릿 제작, 제공</li>
           <li>✏️ 책 A4 1장 핵심요약 제공</li>
@@ -514,10 +547,10 @@
         </ul>
       </div>
       <div class="footer-links">
-        <a href="#" target="_blank" rel="noopener">📄 &lt;TASK&gt; 바로가기</a>
-        <a href="#" target="_blank" rel="noopener">📄 &lt;MONEY 2&gt; 바로가기</a>
-        <a href="#" target="_blank" rel="noopener">📄 노시언의 30가지 노션템플릿 바로가기</a>
-        <a href="#" target="_blank" rel="noopener">📷 인스타그램 바로가기</a>
+        <a href="https://nosion.io/shop_view?idx=11" target="_blank" rel="noopener">📄 &lt;TASK&gt; 바로가기</a>
+        <a href="https://nosion.io/template/?idx=10" target="_blank" rel="noopener">📄 &lt;MONEY 2&gt; 바로가기</a>
+        <a href="https://nosion0.notion.site/30-fd3fed2a4cd64381b294273f64cc97ec?source=copy_link" target="_blank" rel="noopener">📄 노시언의 30가지 노션템플릿 바로가기</a>
+        <a href="https://www.instagram.com/nosion.notion/" target="_blank" rel="noopener">📷 인스타그램 바로가기</a>
       </div>
     </div>
     <div class="footer-quote">구름, 고양이, 책, 노션 좋아합니다. 🥰</div>
