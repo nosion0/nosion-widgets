@@ -26,6 +26,16 @@
       --shine:  hsl(0 0% 100% / .55);
     }
 
+    html[data-theme="dark"] {
+      --background: hsl(220 13% 10%);
+      --foreground: hsl(0 0% 92%);
+      --card: hsl(220 13% 14%);
+      --border: hsl(220 9% 28%);
+      --muted: hsl(220 13% 18%);
+      --muted-foreground: hsl(215 10% 65%);
+    }
+    html[data-theme="dark"] body { background: var(--background); }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
@@ -409,7 +419,18 @@
   </div>
 
   <script>
-    /* ============ SVG helpers ============ */
+    
+    (function() {
+      const THEME_KEY = 'nosion-theme-v1';
+      function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; } }
+      function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+      applyTheme(getTheme());
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.addEventListener('click', () => applyTheme(getTheme() === 'light' ? 'dark' : 'light'));
+      });
+    })();
+/* ============ SVG helpers ============ */
     const INK = 'var(--ink)', STEM = 'var(--stem)', LEAF = 'var(--leaf)',
           FILL = 'var(--fill)', ACC = 'var(--accent)', SOIL = 'var(--soil)';
 

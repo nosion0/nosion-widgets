@@ -19,6 +19,16 @@
       --day-weekend: hsl(220 10% 70%);
     }
 
+    html[data-theme="dark"] {
+      --background: hsl(220 13% 10%);
+      --foreground: hsl(0 0% 92%);
+      --card: hsl(220 13% 14%);
+      --border: hsl(220 9% 28%);
+      --muted: hsl(220 13% 18%);
+      --muted-foreground: hsl(215 10% 65%);
+    }
+    html[data-theme="dark"] body { background: var(--background); }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
@@ -296,7 +306,18 @@
   </div>
 
   <script>
-    /* ===== Korean public holidays 2025–2026 ===== */
+    
+    (function() {
+      const THEME_KEY = 'nosion-theme-v1';
+      function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; } }
+      function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+      applyTheme(getTheme());
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.addEventListener('click', () => applyTheme(getTheme() === 'light' ? 'dark' : 'light'));
+      });
+    })();
+/* ===== Korean public holidays 2025–2026 ===== */
     const HOLIDAYS = new Set([
       '2025-01-01','2025-01-28','2025-01-29','2025-01-30',
       '2025-03-01','2025-04-06','2025-05-05','2025-05-06',

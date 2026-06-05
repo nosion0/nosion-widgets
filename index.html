@@ -8,6 +8,8 @@
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
     :root {
+      --background: hsl(0 0% 100%);
+      --card: hsl(0 0% 100%);
       --foreground: hsl(220 13% 18%);
       --border: hsl(220 9% 84%);
       --muted: hsl(210 20% 96%);
@@ -15,12 +17,39 @@
       --radius: 0.75rem;
     }
 
+    html[data-theme="dark"] {
+      --background: hsl(220 13% 10%);
+      --card: hsl(220 13% 14%);
+      --foreground: hsl(0 0% 92%);
+      --border: hsl(220 9% 28%);
+      --muted: hsl(220 13% 18%);
+      --muted-foreground: hsl(215 10% 65%);
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.25rem;
+      width: 32px; height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+    .theme-toggle:hover { color: var(--foreground); background: var(--muted); }
+    .theme-toggle svg { width: 14px; height: 14px; stroke-width: 2; }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
                    system-ui, 'Segoe UI', sans-serif;
-      background: hsl(0 0% 100%);
+      background: var(--background);
       color: var(--foreground);
       -webkit-font-smoothing: antialiased;
       word-break: keep-all;
@@ -202,6 +231,12 @@
     </filter>
   </defs></svg>
 
+  <button class="theme-toggle" id="themeBtn" type="button" aria-label="라이트/다크 모드 전환">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
+
   <div class="header">
     <div class="logo">노시언 위젯</div>
     <p class="desc">노션 임베드용 미니멀 위젯 모음 — 각 위젯을 클릭해 미리보기하거나 URL을 노션에 붙여넣으세요.</p>
@@ -369,6 +404,19 @@
     <p>노션에서 <code>/embed</code> 입력 → URL 붙여넣기<br>
     예: <code>https://nosion0.github.io/nosion-widgets/calendar.html</code></p>
   </div>
+
+  <script>
+    (function() {
+      const THEME_KEY = 'nosion-theme-v1';
+      function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; } }
+      function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+      applyTheme(getTheme());
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.addEventListener('click', () => applyTheme(getTheme() === 'light' ? 'dark' : 'light'));
+      });
+    })();
+  </script>
 
 </body>
 </html>

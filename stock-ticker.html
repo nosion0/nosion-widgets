@@ -16,6 +16,16 @@
       --radius: 0.75rem;
       --transition: 0.2s ease;
     }
+
+    html[data-theme="dark"] {
+      --background: hsl(220 13% 10%);
+      --foreground: hsl(0 0% 92%);
+      --card: hsl(220 13% 14%);
+      --border: hsl(220 9% 28%);
+      --muted: hsl(220 13% 18%);
+      --muted-foreground: hsl(215 10% 65%);
+    }
+    html[data-theme="dark"] body { background: var(--background); }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
@@ -127,11 +137,28 @@
           <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
         </svg>
       </button>
+      <button class="control-btn" id="themeBtn"
+              data-tooltip="테마 전환" title="테마 전환"
+              type="button" aria-label="라이트/다크 모드 전환">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
     </div>
   </div>
 
   <script>
     'use strict';
+    (function() {
+      const THEME_KEY = 'nosion-theme-v1';
+      function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; } }
+      function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+      applyTheme(getTheme());
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.addEventListener('click', () => applyTheme(getTheme() === 'light' ? 'dark' : 'light'));
+      });
+    })();
     function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
     const SYM_KEY = 'nosion-stock-symbols-v1';
