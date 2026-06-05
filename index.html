@@ -199,35 +199,7 @@
       line-height: 1.5;
     }
 
-    .embed-tip {
-      border-top: 1px solid var(--border);
-      padding-top: 2rem;
-    }
-
-    .embed-tip p {
-      font-size: 0.8125rem;
-      color: var(--muted-foreground);
-      line-height: 1.7;
-    }
-
-    .legal-links {
-      margin-top: 1.5rem;
-      font-size: 0.6875rem;
-      color: var(--muted-foreground);
-      opacity: 0.7;
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-    .legal-links a {
-      color: inherit;
-      text-decoration: none;
-      transition: color 0.15s ease;
-    }
-    .legal-links a:hover { color: var(--foreground); }
-    .legal-links .sep { opacity: 0.5; }
-
-    /* === 베타 배지 + 핵심 가치 === */
+    /* === 베타 배지 === */
     .beta-banner {
       display: inline-flex;
       align-items: center;
@@ -250,68 +222,104 @@
       opacity: 0.6;
     }
 
-    /* === 가격 + 문의 === */
-    .pricing {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem 1.5rem 1.375rem;
-      margin: 2.5rem 0 0;
-      text-align: center;
-    }
-    .pricing-label {
-      font-size: 0.6875rem;
+    /* === 노시언 푸터 === */
+    .nosion-footer {
+      margin-top: 3rem;
+      border-top: 1px solid var(--border);
+      padding-top: 2.25rem;
       color: var(--muted-foreground);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 0.5rem;
+      font-size: 0.8125rem;
+      line-height: 1.7;
     }
-    .pricing-title {
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .brand-logo {
+      display: inline-block;
+      border: 1.5px solid var(--foreground);
+      border-radius: 0.45rem;
+      padding: 0.2rem 0.625rem;
+      font-weight: 700;
+      font-size: 0.9375rem;
+      letter-spacing: -0.02em;
+      color: var(--foreground);
+      margin-bottom: 1.25rem;
+    }
+    .brand-name {
       font-size: 1.125rem;
       font-weight: 600;
       color: var(--foreground);
       letter-spacing: -0.015em;
-      margin-bottom: 0.4rem;
-    }
-    .pricing-desc {
-      font-size: 0.8125rem;
-      color: var(--muted-foreground);
-      line-height: 1.6;
       margin-bottom: 1rem;
     }
-    .pricing-actions {
+    .brand-tags {
+      list-style: none;
+      padding: 0;
+      margin: 0;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       gap: 0.5rem;
-      flex-wrap: wrap;
+      font-size: 0.875rem;
     }
-    .cta {
-      font-size: 0.8125rem;
-      font-weight: 500;
-      color: var(--foreground);
-      background: transparent;
+    .brand-tags li { color: var(--muted-foreground); }
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: flex-start;
+    }
+    .footer-links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
       border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 0.4375rem 0.875rem;
+      border-radius: 0.4rem;
+      color: var(--muted-foreground);
       text-decoration: none;
+      font-size: 0.8125rem;
       transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-      cursor: pointer;
     }
-    .cta.primary {
-      background: var(--foreground);
-      color: var(--card);
-      border-color: var(--foreground);
-    }
-    .cta.primary:hover { opacity: 0.85; }
-    .cta:hover { background: var(--muted); }
-
-    .embed-tip code {
-      font-family: 'Menlo', 'Monaco', monospace;
-      font-size: 0.75rem;
-      background: var(--muted);
-      border: 1px solid var(--border);
-      border-radius: 0.3rem;
-      padding: 0.1rem 0.4rem;
+    .footer-links a:hover {
       color: var(--foreground);
+      background: var(--muted);
+      border-color: var(--muted-foreground);
+    }
+    .footer-quote {
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      margin: 0.5rem 0 1.75rem;
+    }
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.25rem;
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      opacity: 0.85;
+    }
+    .footer-legal {
+      display: inline-flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+    .footer-legal a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .footer-legal a:hover { color: var(--foreground); }
+    .footer-legal .sep { opacity: 0.5; }
+
+    @media (max-width: 560px) {
+      .footer-top { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -494,26 +502,34 @@
     </a>
   </div>
 
-  <div class="embed-tip">
-    <p>노션에서 <code>/embed</code> 입력 → URL 붙여넣기<br>
-    예: <code>https://nosion0.github.io/nosion-widgets/calendar.html</code></p>
-  </div>
-
-  <div class="pricing">
-    <div class="pricing-label">가격</div>
-    <div class="pricing-title">베타 기간 무료</div>
-    <p class="pricing-desc">정식 출시 시 단일 결제 평생 이용 모델을 검토 중입니다.<br>가격이 확정되면 베타 사용자분께 우선 안내드릴게요.</p>
-    <div class="pricing-actions">
-      <a class="cta primary" href="https://github.com/nosion0/nosion-widgets/issues/new?labels=feedback&title=피드백" target="_blank" rel="noopener">피드백 보내기</a>
-      <a class="cta" href="https://github.com/nosion0/nosion-widgets" target="_blank" rel="noopener">GitHub</a>
+  <footer class="nosion-footer">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="brand-logo">nosion</div>
+        <div class="brand-name">🧑🏻‍💼 노시언</div>
+        <ul class="brand-tags">
+          <li>✏️ 노션템플릿 제작, 제공</li>
+          <li>✏️ 책 A4 1장 핵심요약 제공</li>
+          <li>🌈 노션으로 인생을 더 행복하게 :)</li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <a href="#" target="_blank" rel="noopener">📄 &lt;TASK&gt; 바로가기</a>
+        <a href="#" target="_blank" rel="noopener">📄 &lt;MONEY 2&gt; 바로가기</a>
+        <a href="#" target="_blank" rel="noopener">📄 노시언의 30가지 노션템플릿 바로가기</a>
+        <a href="#" target="_blank" rel="noopener">📷 인스타그램 바로가기</a>
+      </div>
     </div>
-  </div>
-
-  <div class="legal-links">
-    <a href="privacy.html">개인정보 처리방침</a>
-    <span class="sep">·</span>
-    <a href="terms.html">이용약관</a>
-  </div>
+    <div class="footer-quote">구름, 고양이, 책, 노션 좋아합니다. 🥰</div>
+    <div class="footer-bottom">
+      <span>ⓒ 2024 노시언 All rights reserved.</span>
+      <span class="footer-legal">
+        <a href="privacy.html">개인정보 처리방침</a>
+        <span class="sep">·</span>
+        <a href="terms.html">이용약관</a>
+      </span>
+    </div>
+  </footer>
 
   <script>
     (function() {
