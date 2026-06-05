@@ -49,11 +49,18 @@
       width: fit-content;
     }
 
+    .card-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.875rem;
+    }
+
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 1.75rem 1.5rem 1.5rem;
+      padding: 1.5rem 1.5rem 1.25rem;
       width: 360px;
       position: relative;
       box-shadow: none;
@@ -76,22 +83,24 @@
       user-select: none;
     }
 
-    /* 콜론 — TWEMCO 스타일 작은 점 두 개 */
+    /* 콜론 — TWEMCO 스타일 점 두 개 (셀 위/아래 절반의 시각 중심에 정렬) */
     .colon {
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 18px;
-      padding: 0 6px;
+      gap: 44px;
+      padding: 0 8px;
+      height: 104px;
       animation: blink 2s steps(2, end) infinite;
     }
     .colon::before, .colon::after {
       content: '';
-      width: 6px;
-      height: 6px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--muted-foreground);
+      flex-shrink: 0;
     }
     @keyframes blink { 50% { opacity: 0.35; } }
 
@@ -182,12 +191,11 @@
       .colon { animation: none; }
     }
 
-    /* === 24H/12H 토글 (호버 시) === */
+    /* === 24H/12H 토글 (카드 바깥, 호버 시) === */
     .format-toggle {
       display: flex;
       justify-content: center;
       gap: 0.375rem;
-      margin-top: 1.25rem;
       opacity: 0;
       transition: opacity var(--transition);
     }
@@ -314,6 +322,7 @@
 </head>
 <body>
   <div class="widget-wrapper" id="widget">
+    <div class="card-stack">
     <div class="card" id="card">
 
       <div class="period" id="period"></div>
@@ -321,20 +330,21 @@
       <div class="flip-row" id="flipRow">
         <div class="cell" data-pos="h1"><div class="half top"><div class="text">0</div></div><div class="half bottom"><div class="text">0</div></div></div>
         <div class="cell" data-pos="h2"><div class="half top"><div class="text">0</div></div><div class="half bottom"><div class="text">0</div></div></div>
-        <div class="colon">:</div>
+        <div class="colon" aria-hidden="true"></div>
         <div class="cell" data-pos="m1"><div class="half top"><div class="text">0</div></div><div class="half bottom"><div class="text">0</div></div></div>
         <div class="cell" data-pos="m2"><div class="half top"><div class="text">0</div></div><div class="half bottom"><div class="text">0</div></div></div>
-      </div>
-
-      <div class="format-toggle">
-        <button class="toggle-btn" type="button" data-format="24">24H</button>
-        <button class="toggle-btn" type="button" data-format="12">12H</button>
       </div>
 
       <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
       <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
       <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
       <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
+    </div>
+
+      <div class="format-toggle">
+        <button class="toggle-btn" type="button" data-format="24">24H</button>
+        <button class="toggle-btn" type="button" data-format="12">12H</button>
+      </div>
     </div>
 
     <div class="controls">
