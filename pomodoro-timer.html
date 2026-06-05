@@ -20,6 +20,16 @@
       --transition: 0.2s ease;
     }
 
+    html[data-theme="dark"] {
+      --background: hsl(220 13% 10%);
+      --foreground: hsl(0 0% 92%);
+      --card: hsl(220 13% 14%);
+      --border: hsl(220 9% 28%);
+      --muted: hsl(220 13% 18%);
+      --muted-foreground: hsl(215 10% 65%);
+    }
+    html[data-theme="dark"] body { background: var(--background); }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
@@ -118,7 +128,7 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: hsl(220 10% 88%);
+      background: var(--border);
       transition: background var(--transition);
     }
 
@@ -247,7 +257,7 @@
     .stat-value {
       font-size: 1.25rem;
       font-weight: 500;
-      color: hsl(220 10% 42%);
+      color: var(--foreground);
       letter-spacing: -0.02em;
       line-height: 1;
       font-variant-numeric: tabular-nums;
@@ -482,11 +492,29 @@
           <line x1="3" y1="21" x2="10" y2="14"/>
         </svg>
       </button>
+      <button class="control-btn" id="themeBtn"
+              data-tooltip="테마 전환" title="테마 전환"
+              type="button" aria-label="라이트/다크 모드 전환">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
     </div>
   </div>
 
   <script>
-    /* ============================================
+    
+    (function() {
+      const THEME_KEY = 'nosion-theme-v1';
+      function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; } }
+      function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+      applyTheme(getTheme());
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.addEventListener('click', () => applyTheme(getTheme() === 'light' ? 'dark' : 'light'));
+      });
+    })();
+/* ============================================
        Pomodoro Timer — 로직
        ============================================ */
     const MODES = {
@@ -515,8 +543,18 @@
       }
     } catch (e) {}
 
+    // 자정 넘어가면 통계 초기화. saveStats/load 직전 호출
+    function refreshTodayKey() {
+      const now = new Date().toDateString();
+      if (now !== todayKey) {
+        todayKey = now;
+        focusDone = 0;
+        focusMins = 0;
+      }
+    }
     function saveStats() {
       try {
+        refreshTodayKey();
         localStorage.setItem(STATS_KEY, JSON.stringify({
           date: todayKey, focusDone, focusMins
         }));
@@ -584,8 +622,10 @@
       } else {
         running = true;
         btnStartEl.textContent = '일시정지';
+        // 백그라운드 탭에서 setInterval이 throttling 되어 drift 발생 → endTime 기반 계산
+        const endTime = Date.now() + remainSecs * 1000;
         intervalId = setInterval(() => {
-          remainSecs--;
+          remainSecs = Math.max(0, Math.round((endTime - Date.now()) / 1000));
           updateDisplay();
           if (remainSecs <= 0) {
             clearInterval(intervalId);
@@ -837,9 +877,7 @@
     }
     function doMove(x, y) {
       if (!moveDrag) return;
-      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
-      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
-      applyPosition();
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); { const __r = cardEl.getBoundingClientRect(); const __bL = __r.left - offsetX; const __bT = __r.top - offsetY; const __MIN = 40; offsetX = Math.max(-__bL - __r.width + __MIN, Math.min(window.innerWidth - __bL - __MIN, offsetX)); offsetY = Math.max(-__bT - __r.height + __MIN, Math.min(window.innerHeight - __bT - __MIN, offsetY)); } applyPosition();
     }
     function endMove() {
       if (moveDrag) {

@@ -23,6 +23,16 @@
       --transition: 0.2s ease;
     }
 
+    html[data-theme="dark"] {
+      --background: hsl(220 13% 10%);
+      --foreground: hsl(0 0% 92%);
+      --card: hsl(220 13% 14%);
+      --border: hsl(220 9% 28%);
+      --muted: hsl(220 13% 18%);
+      --muted-foreground: hsl(215 10% 65%);
+    }
+    html[data-theme="dark"] body { background: var(--background); }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
@@ -634,6 +644,13 @@
           <line x1="3" y1="21" x2="10" y2="14"/>
         </svg>
       </button>
+      <button class="control-btn" id="themeBtn"
+              data-tooltip="테마 전환" title="테마 전환"
+              type="button" aria-label="라이트/다크 모드 전환">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
       <button class="control-btn" id="resetBtn"
               data-tooltip="이번 주 초기화" title="이번 주 초기화"
               aria-label="이번 주 초기화">
@@ -646,7 +663,18 @@
   </div>
 
   <script>
-    /* ============================================
+    
+    (function() {
+      const THEME_KEY = 'nosion-theme-v1';
+      function getTheme() { try { return localStorage.getItem(THEME_KEY) || 'light'; } catch (e) { return 'light'; } }
+      function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
+      applyTheme(getTheme());
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) btn.addEventListener('click', () => applyTheme(getTheme() === 'light' ? 'dark' : 'light'));
+      });
+    })();
+/* ============================================
        노시언 루틴 트래커 - 로직
        ============================================ */
     const STORAGE_KEY = 'nosion-routine-tracker-v1';
@@ -913,10 +941,12 @@
     renderTracker();
     updateTotalStats();
 
-    // 새 주 자동 감지
+    // 새 주 자동 감지 — 지난 주 기록은 history에 보관 후 새 주 시작
     setInterval(() => {
       const currentMonday = getMondayKey();
-      if (currentMonday !== state.weekKey) {
+      if (state.weekKey && currentMonday !== state.weekKey) {
+        if (!state.history) state.history = {};
+        state.history[state.weekKey] = state.data;
         state.weekKey = currentMonday;
         state.data = Array.from({ length: HABITS_COUNT }, () => Array(DAYS_COUNT).fill(false));
         save();
@@ -1038,7 +1068,6 @@
 
     // 핸들에 이벤트 바인딩
     const handles = document.querySelectorAll('.resize-handle');
-    console.log('[리사이즈] 핸들 발견:', handles.length, '개');
 
     handles.forEach(handle => {
       // data-direction 우선, fallback으로 클래스명 사용
@@ -1141,9 +1170,7 @@
 
     function doMove(x, y) {
       if (!moveDrag) return;
-      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX);
-      offsetY = moveDrag.startOffsetY + (y - moveDrag.startY);
-      applyPosition();
+      offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); { const __r = cardEl.getBoundingClientRect(); const __bL = __r.left - offsetX; const __bT = __r.top - offsetY; const __MIN = 40; offsetX = Math.max(-__bL - __r.width + __MIN, Math.min(window.innerWidth - __bL - __MIN, offsetX)); offsetY = Math.max(-__bT - __r.height + __MIN, Math.min(window.innerHeight - __bT - __MIN, offsetY)); } applyPosition();
     }
 
     function endMove() {
