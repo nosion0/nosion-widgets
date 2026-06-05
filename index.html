@@ -227,6 +227,128 @@
     .legal-links a:hover { color: var(--foreground); }
     .legal-links .sep { opacity: 0.5; }
 
+    /* === 베타 배지 + 핵심 가치 === */
+    .beta-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted-foreground);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.25rem 0.625rem;
+      margin-bottom: 1rem;
+    }
+    .beta-banner::before {
+      content: "";
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--foreground);
+      opacity: 0.6;
+    }
+    .pitch {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--foreground);
+      line-height: 1.35;
+      margin-bottom: 0.875rem;
+    }
+    .pitch-sub {
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      line-height: 1.65;
+      margin-bottom: 0;
+    }
+    .value-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.625rem;
+      margin: 2.5rem 0 0;
+    }
+    .value-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.125rem 1.125rem;
+    }
+    .value-card .num {
+      display: inline-block;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .value-card .title {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--foreground);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.25rem;
+    }
+    .value-card .body {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      line-height: 1.55;
+    }
+
+    /* === 가격 + 문의 === */
+    .pricing {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.5rem 1.375rem;
+      margin: 2.5rem 0 0;
+      text-align: center;
+    }
+    .pricing-label {
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .pricing-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--foreground);
+      letter-spacing: -0.015em;
+      margin-bottom: 0.4rem;
+    }
+    .pricing-desc {
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .pricing-actions {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .cta {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--foreground);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.4375rem 0.875rem;
+      text-decoration: none;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+    }
+    .cta.primary {
+      background: var(--foreground);
+      color: var(--card);
+      border-color: var(--foreground);
+    }
+    .cta.primary:hover { opacity: 0.85; }
+    .cta:hover { background: var(--muted); }
+
     .embed-tip code {
       font-family: 'Menlo', 'Monaco', monospace;
       font-size: 0.75rem;
@@ -256,7 +378,27 @@
 
   <div class="header">
     <div class="logo">노시언 위젯</div>
-    <p class="desc">노션 임베드용 미니멀 위젯 모음 — 각 위젯을 클릭해 미리보기하거나 URL을 노션에 붙여넣으세요.</p>
+    <span class="beta-banner">베타 · 무료 이용</span>
+    <p class="pitch">노션을 위한 미니멀 한국형 위젯 28개.</p>
+    <p class="pitch-sub">한국 공휴일·한국어 폰트(Pretendard)·다크모드까지. 회원가입 없이 URL 한 줄로 임베드.</p>
+  </div>
+
+  <div class="value-grid">
+    <div class="value-card">
+      <span class="num">01</span>
+      <div class="title">노시언 톤</div>
+      <div class="body">모노톤 미니멀 — 노션 페이지에 자연스럽게 녹아드는 디자인.</div>
+    </div>
+    <div class="value-card">
+      <span class="num">02</span>
+      <div class="title">한국형</div>
+      <div class="body">한국 공휴일 · 음력 · 한글 폰트 · 칠월칠석. 한국 사용자 우선.</div>
+    </div>
+    <div class="value-card">
+      <span class="num">03</span>
+      <div class="title">가벼움</div>
+      <div class="body">단일 HTML, 외부 의존성 0, 추적·광고 없음. 다크모드 토글.</div>
+    </div>
   </div>
 
   <div class="section-label">사용법</div>
@@ -420,6 +562,16 @@
   <div class="embed-tip">
     <p>노션에서 <code>/embed</code> 입력 → URL 붙여넣기<br>
     예: <code>https://nosion0.github.io/nosion-widgets/calendar.html</code></p>
+  </div>
+
+  <div class="pricing">
+    <div class="pricing-label">가격</div>
+    <div class="pricing-title">베타 기간 무료</div>
+    <p class="pricing-desc">정식 출시 시 단일 결제 평생 이용 모델을 검토 중입니다.<br>가격이 확정되면 베타 사용자분께 우선 안내드릴게요.</p>
+    <div class="pricing-actions">
+      <a class="cta primary" href="https://github.com/nosion0/nosion-widgets/issues/new?labels=feedback&title=피드백" target="_blank" rel="noopener">피드백 보내기</a>
+      <a class="cta" href="https://github.com/nosion0/nosion-widgets" target="_blank" rel="noopener">GitHub</a>
+    </div>
   </div>
 
   <div class="legal-links">
