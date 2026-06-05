@@ -239,26 +239,30 @@
     }
     .brand-logo {
       display: inline-block;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
     }
-    .brand-logo img { width: 120px; height: auto; display: block; }
+    .brand-logo img { width: 110px; height: auto; display: block; }
     .brand-avatar {
-      width: 56px;
-      height: auto;
+      width: 36px;
+      height: 36px;
+      object-fit: cover;
+      object-position: 50% 25%;
       flex-shrink: 0;
       display: block;
+      border-radius: 50%;
+      background: #fff;     /* 다크모드에서도 얼굴 그대로 보이게 */
     }
-    html[data-theme="dark"] .brand-logo img,
-    html[data-theme="dark"] .brand-avatar { filter: invert(1); }
+    /* 로고만 invert (얼굴은 보존) */
+    html[data-theme="dark"] .brand-logo img { filter: invert(1); }
     .brand-name {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 1.125rem;
-      font-weight: 600;
+      font-size: 1.625rem;
+      font-weight: 700;
       color: var(--foreground);
-      letter-spacing: -0.015em;
-      margin-bottom: 1rem;
+      letter-spacing: -0.025em;
+      margin-bottom: 1.25rem;
     }
     .brand-tags {
       list-style: none;
@@ -266,10 +270,21 @@
       margin: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      font-size: 0.875rem;
+      gap: 0.625rem;
+      font-size: 0.9375rem;
     }
-    .brand-tags li { color: var(--muted-foreground); }
+    .brand-tags li {
+      color: hsl(22 90% 48%);     /* 따뜻한 주황 (사진 톤) */
+      letter-spacing: -0.005em;
+    }
+    .brand-tags u {
+      text-decoration: underline;
+      text-decoration-color: hsl(22 90% 48%);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+    html[data-theme="dark"] .brand-tags li,
+    html[data-theme="dark"] .brand-tags u { color: hsl(28 85% 65%); text-decoration-color: hsl(28 85% 65%); }
     .footer-links {
       display: flex;
       flex-direction: column;
@@ -294,8 +309,9 @@
       border-color: var(--muted-foreground);
     }
     .footer-quote {
-      font-size: 0.875rem;
-      color: var(--muted-foreground);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--foreground);
       margin: 0.5rem 0 1.75rem;
     }
     .footer-bottom {
@@ -518,9 +534,9 @@
           노시언
         </div>
         <ul class="brand-tags">
-          <li>✏️ 노션템플릿 제작, 제공</li>
-          <li>✏️ 책 A4 1장 핵심요약 제공</li>
-          <li>🌈 노션으로 인생을 더 행복하게 :)</li>
+          <li>✏️ <u>노션템플릿</u> 제작, 제공</li>
+          <li>✏️ 책 A4 1장 <u>핵심요약</u> 제공</li>
+          <li>🌈 <u>노션으로</u> 인생을 더 행복하게 :)</li>
         </ul>
       </div>
       <div class="footer-links">
