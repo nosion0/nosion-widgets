@@ -64,7 +64,6 @@
       border-radius: var(--radius);
       padding: 1.5rem 1.75rem;
       width: 380px;
-      height: 440px;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -551,11 +550,19 @@
       if (e.key === 'ArrowRight') { document.getElementById('nextBtn').click(); }
     });
 
+    /* ===== 반응형 zoom 공통 ===== */
+    const CAL_DEFAULT_WIDTH = 380;
+    const calCard = document.getElementById('card');
+    const calCardBody = calCard.querySelector('.card-body');
+    function calApplySize(w) {
+      calCard.style.width = w + 'px';
+      calCard.style.height = '';
+      if (calCardBody) calCardBody.style.zoom = (w / CAL_DEFAULT_WIDTH).toFixed(3);
+    }
+
     /* ===== Resize reset ===== */
     document.getElementById('resizeResetBtn').addEventListener('click', () => {
-      const card = document.getElementById('card');
-      card.style.width  = '380px';
-      card.style.height = '440px';
+      calApplySize(CAL_DEFAULT_WIDTH);
       try { localStorage.removeItem(KEY_SIZE); } catch (e) {}
     });
 
@@ -602,15 +609,14 @@
     (function initResize() {
       const wrapper = document.getElementById('widget');
       const card = document.getElementById('card');
-      const MIN_W = 280, MAX_W = 560, MIN_H = 200;
-      let resizing = false, dir = '', startW = 0, startH = 0, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+      const MIN_W = 280, MAX_W = 560;
+      let resizing = false, dir = '', startW = 0, startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
       document.querySelectorAll('.resize-handle').forEach(h => {
         h.addEventListener('mousedown', e => {
           resizing = true;
           dir    = h.dataset.direction;
           startW = card.offsetWidth;
-          startH = card.offsetHeight;
           startX = e.clientX; startY = e.clientY;
           if (getComputedStyle(wrapper).position !== 'fixed') {
             const wrapperRect = wrapper.getBoundingClientRect();
@@ -627,24 +633,19 @@
 
       document.addEventListener('mousemove', e => {
         if (!resizing) return;
+        // 반응형 비례 확대 — 어느 핸들이든 카드 폭을 조절(콘텐츠가 zoom으로 비례)
         const dx = e.clientX - startX, dy = e.clientY - startY;
-        if (dir === 'right' || dir === 'left') {
-          const delta = dir === 'right' ? dx : -dx;
-          const newW = Math.min(MAX_W, Math.max(MIN_W, startW + 2 * delta));
-          const actualDelta = newW - startW;
-          card.style.width = newW + 'px';
-          if (wrapper.style.position === 'fixed') {
-            wrapper.style.left = (startLeft - actualDelta / 2) + 'px';
-          }
-        }
-        if (dir === 'bottom' || dir === 'top') {
-          const delta = dir === 'bottom' ? dy : -dy;
-          const newH = Math.max(MIN_H, startH + 2 * delta);
-          const actualDelta = newH - startH;
-          card.style.height = newH + 'px';
-          if (wrapper.style.position === 'fixed') {
-            wrapper.style.top = (startTop - actualDelta / 2) + 'px';
-          }
+        let delta;
+        if (dir === 'right') delta = dx;
+        else if (dir === 'left') delta = -dx;
+        else if (dir === 'bottom') delta = dy;
+        else delta = -dy;
+        const newW = Math.min(MAX_W, Math.max(MIN_W, startW + 2 * delta));
+        const actualDelta = newW - startW;
+        calApplySize(newW);
+        if (wrapper.style.position === 'fixed') {
+          if (dir === 'left' || dir === 'right') wrapper.style.left = (startLeft - actualDelta / 2) + 'px';
+          else wrapper.style.top = (startTop - actualDelta / 2) + 'px';
         }
       });
 
@@ -652,7 +653,7 @@
         if (!resizing) return;
         resizing = false;
         try {
-          localStorage.setItem(KEY_SIZE, JSON.stringify({ w: card.offsetWidth, h: card.offsetHeight }));
+          localStorage.setItem(KEY_SIZE, JSON.stringify({ w: card.offsetWidth }));
           if (wrapper.style.position === 'fixed') {
             localStorage.setItem(KEY_POS, JSON.stringify({ left: wrapper.style.left, top: wrapper.style.top }));
           }
@@ -661,7 +662,7 @@
 
       try {
         const s = JSON.parse(localStorage.getItem(KEY_SIZE) || 'null');
-        if (s) { if (s.w) card.style.width = `${s.w}px`; if (s.h) card.style.height = `${s.h}px`; }
+        if (s && s.w) calApplySize(s.w);
       } catch (e) {}
     })();
 
