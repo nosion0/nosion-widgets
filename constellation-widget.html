@@ -419,8 +419,6 @@
           <span class="title">머리 위 별자리</span>
           <span id="cityWrap">
             <button class="city-selector" id="citySelector" type="button" aria-haspopup="true" aria-expanded="false" aria-label="도시 선택">서울</button>
-            <span class="city-sep">·</span>
-            <span id="footerTime">—</span>
           </span>
           <div class="city-dropdown" id="cityDropdown" role="menu"></div>
         </div>
@@ -439,7 +437,7 @@
             <span class="dot"></span>
             <span id="constSeason">—</span>
             <span class="dot"></span>
-            <span id="constStar">—</span>
+            <span class="star-meta">가장 밝은 별 <span id="constStar">—</span></span>
           </div>
         </div>
 
@@ -749,8 +747,17 @@
       constStarEl.textContent = c.star;
       constAltEl.textContent = `약 ${altitude}°`;
 
-      citySelectorEl.innerHTML = (currentCity.auto ? PIN_SVG : '') + escapeHtml(currentCity.name);
-      footerTimeEl.textContent = formatLocalTime(now, currentCity.tz);
+      // 위치 핀·시각 없이 도시명만 (자동감지 '서울특별시' 등은 짧게 정제)
+      citySelectorEl.textContent = shortCity(currentCity.name);
+    }
+
+    // '서울특별시' → '서울', 'XX광역시/도' → 'XX' 등 행정구역 접미사 제거
+    function shortCity(name) {
+      if (!name) return '서울';
+      return String(name)
+        .replace(/특별자치시|특별자치도|특별시|광역시|특별자치|자치시|자치도/g, '')
+        .replace(/(?<=.)(시|도)$/, '')
+        .trim() || name;
     }
 
     /* ----- 도시 선택 드롭다운 ----- */
@@ -760,7 +767,7 @@
       const autoBtn = document.createElement('button');
       autoBtn.className = 'city-option';
       autoBtn.type = 'button';
-      autoBtn.innerHTML = PIN_SVG + '현재 위치';
+      autoBtn.textContent = '현재 위치';
       autoBtn.setAttribute('role', 'menuitem');
       autoBtn.style.gridColumn = '1 / -1';
       if (!manualName) autoBtn.classList.add('selected');
