@@ -70,8 +70,8 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 3.75rem 3.75rem 3.5rem;  /* 내용↔테두리 여백 넉넉하게 */
-      width: 360px;
+      padding: 1.75rem 1.75rem 1.5rem;
+      width: 320px;
       position: relative;
       box-shadow: none;
       display: flex;
@@ -83,6 +83,11 @@
       min-height: 0;
     }
 
+    /* 헤더 */
+    .head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.5rem; }
+    .title { font-size: 1.0625rem; font-weight: 700; color: var(--foreground); letter-spacing: -0.02em; }
+    .head-date { font-size: 0.8125rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
     /* 드래그 영역 — 헤더가 없어진 대신 카드 빈 영역에서 (인터랙티브 요소 제외) */
     .card.dragging { cursor: grabbing; }
 
@@ -92,14 +97,14 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 1.5rem;
-      padding-bottom: 1.75rem;
+      gap: 1.25rem;
+      padding-bottom: 1.5rem;
       flex-shrink: 0;
     }
 
     .moon-svg {
-      width: 150px;
-      height: 150px;
+      width: 130px;
+      height: 130px;
       display: block;
       flex-shrink: 0;
     }
@@ -134,8 +139,8 @@
 
     .phase-name {
       font-size: 1.25rem;
-      font-weight: 500;
-      color: var(--foreground);  /* 메인 글씨 — 전 위젯 통일(검정) */
+      font-weight: 600;
+      color: var(--foreground);
       letter-spacing: -0.02em;
       line-height: 1.1;
       text-align: center;
@@ -146,27 +151,27 @@
       color: var(--muted-foreground);
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.005em;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .phase-meta .dot {
-      width: 2px;
-      height: 2px;
-      border-radius: 50%;
-      background: currentColor;
-      opacity: 0.5;
     }
 
     /* === 부드러운 구분선 === */
     .divider {
       height: 1px;
       background: var(--border);
-      opacity: 0.5;
+      opacity: 0.6;
       margin: 0 -0.25rem;
       flex-shrink: 0;
     }
+
+    /* === 하단: 다음 보름 + D-N === */
+    .next-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 1rem;
+      flex-shrink: 0;
+    }
+    .next-label { font-size: 0.8125rem; color: var(--muted-foreground); letter-spacing: -0.005em; }
+    .next-value { font-size: 0.875rem; font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
     /* === 정보 영역 (차분하게) === */
     .info-grid {
@@ -477,17 +482,16 @@
     <div class="card" id="card">
       <div class="card-body">
 
+      <!-- 헤더: 제목 + 날짜 -->
+      <div class="head">
+        <span class="title">달 위상</span>
+        <span class="head-date" id="headDate">—</span>
+      </div>
+
       <!-- 달 시각화 + 위상 이름 (카드의 주인공) -->
       <div class="moon-display">
         <svg class="moon-svg" viewBox="0 0 100 100" aria-hidden="true">
-          <defs>
-            <!-- 손그림 rough 필터 (노시언 스타일) -->
-            <filter id="roughMoon" x="-20%" y="-20%" width="140%" height="140%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="4" result="n"/>
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="1.4" xChannelSelector="R" yChannelSelector="G"/>
-            </filter>
-          </defs>
-          <g filter="url(#roughMoon)">
+          <g>
             <circle class="moon-base" cx="50" cy="50" r="46"/>
             <path class="moon-light" id="moonLight" d=""/>
             <circle class="moon-outline" cx="50" cy="50" r="46"/>
@@ -497,48 +501,19 @@
         <!-- 위상 이름 (큰 글씨) + 메타 한 줄 -->
         <div class="phase-display">
           <div class="phase-name" id="phaseName">—</div>
-          <div class="phase-meta">
-            <span><span id="illumNum">—</span>% 보임</span>
-            <span class="dot"></span>
-            <span><span id="ageNum">—</span>일째</span>
-          </div>
+          <div class="phase-meta">월령 <span id="ageNum">—</span>일 · 밝기 <span id="illumNum">—</span>%</div>
         </div>
       </div>
 
       <!-- 부드러운 구분선 -->
       <div class="divider"></div>
 
-      <!-- 정보 영역 (차분하게) -->
-      <div class="info-grid">
-        <div class="info-row">
-          <span class="info-label" id="nextPhaseLabel">다음 보름달</span>
-          <span class="info-value" id="nextPhaseValue">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">월출 · 월몰</span>
-          <span class="info-value">
-            <span id="moonRise">—</span>
-            <span class="value-sep">·</span>
-            <span id="moonSet">—</span>
-          </span>
-        </div>
+      <!-- 하단: 다음 보름 + D-N -->
+      <div class="next-row">
+        <span class="next-label" id="nextPhaseLabel">다음 보름</span>
+        <span class="next-value" id="nextPhaseValue">—</span>
       </div>
 
-      <!-- 푸터: 나라 선택 + 날짜 (또는 데모 모드 안내) -->
-      <div class="footer">
-        <!-- 일반 모드 -->
-        <span id="cityWrap">
-          <button class="city-selector" id="citySelector" type="button" aria-haspopup="true" aria-expanded="false" aria-label="나라 선택">대한민국</button>
-          <span class="city-sep">·</span>
-          <span id="footerDate">—</span>
-        </span>
-        <!-- 데모 모드 -->
-        <span id="demoText" style="display:none">—</span>
-        <!-- 나라 선택 드롭다운 -->
-        <div class="city-dropdown" id="cityDropdown" role="menu"></div>
-      </div>
-
-      <!-- 리사이즈 핸들 -->
       </div>
 
       <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
@@ -848,7 +823,6 @@
     }
     function applyActive() {
       currentCountry = resolveActive();
-      buildCityDropdown();
       update();
     }
 
@@ -892,19 +866,13 @@
       });
     }
 
+    const headDateEl = document.getElementById('headDate');
     const phaseNameEl = document.getElementById('phaseName');
     const ageNumEl = document.getElementById('ageNum');
     const illumNumEl = document.getElementById('illumNum');
     const moonLightEl = document.getElementById('moonLight');
     const nextPhaseLabelEl = document.getElementById('nextPhaseLabel');
     const nextPhaseValueEl = document.getElementById('nextPhaseValue');
-    const moonRiseEl = document.getElementById('moonRise');
-    const moonSetEl = document.getElementById('moonSet');
-    const cityWrapEl = document.getElementById('cityWrap');
-    const citySelectorEl = document.getElementById('citySelector');
-    const cityDropdownEl = document.getElementById('cityDropdown');
-    const footerDateEl = document.getElementById('footerDate');
-    const demoTextEl = document.getElementById('demoText');
 
     function formatTime(date, tz) {
       if (!date) return '—';
@@ -988,7 +956,6 @@
       const today = new Date();
       const todayNoon = getTodayNoon();
 
-      // 데모 모드면 강제 위상, 아니면 오늘 정오 기준 실제 위상
       const demoPhase = getDemoPhase();
       const age = demoPhase !== null
         ? demoPhase * SYNODIC_MONTH
@@ -996,118 +963,23 @@
       const phase = age / SYNODIC_MONTH;            // 0~1
       const illumination = getIllumination(age);    // 0~1
 
-      // 헤더 — 위상 이름, 달 나이
+      // 헤더 날짜
+      if (headDateEl) headDateEl.textContent = `${today.getMonth() + 1}월 ${today.getDate()}일`;
+
+      // 위상 이름 + 월령 + 밝기
       phaseNameEl.textContent = getPhaseName(age);
       ageNumEl.textContent = age.toFixed(1);
+      illumNumEl.textContent = Math.round(illumination * 100);
 
       // 달 시각화
       moonLightEl.setAttribute('d', buildMoonLightPath(phase, 46, 50, 50));
 
-      // 가시광 비율
-      illumNumEl.textContent = Math.round(illumination * 100);
-
-      // 다음 주요 위상
+      // 다음 주요 위상 — '다음 보름' + 'D-N'
       const next = getNextMajorPhase(age);
-      nextPhaseLabelEl.textContent = next.name;
-      nextPhaseValueEl.textContent = formatDays(next.days);
-
-      // 월출/월몰 — 선택된 나라의 대표 좌표·타임존(현지 하루) 기준
-      const tz = currentCountry.tz;
-      const dayStart = startOfDayInTz(tz);
-      const times = getMoonTimes(dayStart, currentCountry.lat, currentCountry.lng);
-      if (times.alwaysUp) {
-        moonRiseEl.textContent = '하루 종일';
-        moonSetEl.textContent = '안 짐';
-      } else if (times.alwaysDown) {
-        moonRiseEl.textContent = '안 뜸';
-        moonSetEl.textContent = '하루 종일 짐';
-      } else {
-        moonRiseEl.textContent = times.rise ? formatTime(times.rise, tz) : '—';
-        moonSetEl.textContent = times.set ? formatTime(times.set, tz) : '—';
-      }
-
-      // 푸터 — 데모 모드 / 일반 모드 분리
-      if (demoPhase !== null) {
-        cityWrapEl.style.display = 'none';
-        demoTextEl.style.display = '';
-        demoTextEl.textContent = `데모 · 위상 ${Math.round(demoPhase * 100)}%`;
-      } else {
-        cityWrapEl.style.display = '';
-        demoTextEl.style.display = 'none';
-        citySelectorEl.innerHTML = (currentCountry.auto ? PIN_SVG : '') + escapeHtml(currentCountry.name);
-        footerDateEl.textContent = formatDate(today, currentCountry.tz);
-      }
+      nextPhaseLabelEl.textContent = next.name.replace('달', '').trim();
+      nextPhaseValueEl.textContent = 'D-' + Math.max(0, Math.round(next.days));
     }
 
-    /* ----- 나라 선택 드롭다운 ----- */
-    function buildCityDropdown() {
-      cityDropdownEl.innerHTML = '';
-      // 자동(현재 위치) 옵션 — 전체 폭
-      const autoBtn = document.createElement('button');
-      autoBtn.className = 'city-option';
-      autoBtn.type = 'button';
-      autoBtn.innerHTML = PIN_SVG + '현재 위치';
-      autoBtn.setAttribute('role', 'menuitem');
-      autoBtn.style.gridColumn = '1 / -1';
-      if (!manualName) autoBtn.classList.add('selected');
-      autoBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        manualName = null;
-        try { localStorage.removeItem(CITY_KEY); } catch (er) {}
-        closeCityDropdown();
-        applyActive();
-        if (!autoCountry) getAutoCountry().then(loc => { if (loc && !manualName) { autoCountry = loc; applyActive(); } });
-      });
-      cityDropdownEl.appendChild(autoBtn);
-      // 나라 목록
-      COUNTRIES.forEach(country => {
-        const btn = document.createElement('button');
-        btn.className = 'city-option';
-        btn.type = 'button';
-        btn.textContent = country.name;
-        btn.setAttribute('role', 'menuitem');
-        if (manualName === country.name) btn.classList.add('selected');
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          manualName = country.name;
-          try { localStorage.setItem(CITY_KEY, country.name); } catch (er) {}
-          closeCityDropdown();
-          applyActive();   // 위치 변경 → 월출/월몰 다시 계산
-        });
-        cityDropdownEl.appendChild(btn);
-      });
-    }
-
-    function openCityDropdown() {
-      cityDropdownEl.classList.add('show');
-      citySelectorEl.classList.add('open');
-      citySelectorEl.setAttribute('aria-expanded', 'true');
-    }
-
-    function closeCityDropdown() {
-      cityDropdownEl.classList.remove('show');
-      citySelectorEl.classList.remove('open');
-      citySelectorEl.setAttribute('aria-expanded', 'false');
-    }
-
-    citySelectorEl.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (cityDropdownEl.classList.contains('show')) {
-        closeCityDropdown();
-      } else {
-        openCityDropdown();
-      }
-    });
-
-    // 외부 클릭 또는 ESC 키로 닫기
-    document.addEventListener('click', (e) => {
-      if (!cityDropdownEl.contains(e.target) && e.target !== citySelectorEl) {
-        closeCityDropdown();
-      }
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeCityDropdown();
-    });
 
     applyActive();                 // 즉시 표시 (수동값 또는 기본 대한민국)
     if (!manualName) {             // 자동 모드면 IP로 나라 감지 후 갱신
