@@ -147,198 +147,74 @@
 
     .api-save-btn:hover { background: var(--border); }
 
-    /* === City row === */
+    /* === Header (city + condition) === */
     .city-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: baseline;
+      margin-bottom: 1.5rem;
     }
-
     .city-name {
-      font-size: 0.8125rem;
-      color: var(--muted-foreground);
-      letter-spacing: 0.03em;
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: var(--foreground);
+      letter-spacing: -0.015em;
     }
-
-    .updated-time {
+    .updated-time {        /* 재활용: "오늘 · 흐림" 표시 */
       font-size: 0.75rem;
       color: var(--muted-foreground);
-      opacity: 0.6;
-      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.005em;
     }
 
-    /* === Main weather row === */
+    /* === Main weather row (icon + big temp) === */
     .main-row {
       display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 1rem;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
     }
-
     .temp-block {
       display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
+      align-items: baseline;
     }
-
     .temp-value {
-      font-size: 3.5rem;
-      font-weight: 400;
-      color: var(--foreground);
-      letter-spacing: -0.04em;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .temp-feels {
-      font-size: 0.8125rem;
-      color: var(--muted-foreground);
-    }
-
-    .weather-icon {
       font-size: 3rem;
-      line-height: 1;
-      opacity: 0.8;
-      user-select: none;
-    }
-
-    /* === Detail row === */
-    .detail-row {
-      display: flex;
-      gap: 0;
-    }
-
-    .detail-item {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.2rem;
-    }
-
-    .detail-item + .detail-item {
-      border-left: 1px solid var(--border);
-    }
-
-    .detail-value {
-      font-size: 0.9375rem;
-      font-weight: 500;
+      font-weight: 700;
       color: var(--foreground);
+      letter-spacing: -0.06em;
+      line-height: 1;
       font-variant-numeric: tabular-nums;
     }
-
-    .detail-label {
-      font-size: 0.6875rem;
-      color: var(--muted-foreground);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    /* === Outfit suggestion === */
-    .outfit-section {
-      background: var(--muted);
-      border-radius: 0.5rem;
-      padding: 0.75rem 1rem;
-      display: flex;
-      gap: 0.75rem;
-      align-items: flex-start;
-    }
-
-    .outfit-icon {
-      font-size: 1.25rem;
-      line-height: 0;
-      flex-shrink: 0;
-      margin-top: 0.05rem;
-      user-select: none;
-    }
-    .outfit-icon svg {
-      width: 22px;
-      height: 22px;
-      display: block;
-      overflow: visible;
-      stroke: var(--foreground);
-      stroke-width: 1.6;
-      fill: none;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .outfit-text {
-      font-size: 0.8125rem;
-      color: var(--foreground);
-      line-height: 1.5;
-    }
-
-    /* === Forecast === */
-    .forecast-section {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .section-label {
-      font-size: 0.6875rem;
-      color: var(--muted-foreground);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    /* 예보 토글 */
-    .forecast-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      align-self: flex-start;
-      background: none;
-      border: none;
-      padding: 0.15rem 0;
-      margin: 0;
-      cursor: pointer;
-      color: var(--muted-foreground);
-      transition: color var(--transition);
-    }
-    .forecast-toggle:hover { color: var(--foreground); }
-    .forecast-toggle .chevron {
-      width: 12px; height: 12px;
-      stroke: currentColor; stroke-width: 2;
-      fill: none; stroke-linecap: round; stroke-linejoin: round;
-      transition: transform var(--transition);
-    }
-    .forecast-section.collapsed .forecast-list { display: none; }
-    .forecast-section.collapsed .chevron { transform: rotate(-90deg); }
-
-    .forecast-list {
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      gap: 0.25rem;
-    }
-
-    .forecast-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.35rem;
-      flex: 1;
-    }
-
-    .fc-day {
-      font-size: 0.75rem;
-      color: var(--muted-foreground);
-      width: auto;
-    }
-
-    .fc-icon { font-size: 1rem; line-height: 0; user-select: none; }
+    .weather-icon { line-height: 0; user-select: none; }
     .weather-icon svg {
-      width: 70px; height: 70px; display: block; overflow: visible;
-      stroke: var(--foreground); stroke-width: 1.4; fill: none;
+      width: 76px; height: 76px;
+      display: block; overflow: visible;
+      stroke: var(--foreground); stroke-width: 1.6; fill: none;
       stroke-linecap: round; stroke-linejoin: round;
     }
-    .fc-icon svg {
-      width: 24px; height: 24px; display: block; overflow: visible;
-      stroke: var(--foreground); stroke-width: 1.7; fill: none;
-      stroke-linecap: round; stroke-linejoin: round;
+
+    /* === Range (최고 27° · 최저 19°) === */
+    .detail-row {
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.005em;
+      margin-bottom: 1.5rem;
     }
+
+    /* === Outfit advice (구분선 위) === */
+    .outfit-section {
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--foreground);
+      letter-spacing: -0.005em;
+    }
+    .outfit-section .outfit-icon { display: none; }
+
+    /* === (sun moon 등은 작은 동그라미만 — temp-feels/detail-item/forecast 미사용) === */
 
     .fc-desc { display: none; }
 
@@ -462,46 +338,21 @@
         </div>
       </div>
 
-      <!-- Main content -->
+      <!-- Main content (simplified) -->
       <div class="city-row">
         <span class="city-name" id="cityLabel">서울</span>
-        <span class="updated-time" id="updatedTime"></span>
+        <span class="updated-time" id="updatedTime">오늘 · —</span>
       </div>
 
       <div class="main-row">
-        <div class="temp-block">
-          <span class="temp-value" id="tempValue">—°</span>
-          <span class="temp-feels" id="tempFeels">체감 —°</span>
-        </div>
-        <span class="weather-icon" id="weatherIcon" aria-hidden="true">—</span>
+        <span class="weather-icon" id="weatherIcon" aria-hidden="true"></span>
+        <div class="temp-block"><span class="temp-value" id="tempValue">—°</span></div>
       </div>
 
-      <div class="detail-row">
-        <div class="detail-item">
-          <span class="detail-value" id="humidity">—%</span>
-          <span class="detail-label">습도</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-value" id="tempRange">—/—°</span>
-          <span class="detail-label">최고/최저</span>
-        </div>
-      </div>
+      <div class="detail-row" id="tempRange">최고 —° · 최저 —°</div>
 
       <div class="outfit-section">
-        <span class="outfit-icon" id="outfitIcon" aria-hidden="true"></span>
         <span class="outfit-text" id="outfitText">날씨 정보를 불러오는 중...</span>
-      </div>
-
-      <div class="forecast-section" id="forecastSection">
-        <button class="forecast-toggle" id="forecastToggle" type="button" aria-expanded="true">
-          <span class="section-label">5일 예보</span>
-          <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="forecast-list" id="forecastList">
-          <div class="forecast-item" style="justify-content:center;padding:0.5rem 0;">
-            <span style="font-size:0.8125rem;color:var(--muted-foreground)">로딩 중...</span>
-          </div>
-        </div>
       </div>
 
       </div>
@@ -655,44 +506,17 @@
       const low   = Math.round(d.temperature_2m_min[0]);
 
       document.getElementById('cityLabel').textContent = cityName;
-      document.getElementById('updatedTime').textContent =
-        now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 기준';
-      document.getElementById('tempValue').textContent    = `${temp}°`;
-      document.getElementById('tempFeels').textContent    = `체감 ${feels}°`;
-      document.getElementById('weatherIcon').innerHTML     = wmoIcon(code, isDay);
-      document.getElementById('humidity').textContent     = `${hum}%`;
-      document.getElementById('tempRange').textContent    = `${high}/${low}°`;
+      document.getElementById('updatedTime').textContent = `오늘 · ${wmoDesc(code)}`;
+      document.getElementById('tempValue').textContent   = `${temp}°`;
+      document.getElementById('weatherIcon').innerHTML   = wmoIcon(code, isDay);
+      document.getElementById('tempRange').textContent   = `최고 ${high}° · 최저 ${low}°`;
 
-      const { icon, text } = outfitAdvice(temp);
-      document.getElementById('outfitIcon').innerHTML = icon;
+      const { text } = outfitAdvice(temp);
       document.getElementById('outfitText').textContent = text;
-
-      // 5-day forecast (daily 인덱스 1..5; 0 = 오늘)
-      const DAY_KO = ['일', '월', '화', '수', '목', '금', '토'];
-      const list = document.getElementById('forecastList');
-      list.innerHTML = '';
-      for (let i = 1; i <= 5 && i < d.time.length; i++) {
-        const dt   = new Date(d.time[i] + 'T00:00:00');
-        const day  = DAY_KO[dt.getDay()];
-        const icon = wmoIcon(d.weather_code[i], true);
-        const desc = wmoDesc(d.weather_code[i]);
-        const hi   = Math.round(d.temperature_2m_max[i]);
-        const lo   = Math.round(d.temperature_2m_min[i]);
-        const el = document.createElement('div');
-        el.className = 'forecast-item';
-        el.innerHTML = `
-          <span class="fc-day">${day}</span>
-          <span class="fc-icon">${icon}</span>
-          <span class="fc-desc">${desc}</span>
-          <span class="fc-temp">${hi}°<span class="low">${lo}°</span></span>`;
-        list.appendChild(el);
-      }
     }
 
     function renderError(msg) {
       document.getElementById('outfitText').textContent = `오류: ${msg}`;
-      document.getElementById('forecastList').innerHTML =
-        '<div class="forecast-item" style="justify-content:center;padding:0.5rem 0;"><span style="font-size:0.8125rem;color:var(--muted-foreground)">예보를 불러올 수 없습니다</span></div>';
     }
 
     /* ===== City setup overlay ===== */
@@ -840,27 +664,6 @@
     })();
 
     /* ===== Init ===== */
-    /* ===== 5일 예보 토글 ===== */
-    (function initForecastToggle() {
-      const section = document.getElementById('forecastSection');
-      const toggle  = document.getElementById('forecastToggle');
-      let open = true;
-      try {
-        const saved = localStorage.getItem(KEY_FC);
-        if (saved !== null) open = saved === '1';
-      } catch (e) {}
-      function apply() {
-        section.classList.toggle('collapsed', !open);
-        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-      }
-      apply();
-      toggle.addEventListener('click', () => {
-        open = !open;
-        try { localStorage.setItem(KEY_FC, open ? '1' : '0'); } catch (e) {}
-        apply();
-      });
-    })();
-
     fetchWeather();
     setInterval(fetchWeather, 30 * 60 * 1000); // 30분마다 자동 갱신
   </script>
