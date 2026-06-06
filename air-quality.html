@@ -97,11 +97,42 @@
     .handle-left .bar { width: 1px; height: 36px; } .handle-left:hover .bar { width: 3px; }
     .handle-right { right: 0; top: 50%; transform: translate(50%,-50%); width: 16px; height: 36px; cursor: ew-resize; }
     .handle-right .bar { width: 1px; height: 36px; } .handle-right:hover .bar { width: 3px; }
+  
+    /* ===== NOSION FRAME SYSTEM (드래그 이동 + 8방향 리사이즈) ===== */
+    .stage { position: fixed; inset: 0; overflow: hidden; }
+    #card.card {
+      position: absolute; width: auto; height: auto;
+      display: flex; flex-direction: column; align-items: stretch;
+      overflow: hidden; box-sizing: border-box; cursor: grab;
+    }
+    #card.card.dragging { cursor: grabbing; }
+    #card.card > .card-body { flex: 1 1 auto; min-height: 0; }
+    .controls { position: absolute; top: 0.75rem; right: 0.75rem; left: auto; bottom: auto;
+      display: flex; flex-direction: row; gap: 2px; opacity: 0; transition: opacity var(--transition); z-index: 30; padding: 0; }
+    #card.card:hover .controls { opacity: 1; }
+    .control-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: rgba(115,115,115,0.5); cursor: pointer; transition: color var(--transition); border-radius: 4px; }
+    .control-btn:hover:not(:disabled) { color: var(--foreground); }
+    .control-btn svg { width: 13px; height: 13px; stroke-width: 2; }
+    .rz { position: absolute; z-index: 20; touch-action: none; }
+    .rz-n { top: 0; left: 0; right: 0; height: 7px; cursor: ns-resize; }
+    .rz-s { bottom: 0; left: 0; right: 0; height: 7px; cursor: ns-resize; }
+    .rz-e { top: 0; bottom: 0; right: 0; width: 7px; cursor: ew-resize; }
+    .rz-w { top: 0; bottom: 0; left: 0; width: 7px; cursor: ew-resize; }
+    .rz-ne, .rz-nw, .rz-se, .rz-sw { width: 14px; height: 14px; z-index: 21; }
+    .rz-ne { top: 0; right: 0; cursor: nesw-resize; }
+    .rz-nw { top: 0; left: 0; cursor: nwse-resize; }
+    .rz-se { bottom: 0; right: 0; cursor: nwse-resize; }
+    .rz-sw { bottom: 0; left: 0; cursor: nesw-resize; }
+    .rz-e::after, .rz-w::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 2px; height: 28px; border-radius: 99px; background: var(--border); opacity: 0; transition: opacity var(--transition); }
+    .rz-n::after, .rz-s::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 28px; height: 2px; border-radius: 99px; background: var(--border); opacity: 0; transition: opacity var(--transition); }
+    #card.card:hover .rz-n::after, #card.card:hover .rz-s::after, #card.card:hover .rz-e::after, #card.card:hover .rz-w::after { opacity: 0.7; }
+    .rz:hover::after { background: var(--muted-foreground) !important; }
   </style>
 </head>
 <body>
-  <div class="widget-wrapper" id="widget">
-    <div class="card" id="card">
+  <div class="stage" id="stage">
+    <div class="card" id="card" style="visibility:hidden">
       <div class="card-body">
         <div class="caption">대기질</div>
         <div class="hero">
@@ -125,13 +156,8 @@
         </div>
       </div>
 
-      <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
-      <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
-      <div class="resize-handle handle-left" data-direction="left"><div class="bar"></div></div>
-      <div class="resize-handle handle-right" data-direction="right"><div class="bar"></div></div>
-    </div>
 
-    <div class="controls">
+      <div class="controls">
       <button class="control-btn" id="resizeResetBtn" data-tooltip="크기 초기화" title="크기 초기화" type="button" aria-label="카드 크기 초기화">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
@@ -145,6 +171,18 @@
         </svg>
       </button>
     </div>
+
+      <div class="rz rz-n"  data-rz="n"></div>
+      <div class="rz rz-s"  data-rz="s"></div>
+      <div class="rz rz-e"  data-rz="e"></div>
+      <div class="rz rz-w"  data-rz="w"></div>
+      <div class="rz rz-ne" data-rz="ne"></div>
+      <div class="rz rz-nw" data-rz="nw"></div>
+      <div class="rz rz-se" data-rz="se"></div>
+      <div class="rz rz-sw" data-rz="sw"></div>
+</div>
+
+
   </div>
 
   <script>
@@ -322,95 +360,99 @@
     if (!manualName) getAutoLocation().then(loc => { if (loc && !manualName) { autoLoc = loc; applyActive(); } });
     setInterval(fetchAir, 30 * 60 * 1000);
 
-    /* ===== 리사이즈 ===== */
-    const SIZE_KEY = 'nosion-air-size-v1';
-    const MIN_WIDTH = 280, MAX_WIDTH = 520, MIN_HEIGHT = 320, MAX_HEIGHT = 560, DEFAULT_WIDTH = 330;
-    const cardEl = document.getElementById('card');
-    const cardBodyEl = cardEl.querySelector('.card-body');
-    const widgetEl = document.getElementById('widget');
-    let cardWidth = DEFAULT_WIDTH, cardHeight = null;
-    try {
-      const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null');
-      if (s) { if (typeof s.width === 'number') cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width)); if (typeof s.height === 'number' && s.height > 0) cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height)); }
-    } catch (e) {}
-    function applyCardSize() {
-      // 반응형: 카드 폭에 비례해 콘텐츠 전체를 zoom (여백 비율 유지)
-      cardEl.style.width = cardWidth + 'px';
-      cardEl.style.height = '';
-      if (cardBodyEl) cardBodyEl.style.zoom = (cardWidth / DEFAULT_WIDTH).toFixed(3);
-    }
-    function saveSize() { try { localStorage.setItem(SIZE_KEY, JSON.stringify({ width: cardWidth, height: cardHeight })); } catch (e) {} }
-    let resizeDrag = null, startLeft = 0, startTop = 0;
-    function startResize(direction, x, y) {
-      const rect = cardEl.getBoundingClientRect();
-      resizeDrag = { direction, startX: x, startY: y, startWidth: rect.width, startHeight: rect.height };
-      if (getComputedStyle(widgetEl).position !== 'fixed') {
-        const wr = widgetEl.getBoundingClientRect();
-        widgetEl.style.position = 'fixed'; widgetEl.style.left = wr.left + 'px'; widgetEl.style.top = wr.top + 'px'; widgetEl.style.transform = 'none';
-        offsetX = 0; offsetY = 0;
-      }
-      startLeft = parseFloat(widgetEl.style.left) || 0; startTop = parseFloat(widgetEl.style.top) || 0;
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = (direction === 'left' || direction === 'right') ? 'ew-resize' : 'ns-resize';
-    }
-    function moveResize(x, y) {
-      if (!resizeDrag) return;
-      // 반응형 비례 확대 — 어느 핸들이든 카드 폭을 조절(콘텐츠가 zoom으로 비례)
-      const dx = x - resizeDrag.startX, dy = y - resizeDrag.startY, dir = resizeDrag.direction;
-      let delta;
-      if (dir === 'right') delta = dx;
-      else if (dir === 'left') delta = -dx;
-      else if (dir === 'bottom') delta = dy;
-      else delta = -dy;
-      cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
-      const actual = cardWidth - resizeDrag.startWidth;
-      if (widgetEl.style.position === 'fixed') {
-        if (dir === 'left' || dir === 'right') widgetEl.style.left = (startLeft - actual / 2) + 'px';
-        else widgetEl.style.top = (startTop - actual / 2) + 'px';
-      }
-      applyCardSize();
-    }
-    function endResize() { if (!resizeDrag) return; saveSize(); resizeDrag = null; document.body.style.userSelect = ''; document.body.style.cursor = ''; }
-    document.querySelectorAll('.resize-handle').forEach(handle => {
-      const direction = handle.dataset.direction;
-      handle.addEventListener('mousedown', (ev) => { ev.preventDefault(); ev.stopPropagation(); startResize(direction, ev.clientX, ev.clientY); });
-      handle.addEventListener('touchstart', (ev) => { ev.preventDefault(); const tt = ev.touches[0]; startResize(direction, tt.clientX, tt.clientY); }, { passive: false });
-    });
-    document.addEventListener('mousemove', (ev) => { if (resizeDrag) { ev.preventDefault(); moveResize(ev.clientX, ev.clientY); } });
-    document.addEventListener('mouseup', endResize);
-    document.addEventListener('touchmove', (ev) => { if (resizeDrag) { const tt = ev.touches[0]; moveResize(tt.clientX, tt.clientY); } }, { passive: true });
-    document.addEventListener('touchend', endResize);
-    document.addEventListener('touchcancel', endResize);
-    applyCardSize();
 
-    /* ===== 드래그 이동 ===== */
-    const POS_KEY = 'nosion-air-pos-v1';
-    let offsetX = 0, offsetY = 0, moveDrag = null;
-    try { const p = JSON.parse(localStorage.getItem(POS_KEY) || 'null'); if (p) { if (typeof p.x === 'number') offsetX = p.x; if (typeof p.y === 'number') offsetY = p.y; } } catch (e) {}
-    function applyPosition() { widgetEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`; }
-    function savePosition() { try { localStorage.setItem(POS_KEY, JSON.stringify({ x: offsetX, y: offsetY })); } catch (e) {} }
-    function isDraggableTarget(target) {
-      if (!target.closest) return false;
-      const blocked = ['.control-btn', '.resize-handle', 'button', '[contenteditable]', 'a', 'input', '.city-dropdown'];
-      for (const sel of blocked) if (target.closest(sel)) return false;
-      return true;
-    }
-    function startMove(x, y) { moveDrag = { startX: x, startY: y, startOffsetX: offsetX, startOffsetY: offsetY }; document.body.style.userSelect = 'none'; cardEl.classList.add('dragging'); }
-    function doMove(x, y) { if (!moveDrag) return; offsetX = moveDrag.startOffsetX + (x - moveDrag.startX); offsetY = moveDrag.startOffsetY + (y - moveDrag.startY); { const __r = cardEl.getBoundingClientRect(); const __bL = __r.left - offsetX; const __bT = __r.top - offsetY; const __MIN = 40; offsetX = Math.max(-__bL - __r.width + __MIN, Math.min(window.innerWidth - __bL - __MIN, offsetX)); offsetY = Math.max(-__bT - __r.height + __MIN, Math.min(window.innerHeight - __bT - __MIN, offsetY)); } applyPosition(); }
-    function endMove() { if (!moveDrag) return; savePosition(); moveDrag = null; document.body.style.userSelect = ''; cardEl.classList.remove('dragging'); }
-    applyPosition();
-    cardEl.addEventListener('mousedown', (ev) => { if (!isDraggableTarget(ev.target)) return; ev.preventDefault(); startMove(ev.clientX, ev.clientY); });
-    cardEl.addEventListener('touchstart', (ev) => { if (!isDraggableTarget(ev.target)) return; const tt = ev.touches[0]; startMove(tt.clientX, tt.clientY); }, { passive: true });
-    document.addEventListener('mousemove', (ev) => { if (moveDrag) { ev.preventDefault(); doMove(ev.clientX, ev.clientY); } });
-    document.addEventListener('mouseup', endMove);
-    document.addEventListener('touchmove', (ev) => { if (moveDrag) { const tt = ev.touches[0]; doMove(tt.clientX, tt.clientY); } }, { passive: true });
-    document.addEventListener('touchend', endMove);
-    document.addEventListener('touchcancel', endMove);
+    /* ===================================================================
+       드래그 이동 + 8방향 리사이즈 (frame{x,y,w,h} · Pointer Events)
+       =================================================================== */
+    const FRAME_CONFIG = { key: 'nosion-air-quality-frame-v1', minW: 280, minH: 260, defaultW: 330 };
+    /* ===== NOSION FRAME CONTROLLER (공통 · 모든 위젯 동일) ===== */
+    (function (cfg) {
+      const card = document.getElementById('card');
+      if (!card) return;
+      const dragEl = card.querySelector('[data-drag]') || card;
+      const MIN_W = cfg.minW || 240, MIN_H = cfg.minH || 160, DEFAULT_W = cfg.defaultW || 320;
+      const KEY = cfg.key;
+      let active = false, frame;
 
-    document.getElementById('resizeResetBtn').addEventListener('click', () => {
-      cardWidth = DEFAULT_WIDTH; cardHeight = null; applyCardSize(); saveSize();
-      offsetX = 0; offsetY = 0; applyPosition(); savePosition();
-    });
-  </script>
+      function num(v) { return typeof v === 'number' && isFinite(v); }
+      function loadFrame() {
+        try { const f = JSON.parse(localStorage.getItem(KEY) || 'null');
+          if (f && num(f.x) && num(f.y) && num(f.w) && num(f.h)) return f; } catch (e) {}
+        return null;
+      }
+      function saveFrame() { try { localStorage.setItem(KEY, JSON.stringify(frame)); } catch (e) {} }
+      function defaultFrame() {
+        card.style.left = '0px'; card.style.top = '0px';
+        card.style.width = DEFAULT_W + 'px'; card.style.height = 'auto';
+        const h = Math.max(MIN_H, card.offsetHeight);
+        return { w: DEFAULT_W, h,
+          x: Math.round((window.innerWidth - DEFAULT_W) / 2),
+          y: Math.round((window.innerHeight - h) / 2) };
+      }
+      function applyFrame() {
+        card.style.left = frame.x + 'px'; card.style.top = frame.y + 'px';
+        card.style.width = frame.w + 'px'; card.style.height = frame.h + 'px';
+        if (cfg.onResize) cfg.onResize(frame);
+      }
+      function clampFrame() {
+        frame.w = Math.max(MIN_W, frame.w); frame.h = Math.max(MIN_H, frame.h);
+        const K = 48;
+        frame.x = Math.min(window.innerWidth - K, Math.max(K - frame.w, frame.x));
+        frame.y = Math.min(window.innerHeight - K, Math.max(0, frame.y));
+      }
+
+      frame = loadFrame() || defaultFrame();
+      clampFrame(); applyFrame();
+      card.style.visibility = 'visible';
+
+      /* ----- 8방향 리사이즈 (document 리스너) ----- */
+      card.querySelectorAll('[data-rz]').forEach(handle => {
+        handle.addEventListener('pointerdown', (e) => {
+          if (active) return; active = true;
+          e.preventDefault(); e.stopPropagation();
+          const dir = handle.dataset.rz, sx = e.clientX, sy = e.clientY, f0 = { x: frame.x, y: frame.y, w: frame.w, h: frame.h };
+          card.classList.add('resizing');
+          const mv = (ev) => {
+            const dx = ev.clientX - sx, dy = ev.clientY - sy;
+            if (dir.includes('e')) frame.w = Math.max(MIN_W, f0.w + dx);
+            if (dir.includes('s')) frame.h = Math.max(MIN_H, f0.h + dy);
+            if (dir.includes('w')) { const nw = Math.max(MIN_W, f0.w - dx); frame.x = f0.x + (f0.w - nw); frame.w = nw; }
+            if (dir.includes('n')) { const nh = Math.max(MIN_H, f0.h - dy); frame.y = f0.y + (f0.h - nh); frame.h = nh; }
+            applyFrame();
+          };
+          const up = () => {
+            document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+            card.classList.remove('resizing'); active = false; clampFrame(); applyFrame(); saveFrame();
+          };
+          document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
+        });
+      });
+
+      /* ----- 드래그 이동 (이동 임계값으로 클릭과 충돌 방지) ----- */
+      dragEl.addEventListener('pointerdown', (e) => {
+        if (active) return;
+        if (e.target.closest('button, a, input, select, textarea, [contenteditable], [data-rz], [data-no-drag]')) return;
+        const dx0 = e.clientX, dy0 = e.clientY, sx = frame.x, sy = frame.y;
+        let started = false;
+        const mv = (ev) => {
+          const ddx = ev.clientX - dx0, ddy = ev.clientY - dy0;
+          if (!started) {
+            if (Math.abs(ddx) < 4 && Math.abs(ddy) < 4) return;
+            started = true; active = true; card.classList.add('dragging');
+          }
+          frame.x = sx + ddx; frame.y = sy + ddy; applyFrame();
+        };
+        const up = () => {
+          document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+          if (started) { card.classList.remove('dragging'); active = false; clampFrame(); applyFrame(); saveFrame(); }
+        };
+        document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
+      });
+
+      const rb = document.getElementById('resizeResetBtn');
+      if (rb) rb.addEventListener('click', () => { frame = defaultFrame(); clampFrame(); applyFrame(); saveFrame(); });
+      window.addEventListener('resize', () => { clampFrame(); applyFrame(); });
+    })(FRAME_CONFIG);
+</script>
 </body>
 </html>
