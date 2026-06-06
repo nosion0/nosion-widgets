@@ -55,8 +55,6 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.5rem 1.75rem;
-      width: 380px;
-      position: relative;
       display: flex;
       flex-direction: column;
       justify-content: safe center;
@@ -238,7 +236,6 @@
     /* ===== NOSION FRAME SYSTEM (드래그 이동) ===== */
     .stage { position: fixed; inset: 0; overflow: hidden; }
     #card.card {
-      position: absolute; width: auto; height: auto;
       display: flex; flex-direction: column; align-items: stretch;
       overflow: hidden; box-sizing: border-box; cursor: grab;
     }
@@ -253,12 +250,32 @@
     .control-btn svg { width: 13px; height: 13px; stroke-width: 2; }
     /* 그리드 반응형: 날짜 셀 정사각형 유지(원형 today 표식 보존) + 격자 세로 가운데 정렬 */
     #card.card > .card-body { display: flex; flex-direction: column; justify-content: center; }
+  
+    /* === NOSION FRAME SPEC (드래그 이동 + 8방향 리사이즈) === */
+    html,body{background:transparent;height:100%;overflow:hidden;}
+    *{box-sizing:border-box;}
+    .stage{position:fixed;inset:0;}
+    .card{position:absolute;display:flex;flex-direction:column;touch-action:none;container-type:size;}
+    .card.dragging,.card.resizing{user-select:none;box-shadow:0 12px 36px rgba(55,53,47,.16);}
+    .whead{flex:none;cursor:grab;min-height:20px;width:100%;position:relative;z-index:2;background:inherit;}
+    .whead:active{cursor:grabbing;}
+    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
+    .rz{position:absolute;z-index:5;}
+    .rz.n{top:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
+    .rz.s{bottom:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
+    .rz.e{right:-4px;top:10px;bottom:10px;width:8px;cursor:ew-resize;}
+    .rz.w{left:-4px;top:10px;bottom:10px;width:8px;cursor:ew-resize;}
+    .rz.ne{top:-5px;right:-5px;width:14px;height:14px;cursor:nesw-resize;}
+    .rz.nw{top:-5px;left:-5px;width:14px;height:14px;cursor:nwse-resize;}
+    .rz.se{bottom:-5px;right:-5px;width:14px;height:14px;cursor:nwse-resize;}
+    .rz.sw{bottom:-5px;left:-5px;width:14px;height:14px;cursor:nesw-resize;}
   </style>
 </head>
 <body>
-  <div class="stage" id="stage">
-    <div class="card" id="card" style="visibility:hidden">
-      <div class="card-body">
+  <div class="stage">
+    <div class="card" id="w">
+      <div class="whead"></div>
+      <div class="wbody">
 
       <div class="cal-header">
         <button class="nav-btn" id="prevBtn" type="button" aria-label="이전 달">
@@ -531,83 +548,50 @@
 
     /* ===== Init ===== */
     render();
-  
-
-    /* ===================================================================
-       드래그 이동 (frame{x,y} · Pointer Events)
-       =================================================================== */
-    const FRAME_CONFIG = { key: 'nosion-calendar-frame-v1', minW: 300, minH: 300, defaultW: 380 };
-    /* ===== NOSION FRAME CONTROLLER (공통 · 모든 위젯 동일) ===== */
-    (function (cfg) {
-      const card = document.getElementById('card');
-      if (!card) return;
-      const dragEl = card.querySelector('[data-drag]') || card;
-      const MIN_W = cfg.minW || 240, MIN_H = cfg.minH || 160, DEFAULT_W = cfg.defaultW || 320;
-      const KEY = cfg.key;
-      let active = false, frame;
-
-      function num(v) { return typeof v === 'number' && isFinite(v); }
-      function loadFrame() {
-        try { const f = JSON.parse(localStorage.getItem(KEY) || 'null');
-          if (f && num(f.x) && num(f.y) && num(f.w) && num(f.h)) return f; } catch (e) {}
-        return null;
-      }
-      function saveFrame() { try { localStorage.setItem(KEY, JSON.stringify(frame)); } catch (e) {} }
-      function defaultFrame() {
-        card.style.left = '0px'; card.style.top = '0px';
-        card.style.width = DEFAULT_W + 'px'; card.style.height = 'auto';
-        const h = Math.max(MIN_H, card.offsetHeight);
-        return { w: DEFAULT_W, h,
-          x: Math.round((window.innerWidth - DEFAULT_W) / 2),
-          y: Math.round((window.innerHeight - h) / 2) };
-      }
-      function applyFrame() {
-        card.style.left = frame.x + 'px'; card.style.top = frame.y + 'px';
-        card.style.width = frame.w + 'px'; card.style.height = frame.h + 'px';
-        if (cfg.onResize) cfg.onResize(frame);
-      }
-      function clampFrame() {
-        frame.w = Math.max(MIN_W, Math.min(frame.w, window.innerWidth)); frame.h = Math.max(MIN_H, Math.min(frame.h, window.innerHeight));
-        const K = 48;
-        frame.x = Math.min(window.innerWidth - K, Math.max(K - frame.w, frame.x));
-        frame.y = Math.min(window.innerHeight - K, Math.max(0, frame.y));
-      }
-
-      frame = loadFrame() || defaultFrame();
-      clampFrame(); applyFrame();
-      card.style.visibility = 'visible';
-
-
-      /* ----- 드래그 이동 (이동 임계값으로 클릭과 충돌 방지) ----- */
-      dragEl.addEventListener('pointerdown', (e) => {
-        if (active) return;
-        if (e.target.closest('button, a, input, select, textarea, [contenteditable], [data-no-drag]')) return;
-        const dx0 = e.clientX, dy0 = e.clientY, sx = frame.x, sy = frame.y;
-        let started = false;
-        const mv = (ev) => {
-          const ddx = ev.clientX - dx0, ddy = ev.clientY - dy0;
-          if (!started) {
-            if (Math.abs(ddx) < 4 && Math.abs(ddy) < 4) return;
-            started = true; active = true; card.classList.add('dragging');
-          }
-          frame.x = sx + ddx; frame.y = sy + ddy; applyFrame();
-        };
-        const up = () => {
-          document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
-          if (started) {
-            card.classList.remove('dragging'); active = false; clampFrame(); applyFrame(); saveFrame();
-            const sc = (ce) => { ce.stopPropagation(); ce.preventDefault(); };
-            window.addEventListener('click', sc, { capture: true, once: true });
-            setTimeout(() => window.removeEventListener('click', sc, true), 0);
-          }
-        };
-        document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
-      });
-
-      const rb = document.getElementById('resizeResetBtn');
-      if (rb) rb.addEventListener('click', () => { frame = defaultFrame(); clampFrame(); applyFrame(); saveFrame(); });
-      window.addEventListener('resize', () => { clampFrame(); applyFrame(); });
-    })(FRAME_CONFIG);
+</script>
+  <script>
+(function(){
+  var card=document.getElementById('w');
+  var head=card.querySelector('.whead');
+  var KEY='nosion-calendar-frame', MINW=230, MINH=200, DEFW=340, DEFH=300;
+  ['n','s','e','w','ne','nw','se','sw'].forEach(function(d){
+    var el=document.createElement('div');el.className='rz '+d;el.setAttribute('data-rz',d);card.appendChild(el);
+  });
+  var frame=load();
+  function load(){try{var f=JSON.parse(localStorage.getItem(KEY));if(f&&f.w)return f;}catch(e){}
+    var w=Math.min(DEFW,window.innerWidth-28),h=Math.min(DEFH,window.innerHeight-28);
+    return{x:(window.innerWidth-w)/2,y:Math.max(14,(window.innerHeight-h)/2),w:w,h:h};}
+  function clamp(){frame.w=Math.max(MINW,Math.min(frame.w,window.innerWidth-8));
+    frame.h=Math.max(MINH,Math.min(frame.h,window.innerHeight-8));
+    frame.x=Math.max(4,Math.min(frame.x,window.innerWidth-frame.w-4));
+    frame.y=Math.max(4,Math.min(frame.y,window.innerHeight-frame.h-4));}
+  function apply(){clamp();card.style.left=frame.x+'px';card.style.top=frame.y+'px';
+    card.style.width=frame.w+'px';card.style.height=frame.h+'px';}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(frame));}catch(e){}}
+  head.addEventListener('pointerdown',function(e){
+    if(e.target.closest('button,input,a,.seg,.ic,.pill,[data-nodrag]'))return;drag(e);});
+  card.querySelectorAll('.rz').forEach(function(hd){
+    hd.addEventListener('pointerdown',function(e){resize(e,hd.getAttribute('data-rz'));});});
+  function drag(e){e.preventDefault();card.classList.add('dragging');
+    var sx=e.clientX,sy=e.clientY,ox=frame.x,oy=frame.y;
+    function m(ev){frame.x=ox+(ev.clientX-sx);frame.y=oy+(ev.clientY-sy);apply();}
+    function u(){card.classList.remove('dragging');save();
+      document.removeEventListener('pointermove',m);document.removeEventListener('pointerup',u);}
+    document.addEventListener('pointermove',m);document.addEventListener('pointerup',u);}
+  function resize(e,dir){e.preventDefault();e.stopPropagation();card.classList.add('resizing');
+    var sx=e.clientX,sy=e.clientY,o={x:frame.x,y:frame.y,w:frame.w,h:frame.h};
+    function m(ev){var dx=ev.clientX-sx,dy=ev.clientY-sy;
+      if(dir.indexOf('e')>=0){frame.w=Math.max(MINW,o.w+dx);}
+      if(dir.indexOf('s')>=0){frame.h=Math.max(MINH,o.h+dy);}
+      if(dir.indexOf('w')>=0){var nw=Math.max(MINW,o.w-dx);frame.x=o.x+(o.w-nw);frame.w=nw;}
+      if(dir.indexOf('n')>=0){var nh=Math.max(MINH,o.h-dy);frame.y=o.y+(o.h-nh);frame.h=nh;}
+      apply();}
+    function u(){card.classList.remove('resizing');save();
+      document.removeEventListener('pointermove',m);document.removeEventListener('pointerup',u);}
+    document.addEventListener('pointermove',m);document.addEventListener('pointerup',u);}
+  window.addEventListener('resize',apply);
+  apply();
+})();
 </script>
 </body>
 </html>
