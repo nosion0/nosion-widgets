@@ -65,13 +65,17 @@
     .row-del:hover { opacity: 1; color: var(--foreground); }
     .row-del svg { width: 11px; height: 11px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; }
 
-    /* 도시 추가 행 */
+    /* 도시 추가 행 — 호버(또는 입력 중)에만 표시 */
     .add-city {
       display: flex; align-items: center; gap: 0.625rem;
       margin-top: 0.25rem; padding-top: 0.7rem;
       border-top: 1px dashed var(--border);
       position: relative;
+      opacity: 0;
+      transition: opacity var(--transition);
     }
+    .widget-wrapper:hover .add-city,
+    .add-city:focus-within { opacity: 1; }
     .add-city-plus { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--muted-foreground); stroke-width: 2; fill: none; stroke-linecap: round; }
     .add-city-input { flex: 1; border: none; outline: none; background: none; font-family: inherit; font-size: 0.875rem; color: var(--foreground); padding: 0.1rem 0; }
     .add-city-input::placeholder { color: var(--muted-foreground); opacity: 0.7; }
@@ -237,13 +241,24 @@
       return Math.round((cityUTC - localUTC) / 86400000);
     }
 
+    // 현재 같은 순간의 도시 절대 시각(UTC 대비 분 offset) — 시간순 정렬용
+    function tzOffsetMin(z) {
+      const now = new Date();
+      const asUTC = Date.UTC(z.y, z.mo - 1, z.d, z.h, z.mi);
+      const real = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes());
+      return Math.round((asUTC - real) / 60000);
+    }
+
     function update() {
       const now = new Date();
       headDateEl.textContent = `${now.getMonth() + 1}월 ${now.getDate()}일 (${WEEKDAY[now.getDay()]})`;
 
+      // 각 도시 현재 시각 기준 정렬(이른 시각 → 늦은 시각, 즉 서쪽 → 동쪽)
+      const sorted = CITIES.map(c => ({ c, z: zoned(c.tz) }));
+      sorted.sort((a, b) => tzOffsetMin(a.z) - tzOffsetMin(b.z));
+
       listEl.innerHTML = '';
-      CITIES.forEach((c, idx) => {
-        const z = zoned(c.tz);
+      sorted.forEach(({ c, z }) => {
         const isDay = z.h >= 6 && z.h < 18;
         const diff = dayDiff(z);
         const h12 = z.h % 12 === 0 ? 12 : z.h % 12;
@@ -281,7 +296,7 @@
         del.setAttribute('aria-label', c.name + ' 삭제');
         del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
         del.addEventListener('click', () => {
-          CITIES = CITIES.filter((x, i) => i !== idx);
+          CITIES = CITIES.filter(x => x !== c);
           saveCities(); update();
         });
 
