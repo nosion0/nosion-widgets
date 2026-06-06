@@ -283,7 +283,7 @@
         if (cfg.onResize) cfg.onResize(frame);
       }
       function clampFrame() {
-        frame.w = Math.max(MIN_W, frame.w); frame.h = Math.max(MIN_H, frame.h);
+        frame.w = Math.max(MIN_W, Math.min(frame.w, window.innerWidth)); frame.h = Math.max(MIN_H, Math.min(frame.h, window.innerHeight));
         const K = 48;
         frame.x = Math.min(window.innerWidth - K, Math.max(K - frame.w, frame.x));
         frame.y = Math.min(window.innerHeight - K, Math.max(0, frame.y));

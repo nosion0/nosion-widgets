@@ -300,10 +300,8 @@
     .rz-n::after, .rz-s::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 28px; height: 2px; border-radius: 99px; background: var(--border); opacity: 0; transition: opacity var(--transition); }
     #card.card:hover .rz-n::after, #card.card:hover .rz-s::after, #card.card:hover .rz-e::after, #card.card:hover .rz-w::after { opacity: 0.7; }
     .rz:hover::after { background: var(--muted-foreground) !important; }
-    /* 그리드 반응형 채움: 날짜 격자가 카드 높이를 꽉 채움 (aspect-ratio 고정 해제) */
-    #card.card > .card-body { display: flex; flex-direction: column; }
-    .date-grid { flex: 1 1 auto; min-height: 0; grid-auto-rows: 1fr; }
-    .date-cell { aspect-ratio: auto !important; }
+    /* 그리드 반응형: 날짜 셀 정사각형 유지(원형 today 표식 보존) + 격자 세로 가운데 정렬 */
+    #card.card > .card-body { display: flex; flex-direction: column; justify-content: center; }
   </style>
 </head>
 <body>
@@ -629,7 +627,7 @@
         if (cfg.onResize) cfg.onResize(frame);
       }
       function clampFrame() {
-        frame.w = Math.max(MIN_W, frame.w); frame.h = Math.max(MIN_H, frame.h);
+        frame.w = Math.max(MIN_W, Math.min(frame.w, window.innerWidth)); frame.h = Math.max(MIN_H, Math.min(frame.h, window.innerHeight));
         const K = 48;
         frame.x = Math.min(window.innerWidth - K, Math.max(K - frame.w, frame.x));
         frame.y = Math.min(window.innerHeight - K, Math.max(0, frame.y));
@@ -678,7 +676,12 @@
         };
         const up = () => {
           document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
-          if (started) { card.classList.remove('dragging'); active = false; clampFrame(); applyFrame(); saveFrame(); }
+          if (started) {
+            card.classList.remove('dragging'); active = false; clampFrame(); applyFrame(); saveFrame();
+            const sc = (ce) => { ce.stopPropagation(); ce.preventDefault(); };
+            window.addEventListener('click', sc, { capture: true, once: true });
+            setTimeout(() => window.removeEventListener('click', sc, true), 0);
+          }
         };
         document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
       });

@@ -278,7 +278,7 @@
         if (cfg.onResize) cfg.onResize(frame);
       }
       function clampFrame() {
-        frame.w = Math.max(MIN_W, frame.w); frame.h = Math.max(MIN_H, frame.h);
+        frame.w = Math.max(MIN_W, Math.min(frame.w, window.innerWidth)); frame.h = Math.max(MIN_H, Math.min(frame.h, window.innerHeight));
         const K = 48;
         frame.x = Math.min(window.innerWidth - K, Math.max(K - frame.w, frame.x));
         frame.y = Math.min(window.innerHeight - K, Math.max(0, frame.y));
@@ -327,7 +327,12 @@
         };
         const up = () => {
           document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
-          if (started) { card.classList.remove('dragging'); active = false; clampFrame(); applyFrame(); saveFrame(); }
+          if (started) {
+            card.classList.remove('dragging'); active = false; clampFrame(); applyFrame(); saveFrame();
+            const sc = (ce) => { ce.stopPropagation(); ce.preventDefault(); };
+            window.addEventListener('click', sc, { capture: true, once: true });
+            setTimeout(() => window.removeEventListener('click', sc, true), 0);
+          }
         };
         document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
       });

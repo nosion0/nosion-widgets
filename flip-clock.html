@@ -380,8 +380,8 @@
     #card.card { align-items: center; justify-content: center; }
     #card.card > .toggles { position: absolute; left: 0; right: 0; bottom: 0.75rem;
       display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-      opacity: 0; transition: opacity var(--transition); z-index: 25; }
-    #card.card:hover > .toggles { opacity: 1; }
+      opacity: 0; pointer-events: none; transition: opacity var(--transition); z-index: 25; }
+    #card.card:hover > .toggles { opacity: 1; pointer-events: auto; }
     .format-toggle, .color-toggle { opacity: 1; }
   </style>
 </head>
@@ -420,10 +420,6 @@
       </button>
     </div>
 
-      <div class="rz rz-n"  data-rz="n"></div>
-      <div class="rz rz-s"  data-rz="s"></div>
-      <div class="rz rz-e"  data-rz="e"></div>
-      <div class="rz rz-w"  data-rz="w"></div>
       <div class="toggles">
         <div class="format-toggle">
           <button class="toggle-btn" type="button" data-format="24">24H</button>
@@ -632,7 +628,7 @@
         if (cfg.onResize) cfg.onResize(frame);
       }
       function clampFrame() {
-        frame.w = Math.max(MIN_W, frame.w); frame.h = Math.max(MIN_H, frame.h);
+        frame.w = Math.max(MIN_W, Math.min(frame.w, window.innerWidth)); frame.h = Math.max(MIN_H, Math.min(frame.h, window.innerHeight));
         const K = 48;
         frame.x = Math.min(window.innerWidth - K, Math.max(K - frame.w, frame.x));
         frame.y = Math.min(window.innerHeight - K, Math.max(0, frame.y));
@@ -681,7 +677,12 @@
         };
         const up = () => {
           document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
-          if (started) { card.classList.remove('dragging'); active = false; clampFrame(); applyFrame(); saveFrame(); }
+          if (started) {
+            card.classList.remove('dragging'); active = false; clampFrame(); applyFrame(); saveFrame();
+            const sc = (ce) => { ce.stopPropagation(); ce.preventDefault(); };
+            window.addEventListener('click', sc, { capture: true, once: true });
+            setTimeout(() => window.removeEventListener('click', sc, true), 0);
+          }
         };
         document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
       });
