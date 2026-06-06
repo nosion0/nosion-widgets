@@ -157,7 +157,9 @@
 
     .result-item.placeholder {
       color: var(--muted-foreground);
-      opacity: 0.45;
+      opacity: 0.55;
+      font-size: 1.5rem;     /* 짧은 '?' 대신 긴 문구 들어가도 한 줄에 들어가게 */
+      letter-spacing: -0.02em;
     }
 
     /* 최종 선정 시 터지는 폭죽 레이어 — picker-body 전체 오버레이 */
@@ -516,7 +518,7 @@
       <!-- 본문 -->
       <div class="picker-body">
         <div class="result-display" id="resultDisplay">
-          <div class="result-item placeholder">?</div>
+          <div class="result-item placeholder">오늘 점심은?</div>
         </div>
         <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
         <button class="pick-button" id="pickButton" type="button">돌려보기</button>
@@ -894,7 +896,7 @@
         clearAnimation();
         // lastPick 무효화 후 placeholder로 회전
         state.lastPick = null;
-        showResultItem('?', { isPlaceholder: true });
+        showResultItem('오늘 점심은?', { isPlaceholder: true });
       }
       // 메뉴 한도 도달 시 입력 비활성화
       const full = state.menus.length >= MAX_MENU_COUNT;
@@ -948,7 +950,7 @@
         initial.textContent = state.lastPick;
         initial.classList.remove('placeholder');
       } else {
-        initial.textContent = '?';
+        initial.textContent = '오늘 점심은?';
         initial.classList.add('placeholder');
       }
     }
