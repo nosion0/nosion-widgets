@@ -550,8 +550,12 @@
     // 분 단위로만 변하므로 매 초 호출해도 next 비교로 no-op
     setInterval(update, 1000);
 
-    const FRAME_CONFIG = { key: 'nosion-flip-clock-frame-v1', minW: 260, minH: 120, defaultW: 360,
-      onResize: (f) => { const s = Math.max(0.75, Math.min(1.6, f.w / 360)); const c = document.getElementById('w'); if (c) c.style.setProperty('--scale', s.toFixed(3)); } };
+    /* flip-clock: 카드 폭에 따라 --scale 비례 조절(스펙 외 위젯 자체 동작) */
+    new ResizeObserver(function(){
+      var c=document.getElementById('w'); if(!c) return;
+      var s=Math.max(0.75,Math.min(1.6, c.getBoundingClientRect().width/360));
+      c.style.setProperty('--scale', s.toFixed(3));
+    }).observe(document.getElementById('w'));
 </script>
   <script>
 (function(){
