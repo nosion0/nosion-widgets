@@ -148,8 +148,8 @@
       align-items: center;
       justify-content: center;
       color: var(--foreground);
-      /* 슬롯머신 휠 효과 — 회전축을 위/아래에 잡아 위→아래로 휘리릭 */
-      transform-origin: center center;
+      /* 원통 휠 효과 — 회전축을 텍스트 뒤로 보내 원통 면처럼 휘어짐 */
+      transform-origin: center center -80px;
       transform-style: preserve-3d;
       backface-visibility: hidden;
       will-change: transform, opacity;
@@ -590,8 +590,8 @@
 
     // 페이드 사이클 (감속)
     const ANIM_TOTAL_MS = 2600;
-    const ANIM_START_INTERVAL_MS = 40;
-    const ANIM_END_INTERVAL_MS = 380;
+    const ANIM_START_INTERVAL_MS = 28;     /* 초반 매우 빠르게 — 격렬한 흐름 */
+    const ANIM_END_INTERVAL_MS = 360;
 
     const defaultState = () => ({
       menus: [...DEFAULT_MENUS],
@@ -660,12 +660,12 @@
      * 가상의 수직 원통 표면에 메뉴가 적혀있어 좌→우로 흘러가는 느낌
      * Web Animations API 사용 — CSS transition/animation보다 빠른 tick에서 신뢰성 높음
      */
-    const ENTER_EASE = 'cubic-bezier(0.2, 0.85, 0.3, 1)';
+    const ENTER_EASE = 'cubic-bezier(0.15, 0.85, 0.3, 1)';
     const EXIT_EASE = 'cubic-bezier(0.55, 0, 0.85, 0.2)';
     const SETTLE_EASE = 'cubic-bezier(0.34, 1.65, 0.5, 1)';
-    const ENTER_MS = 140;
-    const EXIT_MS = 130;
-    const SETTLE_MS = 520;
+    const ENTER_MS = 110;                  /* 더 짧고 휙 */
+    const EXIT_MS = 100;
+    const SETTLE_MS = 540;
 
     /* ----- 폭죽 효과 (흑백 스펙트럼) ----- */
     // foreground(가장 진함) → border(옅음) 사이 6단계 명도
@@ -746,13 +746,13 @@
     function showResultItem(text, opts = {}) {
       const { isPlaceholder = false, isFinal = false } = opts;
 
-      // 현재 표시 중인 항목들 → 위로 휙 휘리릭 사라짐 (슬롯머신 휠 느낌)
+      // 현재 표시 중인 항목들 → 좌측으로 격렬하게 휘리릭
       resultDisplay.querySelectorAll('.result-item:not(.exiting)').forEach(el => {
         el.classList.add('exiting');
         const anim = el.animate(
           [
-            { transform: 'translateY(0%) rotateX(0deg) scale(1)',          opacity: 1 },
-            { transform: 'translateY(-130%) rotateX(-80deg) scale(0.85)',  opacity: 0 }
+            { transform: 'rotateY(0deg) translateX(0%) scale(1)',         opacity: 1 },
+            { transform: 'rotateY(95deg) translateX(40%) scale(0.7)',     opacity: 0 }
           ],
           { duration: EXIT_MS, easing: EXIT_EASE, fill: 'forwards' }
         );
@@ -764,19 +764,19 @@
       item.className = 'result-item';
       if (isPlaceholder) item.classList.add('placeholder');
       item.textContent = text;
-      // 초기 위치 — 아래에서 위로 슬롯머신처럼 올라옴
-      item.style.transform = 'translateY(130%) rotateX(80deg) scale(0.85)';
+      // 초기 위치 — 오른쪽 깊이 격렬한 각도에서 시작
+      item.style.transform = 'rotateY(-95deg) translateX(-40%) scale(0.7)';
       item.style.opacity = '0';
       resultDisplay.appendChild(item);
 
       if (isFinal) {
-        // 최종 결과 — 더 강한 bounce + scale로 강조
+        // 최종 결과 — 큰 overshoot 으로 격렬한 안착
         item.animate(
           [
-            { transform: 'translateY(70%) rotateX(45deg) scale(0.85)', opacity: 0.4, offset: 0 },
-            { transform: 'translateY(-8%) rotateX(-10deg) scale(1.12)', opacity: 1, offset: 0.55 },
-            { transform: 'translateY(3%) rotateX(2deg) scale(0.97)',   opacity: 1, offset: 0.8 },
-            { transform: 'translateY(0%) rotateX(0deg) scale(1)',       opacity: 1, offset: 1 }
+            { transform: 'rotateY(-60deg) translateX(-25%) scale(0.85)', opacity: 0.4, offset: 0 },
+            { transform: 'rotateY(10deg) translateX(5%) scale(1.13)',   opacity: 1,   offset: 0.55 },
+            { transform: 'rotateY(-3deg) translateX(-2%) scale(0.97)',  opacity: 1,   offset: 0.8 },
+            { transform: 'rotateY(0deg) translateX(0%) scale(1)',        opacity: 1,   offset: 1 }
           ],
           { duration: SETTLE_MS, easing: SETTLE_EASE, fill: 'forwards' }
         );
@@ -784,8 +784,8 @@
       } else {
         item.animate(
           [
-            { transform: 'translateY(130%) rotateX(80deg) scale(0.85)', opacity: 0 },
-            { transform: 'translateY(0%) rotateX(0deg) scale(1)',        opacity: 1 }
+            { transform: 'rotateY(-95deg) translateX(-40%) scale(0.7)', opacity: 0 },
+            { transform: 'rotateY(0deg) translateX(0%) scale(1)',        opacity: 1 }
           ],
           { duration: ENTER_MS, easing: ENTER_EASE, fill: 'forwards' }
         );
