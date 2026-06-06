@@ -270,21 +270,19 @@
       margin: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.625rem;
+      gap: 1rem;
       font-size: 0.9375rem;
     }
     .brand-tags li {
-      color: hsl(22 90% 48%);     /* 따뜻한 주황 (사진 톤) */
+      color: var(--foreground);
       letter-spacing: -0.005em;
     }
     .brand-tags u {
       text-decoration: underline;
-      text-decoration-color: hsl(22 90% 48%);
+      text-decoration-color: var(--foreground);
       text-decoration-thickness: 1px;
       text-underline-offset: 3px;
     }
-    html[data-theme="dark"] .brand-tags li,
-    html[data-theme="dark"] .brand-tags u { color: hsl(28 85% 65%); text-decoration-color: hsl(28 85% 65%); }
     .footer-links {
       display: flex;
       flex-direction: column;
@@ -310,9 +308,8 @@
     }
     .footer-quote {
       font-size: 0.9375rem;
-      font-weight: 500;
       color: var(--foreground);
-      margin: 0.5rem 0 1.75rem;
+      margin-top: 1.5rem;
     }
     .footer-bottom {
       display: flex;
@@ -321,6 +318,7 @@
       flex-wrap: wrap;
       gap: 0.75rem;
       border-top: 1px solid var(--border);
+      margin-top: 2rem;
       padding-top: 1.25rem;
       font-size: 0.75rem;
       color: var(--muted-foreground);
@@ -544,9 +542,9 @@
         <a href="https://nosion.io/template/?idx=10" target="_blank" rel="noopener">📄 &lt;MONEY 2&gt; 바로가기</a>
         <a href="https://nosion0.notion.site/30-fd3fed2a4cd64381b294273f64cc97ec?source=copy_link" target="_blank" rel="noopener">📄 노시언의 30가지 노션템플릿 바로가기</a>
         <a href="https://www.instagram.com/nosion.notion/" target="_blank" rel="noopener">📷 인스타그램 바로가기</a>
+        <div class="footer-quote">구름, 고양이, 책, 노션 좋아합니다. 🥰</div>
       </div>
     </div>
-    <div class="footer-quote">구름, 고양이, 책, 노션 좋아합니다. 🥰</div>
     <div class="footer-bottom">
       <span>ⓒ 2024 노시언 All rights reserved.</span>
       <span class="footer-legal">
