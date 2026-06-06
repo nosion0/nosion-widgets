@@ -50,14 +50,6 @@
       overflow: hidden;
     }
 
-    .widget-wrapper {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      position: relative;
-      width: fit-content;
-    }
-
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -233,31 +225,6 @@
 
     .fc-temp .low { color: var(--muted-foreground); margin-left: 0; }
 
-    /* === Resize handles === */
-    .resize-handle {
-      position: absolute;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .handle-top, .handle-bottom { left: 0; right: 0; height: 12px; cursor: ns-resize; }
-    .handle-top { top: 0; }
-    .handle-bottom { bottom: 0; }
-    .handle-left, .handle-right { top: 0; bottom: 0; width: 12px; cursor: ew-resize; }
-    .handle-left { left: 0; }
-    .handle-right { right: 0; }
-
-    .resize-handle .bar {
-      border-radius: 99px;
-      background: var(--border);
-      opacity: 0;
-      transition: opacity var(--transition);
-    }
-    .handle-top .bar, .handle-bottom .bar { width: 32px; height: 3px; }
-    .handle-left .bar, .handle-right .bar { width: 3px; height: 32px; }
-    .resize-handle:hover .bar { opacity: 1; }
-
     /* === Controls === */
     .controls {
       display: flex;
@@ -266,7 +233,6 @@
       opacity: 0;
       transition: opacity var(--transition);
     }
-    .widget-wrapper:hover .controls { opacity: 1; }
 
     .control-btn {
       width: 28px;
@@ -451,8 +417,6 @@
     })();
 /* ===== localStorage keys ===== */
     const KEY_CITY = 'nosion-weather-city-v1';
-    const KEY_SIZE = 'nosion-weather-size-v1';
-    const KEY_POS  = 'nosion-weather-pos-v1';
     const KEY_FC   = 'nosion-weather-forecast-open-v1';
 
     /* ===== State ===== */

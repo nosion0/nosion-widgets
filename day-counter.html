@@ -52,15 +52,6 @@
       align-items: center;
     }
 
-    /* ===== Widget wrapper ===== */
-    .widget-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      position: relative;
-      width: fit-content;
-    }
-
     /* ===== Left panel (hover only) ===== */
     .left-panel {
       display: flex;
@@ -71,11 +62,6 @@
       pointer-events: none;
       transition: opacity 0.3s ease;
       flex-shrink: 0;
-    }
-
-    .widget-wrapper:hover .left-panel {
-      opacity: 1;
-      pointer-events: auto;
     }
 
     .panel-btn {
@@ -232,35 +218,7 @@
 
     .quarter-section .dot-grid { align-self: center; }
 
-    /* ===== Resize handles ===== */
-    .resize-handle {
-      position: absolute;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .handle-top, .handle-bottom { left: 0; right: 0; height: 16px; cursor: ns-resize; }
-    .handle-top    { top: 0; }
-    .handle-bottom { bottom: 0; }
-    .handle-left, .handle-right { top: 0; bottom: 0; width: 16px; cursor: ew-resize; }
-    .handle-left  { left: 0; }
-    .handle-right { right: 0; }
-
-    .resize-handle .bar {
-      border-radius: 99px;
-      background: var(--border);
-      opacity: 0;
-      transition: opacity 0.15s ease;
-    }
-
-    .handle-top .bar, .handle-bottom .bar { width: 36px; height: 3px; }
-    .handle-left .bar, .handle-right .bar { width: 3px; height: 36px; }
-    .resize-handle:hover .bar { opacity: 1; }
-
     .controls { display: flex; flex-direction: column; gap: 2px; opacity: 0; transition: opacity 0.2s ease; padding-top: 0.25rem; align-self: flex-start; }
-    .widget-wrapper:hover .controls { opacity: 1; }
     .control-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: rgba(115,115,115,0.5); cursor: pointer; transition: color 0.2s ease; border-radius: 4px; position: relative; }
     .control-btn:hover:not(:disabled) { color: var(--foreground); }
     .control-btn svg { width: 13px; height: 13px; stroke-width: 2; }
@@ -418,9 +376,6 @@
     const K_MODE     = 'nosion-dc-mode-v2';
     const K_WEEKENDS = 'nosion-dc-weekends-v2';
     const K_COLS     = 'nosion-dc-cols-v2';
-    const K_SIZE     = 'nosion-dc-size-v2';
-    const K_POS      = 'nosion-dc-pos-v2';
-
     const COL_OPTIONS  = [5, 7, 10, 15];
     const VIEW_MODES   = ['month', 'quarter', 'year', 'continuous'];
     const VIEW_LABELS  = { month: '한달', quarter: '분기', year: '연도', continuous: '1년통' };

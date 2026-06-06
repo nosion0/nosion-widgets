@@ -51,14 +51,6 @@
       overflow: hidden;
     }
 
-    .widget-wrapper {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      position: relative;
-      width: fit-content;
-    }
-
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -322,7 +314,6 @@
       transition: opacity var(--transition);
       padding-top: 0.25rem;
     }
-    .widget-wrapper:hover .controls { opacity: 1; }
 
     .control-btn {
       width: 24px; height: 24px;
@@ -373,38 +364,6 @@
     }
     .control-btn[data-tooltip]:hover::before,
     .control-btn[data-tooltip]:hover::after { opacity: 1; transition-delay: 0.4s; }
-
-    /* === 리사이즈 핸들 === */
-    .resize-handle {
-      position: absolute;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      z-index: 20;
-    }
-    .resize-handle .bar {
-      background: var(--border);
-      transition: opacity var(--transition), background var(--transition),
-                  width 0.15s ease, height 0.15s ease;
-      border-radius: 999px;
-      opacity: 0;
-    }
-    .widget-wrapper:hover .resize-handle .bar { opacity: 1; }
-    .resize-handle:hover .bar { background: var(--muted-foreground); }
-
-    .handle-top { top: 0; left: 50%; transform: translate(-50%, -50%); width: 36px; height: 16px; cursor: ns-resize; }
-    .handle-top .bar { width: 36px; height: 1px; }
-    .handle-top:hover .bar { height: 3px; }
-    .handle-bottom { bottom: 0; left: 50%; transform: translate(-50%, 50%); width: 36px; height: 16px; cursor: ns-resize; }
-    .handle-bottom .bar { width: 36px; height: 1px; }
-    .handle-bottom:hover .bar { height: 3px; }
-    .handle-left { left: 0; top: 50%; transform: translate(-50%, -50%); width: 16px; height: 36px; cursor: ew-resize; }
-    .handle-left .bar { width: 1px; height: 36px; }
-    .handle-left:hover .bar { width: 3px; }
-    .handle-right { right: 0; top: 50%; transform: translate(50%, -50%); width: 16px; height: 36px; cursor: ew-resize; }
-    .handle-right .bar { width: 1px; height: 36px; }
-    .handle-right:hover .bar { width: 3px; }
   
     /* ===== NOSION FRAME SYSTEM (드래그 이동 + 8방향 리사이즈) ===== */
     .stage { position: fixed; inset: 0; overflow: hidden; }
