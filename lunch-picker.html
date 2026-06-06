@@ -184,32 +184,32 @@
       border-radius: 1px;
     }
 
-    /* 작은 별 ✨ 스파클 */
+    /* 몽블랑 6각 별 스파클 — 모노톤 */
     .sparkle {
       position: absolute;
       pointer-events: none;
-      font-size: 1.25rem;
-      filter: drop-shadow(0 0 4px rgba(255, 220, 120, 0.6));
       will-change: transform, opacity;
       z-index: 6;
+      color: var(--foreground);
     }
+    .sparkle svg { display: block; width: 100%; height: 100%; }
 
-    /* 결과 텍스트 글로우 펄스 — 강조 시점에만 잠시 */
+    /* 결과 텍스트 글로우 펄스 — 모노톤 */
     .result-item.glow {
       animation: result-glow 0.8s ease-out 0.05s both;
     }
     @keyframes result-glow {
-      0%   { text-shadow: 0 0 0   rgba(0,0,0,0); }
-      40%  { text-shadow: 0 0 18px rgba(255, 220, 120, 0.55), 0 0 6px rgba(255, 240, 200, 0.5); }
-      100% { text-shadow: 0 0 0   rgba(0,0,0,0); }
+      0%   { text-shadow: 0 0 0    rgba(0,0,0,0); }
+      40%  { text-shadow: 0 0 22px rgba(0, 0, 0, 0.18), 0 0 6px rgba(0, 0, 0, 0.10); }
+      100% { text-shadow: 0 0 0    rgba(0,0,0,0); }
     }
     html[data-theme="dark"] .result-item.glow {
       animation: result-glow-dark 0.8s ease-out 0.05s both;
     }
     @keyframes result-glow-dark {
-      0%   { text-shadow: 0 0 0    rgba(0,0,0,0); }
-      40%  { text-shadow: 0 0 22px rgba(255, 230, 150, 0.85), 0 0 8px rgba(255, 240, 200, 0.7); }
-      100% { text-shadow: 0 0 0    rgba(0,0,0,0); }
+      0%   { text-shadow: 0 0 0    rgba(255,255,255,0); }
+      40%  { text-shadow: 0 0 24px rgba(255, 255, 255, 0.45), 0 0 8px rgba(255, 255, 255, 0.3); }
+      100% { text-shadow: 0 0 0    rgba(255,255,255,0); }
     }
 
     /* 카드 살짝 흔들림 — 추첨 완료 시 */
@@ -783,8 +783,18 @@
       }
     }
 
-    /* ----- 스파클 ✨ — 결과 텍스트 주변에 작은 별 잠깐 표시 ----- */
-    const SPARKLE_GLYPHS = ['✨','⭐','✦','★'];
+    /* ----- 스파클 — 몽블랑 스타일 6각 별 (둥근 잎 6개) ----- */
+    // 6개 둥근 ellipse를 60°씩 회전. 노시언 모노톤.
+    const SPARKLE_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+      '<g fill="currentColor">' +
+        '<ellipse cx="50" cy="22" rx="9" ry="28"/>' +
+        '<ellipse cx="50" cy="22" rx="9" ry="28" transform="rotate(60 50 50)"/>' +
+        '<ellipse cx="50" cy="22" rx="9" ry="28" transform="rotate(120 50 50)"/>' +
+        '<ellipse cx="50" cy="22" rx="9" ry="28" transform="rotate(180 50 50)"/>' +
+        '<ellipse cx="50" cy="22" rx="9" ry="28" transform="rotate(240 50 50)"/>' +
+        '<ellipse cx="50" cy="22" rx="9" ry="28" transform="rotate(300 50 50)"/>' +
+      '</g></svg>';
+
     function spawnSparkles() {
       if (!confettiLayer) return;
       const layerRect = confettiLayer.getBoundingClientRect();
@@ -795,15 +805,17 @@
       for (let i = 0; i < SPARKLE_COUNT; i++) {
         const s = document.createElement('div');
         s.className = 'sparkle';
-        s.textContent = SPARKLE_GLYPHS[Math.floor(Math.random() * SPARKLE_GLYPHS.length)];
-        // 시작 위치 — 결과 텍스트 주변 70~95px 반경
+        s.innerHTML = SPARKLE_SVG;
+        // 시작 위치 — 결과 텍스트 주변
         const angle = (Math.PI * 2 * i) / SPARKLE_COUNT + (Math.random() - 0.5) * 0.6;
         const r = 60 + Math.random() * 40;
         const sx = cx + Math.cos(angle) * r;
-        const sy = cy + Math.sin(angle) * r * 0.7;     // 가로로 살짝 더 퍼지게
-        s.style.left = (sx - 10) + 'px';
-        s.style.top  = (sy - 10) + 'px';
-        s.style.fontSize = (0.85 + Math.random() * 0.85) + 'rem';
+        const sy = cy + Math.sin(angle) * r * 0.7;
+        const sz = 14 + Math.random() * 12;     // 14~26px
+        s.style.left = (sx - sz / 2) + 'px';
+        s.style.top  = (sy - sz / 2) + 'px';
+        s.style.width = sz + 'px';
+        s.style.height = sz + 'px';
         confettiLayer.appendChild(s);
         const delay = i * 35;
         const dur = 700 + Math.random() * 250;
