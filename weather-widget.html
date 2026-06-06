@@ -16,10 +16,6 @@
       --muted-foreground: hsl(215 14% 50%);
       --radius: 0.75rem;
       --transition: 0.2s ease;
-      /* 레퍼런스 사진의 라벤더 구름 (측정: #cfcbe0 ~ #f5f3fa) */
-      --cloud-hi: #f3f1fa;
-      --cloud-lo: #cfcbe0;
-      --cloud-edge: #b9b3d0;
     }
 
     html[data-theme="dark"] {
@@ -29,9 +25,6 @@
       --border: hsl(220 9% 28%);
       --muted: hsl(220 13% 18%);
       --muted-foreground: hsl(215 10% 65%);
-      --cloud-hi: #5b5772;
-      --cloud-lo: #423e58;
-      --cloud-edge: #6d6890;
     }
     html[data-theme="dark"] body { background: var(--background); }
 
@@ -69,8 +62,8 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 28px;
-      width: 294px;
+      padding: 18px 20px 16px;
+      width: 290px;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -168,10 +161,10 @@
       line-height: 1.2;
     }
     .updated-time {        /* '오늘 · 흐림' */
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted-foreground);
       font-weight: 400;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.005em;
     }
 
     /* === Main weather row (icon + temp + range stacked right) === */
@@ -179,44 +172,47 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 28px;
-      margin: 24px 0 0;
+      gap: 24px;
+      margin: 14px 0 0;
     }
     .temp-block {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 6px;
+      gap: 4px;
     }
     .temp-value {
-      font-size: 40px;
+      font-size: 36px;
       font-weight: 800;
       color: var(--foreground);
-      letter-spacing: -2px;
+      letter-spacing: -1px;
       line-height: 1;
       font-variant-numeric: tabular-nums;
     }
     .detail-row {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted-foreground);
       font-variant-numeric: tabular-nums;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.005em;
     }
-    .weather-icon { line-height: 0; user-select: none; }
+    .weather-icon { line-height: 0; user-select: none; width: 44px; height: 44px; }
     .weather-icon svg {
-      width: 50px; height: auto;
+      width: 44px; height: 44px;
       display: block; overflow: visible;
+      stroke: var(--foreground); stroke-width: 1.6;
+      fill: var(--muted);
+      stroke-linecap: round; stroke-linejoin: round;
     }
 
     /* === Outfit advice (얇은 divider 위) === */
     .outfit-section {
-      margin-top: 28px;
-      padding-top: 18px;
+      margin-top: 18px;
+      padding-top: 14px;
       border-top: 1px solid var(--border);
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
       color: var(--foreground);
-      letter-spacing: -0.01em;
+      letter-spacing: -0.005em;
     }
     .outfit-section .outfit-icon { display: none; }
 
@@ -428,28 +424,21 @@
 
     /* ===== Weather code map (WMO codes — Open-Meteo) → 노시언 선 아이콘 ===== */
     function wmoIcon(code, isDay) {
-      // 레퍼런스 사진 스타일 — 라벤더 그라데이션 채움 3D 구름
-      const G = '<defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--cloud-hi)"/><stop offset="1" stop-color="var(--cloud-lo)"/></linearGradient></defs>';
-      const wrap = (inner, vb = '0 0 48 34') => `<svg viewBox="${vb}" aria-hidden="true">${G}${inner}</svg>`;
-      // 통통한 구름 — 동일 fill + 그라데이션으로 봉우리들이 자연스럽게 합쳐짐
-      const CLOUD = '<g fill="url(#cg)"><circle cx="14" cy="20" r="7.5"/><circle cx="27" cy="14" r="12"/><circle cx="38" cy="21" r="7"/><rect x="10" y="20" width="30" height="12" rx="6"/></g>';
-      const SUN = (cx, cy, r) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#cg)"/>` +
-        `<g stroke="var(--cloud-lo)" stroke-width="2.2" stroke-linecap="round">` +
-        `<line x1="${cx}" y1="${cy-r-4}" x2="${cx}" y2="${cy-r-1.5}"/><line x1="${cx}" y1="${cy+r+1.5}" x2="${cx}" y2="${cy+r+4}"/>` +
-        `<line x1="${cx-r-4}" y1="${cy}" x2="${cx-r-1.5}" y2="${cy}"/><line x1="${cx+r+1.5}" y1="${cy}" x2="${cx+r+4}" y2="${cy}"/>` +
-        `<line x1="${cx-r-3}" y1="${cy-r-3}" x2="${cx-r-1}" y2="${cy-r-1}"/><line x1="${cx+r+1}" y1="${cy+r+1}" x2="${cx+r+3}" y2="${cy+r+3}"/>` +
-        `<line x1="${cx+r+1}" y1="${cy-r-1}" x2="${cx+r+3}" y2="${cy-r-3}"/><line x1="${cx-r-3}" y1="${cy+r+3}" x2="${cx-r-1}" y2="${cy+r+1}"/></g>`;
-      const DROPS = '<g fill="var(--cloud-edge)"><path d="M16 34l-1.5 3.4h3z"/><path d="M24 35l-1.5 3.4h3z"/><path d="M32 34l-1.5 3.4h3z"/></g>';
-      const SNOW = '<g fill="var(--cloud-edge)"><circle cx="16" cy="36" r="1.7"/><circle cx="24" cy="37.5" r="1.7"/><circle cx="32" cy="36" r="1.7"/></g>';
-
-      if (code === 0) return wrap(SUN(24, 17, 9));
-      if (code === 1 || code === 2) return wrap(SUN(35, 11, 6.5) + CLOUD);
-      if (code === 3) return wrap(CLOUD);
-      if (code === 45 || code === 48) return wrap('<g stroke="url(#cg)" stroke-width="3" stroke-linecap="round"><line x1="8" y1="11" x2="40" y2="11"/><line x1="10" y1="18" x2="38" y2="18"/><line x1="8" y1="25" x2="34" y2="25"/></g>');
-      if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return wrap(CLOUD + DROPS, '0 0 48 40');
-      if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return wrap(CLOUD + SNOW, '0 0 48 40');
-      if (code >= 95) return wrap(CLOUD + '<path d="M25 33l-4 6h3.2l-2.6 5 7-8h-3.4z" fill="var(--cloud-edge)"/>', '0 0 48 44');
-      return wrap(CLOUD);
+      const w = (inner) => `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><g filter="url(#rough)">${inner}</g></svg>`;
+      const CLOUD = '<path d="M7 17h9a3.1 3.1 0 0 0 .3-6.2 4.1 4.1 0 0 0-7.8-1.1A3.3 3.3 0 0 0 7 17z"/>';
+      const CLOUD_HI = '<path d="M6.5 14.5h9a3 3 0 0 0 .3-6 4 4 0 0 0-7.7-1.1A3.2 3.2 0 0 0 6.5 14.5z"/>';
+      if (code === 0) return isDay
+        ? w('<circle cx="12" cy="12" r="4.2"/><path d="M12 3.4v2M12 18.6v2M3.4 12h2M18.6 12h2M5.9 5.9l1.5 1.5M16.6 16.6l1.5 1.5M18.1 5.9l-1.5 1.5M7.4 16.6l-1.5 1.5"/>')
+        : w('<path d="M20 14.6A8 8 0 1 1 10.8 4.7a6.2 6.2 0 0 0 9.2 9.9z"/>');
+      if (code === 1 || code === 2) return w('<circle cx="8.5" cy="8.5" r="2.7"/><path d="M8.5 3.7v1.3M4.2 8.5H2.9M5.3 5.3l-.9-.9"/>' + CLOUD);
+      if (code === 3) return w(CLOUD);
+      if (code === 45 || code === 48) return w('<path d="M4 8.5h15M5 12.5h14M4 16.5h12M6 20h11"/>');
+      if ((code >= 51 && code <= 57) || (code >= 61 && code <= 67) || (code >= 80 && code <= 82))
+        return w(CLOUD_HI + '<path d="M9 17.8l-1 2.4M13 17.8l-1 2.4M17 17.8l-1 2.4"/>');
+      if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86))
+        return w(CLOUD_HI + '<path d="M9.5 18.6v.01M13 18.6v.01M11.2 21v.01M15 21v.01"/>');
+      if (code >= 95) return w(CLOUD_HI + '<path d="M12.5 17l-2.3 3.6h2.7l-1.6 3"/>');
+      return w(CLOUD);
     }
     function wmoDesc(code) {
       const M = {
