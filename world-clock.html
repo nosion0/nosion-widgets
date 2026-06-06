@@ -50,13 +50,17 @@
     .head-date { font-size: 0.6875rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
 
     .clock-list { display: flex; flex-direction: column; }
-    .clock-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.6rem 0; position: relative; }
+    .clock-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0; position: relative; }
     .clock-row + .clock-row { border-top: 1px solid var(--hairline); }
 
-    .dn { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--muted-foreground); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .city { flex: 1; font-size: 0.875rem; color: var(--foreground); }
+    .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--muted-foreground); }
+    .dot.day { background: var(--foreground); }
+    .dot.night { background: var(--muted-foreground); opacity: 0.45; }
+    .city-block { flex: 1; display: flex; flex-direction: column; gap: 0.05rem; min-width: 0; }
+    .city { font-size: 0.9375rem; font-weight: 600; color: var(--foreground); letter-spacing: -0.01em; line-height: 1.2; }
+    .gmt { font-size: 0.6875rem; color: var(--muted-foreground); letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
     .offset { font-size: 0.625rem; color: var(--muted-foreground); background: var(--muted); border-radius: 99px; padding: 0.1rem 0.4rem; letter-spacing: 0.02em; }
-    .time { font-size: 1.0625rem; font-weight: 500; color: var(--foreground); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; transition: transform var(--transition); }
+    .time { font-size: 1.125rem; font-weight: 700; color: var(--foreground); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; transition: transform var(--transition); }
     .ampm { font-size: 0.6875rem; color: var(--muted-foreground); margin-left: 0.25rem; font-variant-numeric: tabular-nums; }
     /* 호버 시 time을 왼쪽으로 살짝 밀어 삭제 버튼 공간 확보 (평소 time 끝 = 날짜 끝) */
     .clock-row:hover .time { transform: translateX(-22px); }
@@ -223,12 +227,9 @@
       try { localStorage.setItem(CITY_KEY, JSON.stringify(CITIES)); } catch (e) {}
     }
 
-    const SUN_SVG = '<svg class="dn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5.6" y1="5.6" x2="7.3" y2="7.3"/><line x1="16.7" y1="16.7" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.7" y2="7.3"/><line x1="7.3" y1="16.7" x2="5.6" y2="18.4"/></svg>';
-    const MOON_SVG = '<svg class="dn" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.5A6.5 6.5 0 1 1 9.8 6a5 5 0 0 0 7.7 8.5z"/></svg>';
 
     const listEl = document.getElementById('list');
     const headDateEl = document.getElementById('headDate');
-    const WEEKDAY = ['일','월','화','수','목','금','토'];
 
     // 특정 타임존의 현재 시/분 + 날짜
     function zoned(tz) {
@@ -238,14 +239,6 @@
       }).formatToParts(new Date()).reduce((a, x) => (a[x.type] = x.value, a), {});
       return { y: +parts.year, mo: +parts.month, d: +parts.day, h: +parts.hour, mi: +parts.minute };
     }
-
-    function dayDiff(z) {
-      const now = new Date();
-      const cityUTC = Date.UTC(z.y, z.mo - 1, z.d);
-      const localUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-      return Math.round((cityUTC - localUTC) / 86400000);
-    }
-
     // 현재 같은 순간의 도시 절대 시각(UTC 대비 분 offset) — 시간순 정렬용
     function tzOffsetMin(z) {
       const now = new Date();
@@ -254,9 +247,15 @@
       return Math.round((asUTC - real) / 60000);
     }
 
+    function gmtLabel(offMin) {
+      const h = offMin / 60;
+      const sign = h >= 0 ? '+' : '-';
+      const abs = Math.abs(h);
+      return 'GMT' + sign + (Number.isInteger(abs) ? abs : abs.toFixed(1));
+    }
+
     function update() {
-      const now = new Date();
-      headDateEl.textContent = `${now.getMonth() + 1}월 ${now.getDate()}일 (${WEEKDAY[now.getDay()]})`;
+      headDateEl.textContent = '현재 시각';
 
       // 각 도시 현재 시각 기준 정렬(이른 시각 → 늦은 시각, 즉 서쪽 → 동쪽)
       const sorted = CITIES.map(c => ({ c, z: zoned(c.tz) }));
@@ -265,35 +264,27 @@
       listEl.innerHTML = '';
       sorted.forEach(({ c, z }) => {
         const isDay = z.h >= 6 && z.h < 18;
-        const diff = dayDiff(z);
-        const h12 = z.h % 12 === 0 ? 12 : z.h % 12;
-        const mer = z.h < 12 ? 'AM' : 'PM';
 
         const row = document.createElement('div');
         row.className = 'clock-row';
 
-        const icon = document.createElement('span');
-        icon.innerHTML = isDay ? SUN_SVG : MOON_SVG;
+        const dot = document.createElement('span');
+        dot.className = 'dot ' + (isDay ? 'day' : 'night');
 
+        const block = document.createElement('div');
+        block.className = 'city-block';
         const city = document.createElement('span');
         city.className = 'city';
         city.textContent = c.name;
-
-        if (diff !== 0) {
-          const off = document.createElement('span');
-          off.className = 'offset';
-          off.textContent = diff > 0 ? '내일' : '어제';
-          city.appendChild(document.createTextNode(' '));
-          city.appendChild(off);
-        }
+        const gmt = document.createElement('span');
+        gmt.className = 'gmt';
+        gmt.textContent = gmtLabel(tzOffsetMin(z));
+        block.appendChild(city);
+        block.appendChild(gmt);
 
         const time = document.createElement('span');
         time.className = 'time';
-        time.textContent = `${h12}:${String(z.mi).padStart(2, '0')}`;
-        const ampm = document.createElement('span');
-        ampm.className = 'ampm';
-        ampm.textContent = mer;
-        time.appendChild(ampm);
+        time.textContent = `${String(z.h).padStart(2, '0')}:${String(z.mi).padStart(2, '0')}`;
 
         const del = document.createElement('button');
         del.className = 'row-del';
@@ -305,8 +296,8 @@
           saveCities(); update();
         });
 
-        row.appendChild(icon.firstChild);
-        row.appendChild(city);
+        row.appendChild(dot);
+        row.appendChild(block);
         row.appendChild(time);
         row.appendChild(del);
         listEl.appendChild(row);
