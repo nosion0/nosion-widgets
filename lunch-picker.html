@@ -184,6 +184,45 @@
       border-radius: 1px;
     }
 
+    /* 작은 별 ✨ 스파클 */
+    .sparkle {
+      position: absolute;
+      pointer-events: none;
+      font-size: 1.25rem;
+      filter: drop-shadow(0 0 4px rgba(255, 220, 120, 0.6));
+      will-change: transform, opacity;
+      z-index: 6;
+    }
+
+    /* 결과 텍스트 글로우 펄스 — 강조 시점에만 잠시 */
+    .result-item.glow {
+      animation: result-glow 0.8s ease-out 0.05s both;
+    }
+    @keyframes result-glow {
+      0%   { text-shadow: 0 0 0   rgba(0,0,0,0); }
+      40%  { text-shadow: 0 0 18px rgba(255, 220, 120, 0.55), 0 0 6px rgba(255, 240, 200, 0.5); }
+      100% { text-shadow: 0 0 0   rgba(0,0,0,0); }
+    }
+    html[data-theme="dark"] .result-item.glow {
+      animation: result-glow-dark 0.8s ease-out 0.05s both;
+    }
+    @keyframes result-glow-dark {
+      0%   { text-shadow: 0 0 0    rgba(0,0,0,0); }
+      40%  { text-shadow: 0 0 22px rgba(255, 230, 150, 0.85), 0 0 8px rgba(255, 240, 200, 0.7); }
+      100% { text-shadow: 0 0 0    rgba(0,0,0,0); }
+    }
+
+    /* 카드 살짝 흔들림 — 추첨 완료 시 */
+    .card.celebrate {
+      animation: card-pulse 0.55s ease-out 0.05s;
+    }
+    @keyframes card-pulse {
+      0%   { transform: scale(1) rotate(0deg); }
+      25%  { transform: scale(1.012) rotate(-0.4deg); }
+      55%  { transform: scale(0.997) rotate(0.3deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
     .pick-button {
       font-family: inherit;
       font-size: 0.875rem;
@@ -677,10 +716,12 @@
       'hsl(220, 10%, 75%)',
       'hsl(220, 9%, 85%)'    // border
     ];
-    const CONFETTI_COUNT = 16;
+    const CONFETTI_COUNT = 38;       /* 16 → 38 더 풍성하게 */
 
-    function spawnConfetti() {
+    function spawnConfetti(scale) {
       if (!confettiLayer) return;
+      const s = typeof scale === 'number' ? scale : 1;
+      const count = Math.max(6, Math.round(CONFETTI_COUNT * s));
 
       // result-display 중심점을 confettiLayer 좌표계로 변환
       const layerRect = confettiLayer.getBoundingClientRect();
@@ -688,9 +729,9 @@
       const originX = targetRect.left - layerRect.left + targetRect.width / 2;
       const originY = targetRect.top - layerRect.top + targetRect.height / 2;
 
-      const angleStep = (Math.PI * 2) / CONFETTI_COUNT;
+      const angleStep = (Math.PI * 2) / count;
 
-      for (let i = 0; i < CONFETTI_COUNT; i++) {
+      for (let i = 0; i < count; i++) {
         const p = document.createElement('div');
         p.className = 'confetti-particle';
         // 35% 확률로 사각형 (종이조각 느낌 변주)
@@ -700,8 +741,8 @@
         const shadeIdx = Math.floor(Math.random() * CONFETTI_SHADES.length);
         p.style.background = CONFETTI_SHADES[shadeIdx];
 
-        // 크기 변주 — 4~9px
-        const size = 4 + Math.random() * 5;
+        // 크기 변주 — 3~14px (작은 입자/큰 종이조각 혼합 → 깊이감)
+        const size = 3 + Math.random() * 11;
         const w = p.classList.contains('square') ? size * 0.8 : size;
         const h = p.classList.contains('square') ? size * 1.2 : size;
         p.style.width = w + 'px';
@@ -713,17 +754,16 @@
 
         confettiLayer.appendChild(p);
 
-        // 방향: 360도 균등 + 약간의 랜덤성
-        const angle = angleStep * i + (Math.random() - 0.5) * 0.5;
-        // 거리: 50~110px
-        const distance = 55 + Math.random() * 55;
+        // 방향: 360도 균등 + 더 큰 랜덤성
+        const angle = angleStep * i + (Math.random() - 0.5) * 0.8;
+        // 거리: 70~180px (더 멀리)
+        const distance = 70 + Math.random() * 110;
         const dx = Math.cos(angle) * distance;
-        // 위쪽 방향은 더 멀리, 중력으로 끝에 약간 떨어지는 효과
-        const dyInitial = Math.sin(angle) * distance - 8;
-        const dyFinal = dyInitial + 28 + Math.random() * 22;
-        // 회전 — 사각형이면 더 두드러짐
-        const rotation = (Math.random() - 0.5) * 540;
-        const duration = 700 + Math.random() * 350;
+        const dyInitial = Math.sin(angle) * distance - 10;
+        const dyFinal = dyInitial + 36 + Math.random() * 30;
+        // 회전 — 더 격렬하게 (720°까지)
+        const rotation = (Math.random() - 0.5) * 720;
+        const duration = 900 + Math.random() * 500;
 
         p.animate(
           [
@@ -740,6 +780,42 @@
             fill: 'forwards'
           }
         ).onfinish = () => p.remove();
+      }
+    }
+
+    /* ----- 스파클 ✨ — 결과 텍스트 주변에 작은 별 잠깐 표시 ----- */
+    const SPARKLE_GLYPHS = ['✨','⭐','✦','★'];
+    function spawnSparkles() {
+      if (!confettiLayer) return;
+      const layerRect = confettiLayer.getBoundingClientRect();
+      const targetRect = resultDisplay.getBoundingClientRect();
+      const cx = targetRect.left - layerRect.left + targetRect.width / 2;
+      const cy = targetRect.top - layerRect.top + targetRect.height / 2;
+      const SPARKLE_COUNT = 7;
+      for (let i = 0; i < SPARKLE_COUNT; i++) {
+        const s = document.createElement('div');
+        s.className = 'sparkle';
+        s.textContent = SPARKLE_GLYPHS[Math.floor(Math.random() * SPARKLE_GLYPHS.length)];
+        // 시작 위치 — 결과 텍스트 주변 70~95px 반경
+        const angle = (Math.PI * 2 * i) / SPARKLE_COUNT + (Math.random() - 0.5) * 0.6;
+        const r = 60 + Math.random() * 40;
+        const sx = cx + Math.cos(angle) * r;
+        const sy = cy + Math.sin(angle) * r * 0.7;     // 가로로 살짝 더 퍼지게
+        s.style.left = (sx - 10) + 'px';
+        s.style.top  = (sy - 10) + 'px';
+        s.style.fontSize = (0.85 + Math.random() * 0.85) + 'rem';
+        confettiLayer.appendChild(s);
+        const delay = i * 35;
+        const dur = 700 + Math.random() * 250;
+        s.animate(
+          [
+            { transform: 'scale(0) rotate(0deg)',         opacity: 0,   offset: 0 },
+            { transform: 'scale(1.2) rotate(60deg)',      opacity: 1,   offset: 0.4 },
+            { transform: 'scale(1) rotate(120deg)',       opacity: 0.9, offset: 0.7 },
+            { transform: 'scale(0.5) rotate(180deg)',     opacity: 0,   offset: 1 }
+          ],
+          { duration: dur, delay, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)', fill: 'forwards' }
+        ).onfinish = () => s.remove();
       }
     }
 
@@ -780,7 +856,17 @@
           ],
           { duration: SETTLE_MS, easing: SETTLE_EASE, fill: 'forwards' }
         );
-        setTimeout(spawnConfetti, 180);
+        // 화려한 완료 효과 — confetti 2-wave + 스파클 + 글로우 + 카드 펄스
+        setTimeout(() => {
+          spawnConfetti();
+          item.classList.add('glow');
+          cardEl.classList.add('celebrate');
+          spawnSparkles();
+          setTimeout(() => cardEl.classList.remove('celebrate'), 600);
+          setTimeout(() => item.classList.remove('glow'), 900);
+        }, 180);
+        // 2번째 confetti wave (작게)
+        setTimeout(() => spawnConfetti(0.6), 380);
       } else {
         item.animate(
           [
