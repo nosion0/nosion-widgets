@@ -943,16 +943,11 @@
 
     /* ----- 초기화 ----- */
     function initDisplay() {
-      // 초기 항목은 HTML에 이미 있으므로 직접 교체 (애니메이션 없이)
+      // 페이지 로드 시 항상 placeholder 문구로 시작 (lastPick은 다음 회전 시작점으로만 사용)
       const initial = resultDisplay.querySelector('.result-item');
       if (!initial) return;
-      if (state.lastPick) {
-        initial.textContent = state.lastPick;
-        initial.classList.remove('placeholder');
-      } else {
-        initial.textContent = '오늘 점심은?';
-        initial.classList.add('placeholder');
-      }
+      initial.textContent = '오늘 점심은?';
+      initial.classList.add('placeholder');
     }
 
     renderMenuList();
