@@ -300,6 +300,8 @@
     .rz-n::after, .rz-s::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 28px; height: 2px; border-radius: 99px; background: var(--border); opacity: 0; transition: opacity var(--transition); }
     #card.card:hover .rz-n::after, #card.card:hover .rz-s::after, #card.card:hover .rz-e::after, #card.card:hover .rz-w::after { opacity: 0.7; }
     .rz:hover::after { background: var(--muted-foreground) !important; }
+    /* 콘텐츠 세로 가운데 정렬 — 확장 시 위쪽 쏠림 방지 */
+    #card.card > .card-body { justify-content: center; }
     /* 좌측 모드 패널 — 카드 내부 좌상단 호버 오버레이로 이동 */
     #card.card > .left-panel { position: absolute; top: 0.75rem; left: 0.75rem; z-index: 30; margin: 0; align-items: flex-start; }
     #card.card:hover .left-panel, #card.card:focus-within .left-panel { opacity: 1; pointer-events: auto; }
