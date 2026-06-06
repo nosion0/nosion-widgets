@@ -148,8 +148,8 @@
       align-items: center;
       justify-content: center;
       color: var(--foreground);
-      /* 원통 표면 효과 — 회전축을 텍스트 뒤쪽으로 보내 진짜 원통 면처럼 휘어짐 */
-      transform-origin: center center -80px;
+      /* 슬롯머신 휠 효과 — 회전축을 위/아래에 잡아 위→아래로 휘리릭 */
+      transform-origin: center center;
       transform-style: preserve-3d;
       backface-visibility: hidden;
       will-change: transform, opacity;
@@ -589,9 +589,9 @@
     const MENU_NAME_MAX_LENGTH = 12;
 
     // 페이드 사이클 (감속)
-    const ANIM_TOTAL_MS = 1500;
-    const ANIM_START_INTERVAL_MS = 50;
-    const ANIM_END_INTERVAL_MS = 300;
+    const ANIM_TOTAL_MS = 2600;
+    const ANIM_START_INTERVAL_MS = 40;
+    const ANIM_END_INTERVAL_MS = 380;
 
     const defaultState = () => ({
       menus: [...DEFAULT_MENUS],
@@ -660,12 +660,12 @@
      * 가상의 수직 원통 표면에 메뉴가 적혀있어 좌→우로 흘러가는 느낌
      * Web Animations API 사용 — CSS transition/animation보다 빠른 tick에서 신뢰성 높음
      */
-    const ENTER_EASE = 'cubic-bezier(0.2, 0.75, 0.3, 1)';
-    const EXIT_EASE = 'cubic-bezier(0.4, 0, 0.7, 1)';
-    const SETTLE_EASE = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
-    const ENTER_MS = 260;
-    const EXIT_MS = 240;
-    const SETTLE_MS = 450;
+    const ENTER_EASE = 'cubic-bezier(0.2, 0.85, 0.3, 1)';
+    const EXIT_EASE = 'cubic-bezier(0.55, 0, 0.85, 0.2)';
+    const SETTLE_EASE = 'cubic-bezier(0.34, 1.65, 0.5, 1)';
+    const ENTER_MS = 140;
+    const EXIT_MS = 130;
+    const SETTLE_MS = 520;
 
     /* ----- 폭죽 효과 (흑백 스펙트럼) ----- */
     // foreground(가장 진함) → border(옅음) 사이 6단계 명도
@@ -746,15 +746,13 @@
     function showResultItem(text, opts = {}) {
       const { isPlaceholder = false, isFinal = false } = opts;
 
-      // 현재 표시 중인 항목들 → 우측으로 회전해 사라짐
+      // 현재 표시 중인 항목들 → 위로 휙 휘리릭 사라짐 (슬롯머신 휠 느낌)
       resultDisplay.querySelectorAll('.result-item:not(.exiting)').forEach(el => {
         el.classList.add('exiting');
-        // 현재 보이는 상태(rotateY 0, opacity 1)에서 우측 회전 후 사라짐
-        // 단, 진입 애니메이션이 진행 중이면 그 위치에서 자연스럽게 이어지도록
         const anim = el.animate(
           [
-            { transform: 'rotateY(0deg)', opacity: 1 },
-            { transform: 'rotateY(70deg)', opacity: 0 }
+            { transform: 'translateY(0%) rotateX(0deg) scale(1)',          opacity: 1 },
+            { transform: 'translateY(-130%) rotateX(-80deg) scale(0.85)',  opacity: 0 }
           ],
           { duration: EXIT_MS, easing: EXIT_EASE, fill: 'forwards' }
         );
@@ -766,29 +764,28 @@
       item.className = 'result-item';
       if (isPlaceholder) item.classList.add('placeholder');
       item.textContent = text;
-      // 초기 위치 설정 (애니메이션 시작 전 깜빡임 방지)
-      item.style.transform = 'rotateY(-70deg)';
+      // 초기 위치 — 아래에서 위로 슬롯머신처럼 올라옴
+      item.style.transform = 'translateY(130%) rotateX(80deg) scale(0.85)';
       item.style.opacity = '0';
       resultDisplay.appendChild(item);
 
-      // 좌측에서 정면으로 회전해 들어옴
       if (isFinal) {
-        // 최종 결과 — 살짝 튕기는 강조 효과
+        // 최종 결과 — 더 강한 bounce + scale로 강조
         item.animate(
           [
-            { transform: 'rotateY(-28deg) scale(0.92)', opacity: 0.6, offset: 0 },
-            { transform: 'rotateY(4deg) scale(1.04)',   opacity: 1,   offset: 0.55 },
-            { transform: 'rotateY(0deg) scale(1)',      opacity: 1,   offset: 1 }
+            { transform: 'translateY(70%) rotateX(45deg) scale(0.85)', opacity: 0.4, offset: 0 },
+            { transform: 'translateY(-8%) rotateX(-10deg) scale(1.12)', opacity: 1, offset: 0.55 },
+            { transform: 'translateY(3%) rotateX(2deg) scale(0.97)',   opacity: 1, offset: 0.8 },
+            { transform: 'translateY(0%) rotateX(0deg) scale(1)',       opacity: 1, offset: 1 }
           ],
           { duration: SETTLE_MS, easing: SETTLE_EASE, fill: 'forwards' }
         );
-        // 결과 텍스트가 정면에 도착할 즈음 폭죽 발사
-        setTimeout(spawnConfetti, 120);
+        setTimeout(spawnConfetti, 180);
       } else {
         item.animate(
           [
-            { transform: 'rotateY(-70deg)', opacity: 0 },
-            { transform: 'rotateY(0deg)',   opacity: 1 }
+            { transform: 'translateY(130%) rotateX(80deg) scale(0.85)', opacity: 0 },
+            { transform: 'translateY(0%) rotateX(0deg) scale(1)',        opacity: 1 }
           ],
           { duration: ENTER_MS, easing: ENTER_EASE, fill: 'forwards' }
         );
