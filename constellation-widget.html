@@ -185,14 +185,11 @@
       color: var(--muted-foreground);
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 0.5rem;
     }
-    .const-meta .dot {
-      width: 2px; height: 2px;
-      border-radius: 50%;
-      background: currentColor;
-      opacity: 0.5;
-    }
+    .const-meta .star-meta { text-align: right; }
+    .const-meta #constStar { color: var(--foreground); font-weight: 500; }
     .hover-hint {
       font-size: 0.6875rem;
       color: var(--muted-foreground);
@@ -433,14 +430,12 @@
         <div class="const-display">
           <div class="const-name" id="constName">—</div>
           <div class="const-meta">
-            <span id="constEn">—</span>
-            <span class="dot"></span>
-            <span id="constSeason">—</span>
-            <span class="dot"></span>
+            <span class="meta-left"><span id="constEn">—</span></span>
             <span class="star-meta">가장 밝은 별 <span id="constStar">—</span></span>
           </div>
         </div>
 
+        <span id="constSeason" style="display:none">—</span>
         <span id="constAlt" style="display:none">—</span>
 
       </div>
@@ -740,7 +735,7 @@
       const { c, altitude } = overheadConstellation(now, currentCity.lat, currentCity.lng);
 
       starFigureEl.innerHTML = buildFigure(c);
-      storyEl.innerHTML = `<div class="story-title">${escapeHtml(c.ko)}</div><div class="story-body">${escapeHtml(c.story)}</div>`;
+      storyEl.innerHTML = `<div class="story-body">${escapeHtml(c.story)}</div>`;
       constNameEl.textContent = c.ko;
       constEnEl.textContent = c.en;
       constSeasonEl.textContent = c.season;
