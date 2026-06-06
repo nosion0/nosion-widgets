@@ -503,7 +503,12 @@
       const grid = document.createElement('div');
       grid.className = 'dot-grid';
       grid.style.setProperty('--cols', cols);
-      days.forEach(d => grid.appendChild(makeDot(d, now, todayStr)));
+      // 별자리 기준 — 지난 날·오늘만 표시(미래 일자는 숨겨 시각적 여백을 통일)
+      const visible = days.filter(d => {
+        const k = dateKey(d);
+        return k === todayStr || d < now;
+      });
+      visible.forEach(d => grid.appendChild(makeDot(d, now, todayStr)));
       return grid;
     }
 
