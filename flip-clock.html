@@ -573,7 +573,7 @@
 
     function applyCardSize() {
       cardEl.style.width = cardWidth + 'px';
-      cardEl.style.height = cardHeight !== null ? cardHeight + 'px' : '';
+      cardEl.style.height = '';
     }
 
     /* 카드 width에 비례해 시계 크기 자동 조정 (0.75 ~ 1.6배 사이) */
@@ -607,18 +607,18 @@
     }
     function moveResize(x, y) {
       if (!resizeDrag) return;
+      // 반응형 비례 확대 — 어느 핸들이든 카드 폭을 조절(--scale로 시계가 비례)
       const dx = x - resizeDrag.startX, dy = y - resizeDrag.startY, dir = resizeDrag.direction;
-      if (dir === 'right' || dir === 'left') {
-        const delta = dir === 'right' ? dx : -dx;
-        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
-        const actual = cardWidth - resizeDrag.startWidth;
-        if (widgetEl.style.position === 'fixed') widgetEl.style.left = (startLeft - actual / 2) + 'px';
-      }
-      if (dir === 'bottom' || dir === 'top') {
-        const delta = dir === 'bottom' ? dy : -dy;
-        cardHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta));
-        const actual = cardHeight - resizeDrag.startHeight;
-        if (widgetEl.style.position === 'fixed') widgetEl.style.top = (startTop - actual / 2) + 'px';
+      let delta;
+      if (dir === 'right') delta = dx;
+      else if (dir === 'left') delta = -dx;
+      else if (dir === 'bottom') delta = dy;
+      else delta = -dy;
+      cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
+      const actual = cardWidth - resizeDrag.startWidth;
+      if (widgetEl.style.position === 'fixed') {
+        if (dir === 'left' || dir === 'right') widgetEl.style.left = (startLeft - actual / 2) + 'px';
+        else widgetEl.style.top = (startTop - actual / 2) + 'px';
       }
       applyCardSize();
     }

@@ -708,6 +708,8 @@
     const MAX_HEIGHT = 600;
 
     const cardEl = document.getElementById('card');
+    const cardBodyEl = cardEl.querySelector('.card-body');
+    const DEFAULT_WIDTH = 360;
     let cardWidth = 360;
     let cardHeight = null;
 
@@ -725,12 +727,10 @@
     } catch (e) {}
 
     function applyCardSize() {
+      // 반응형: 카드 폭에 비례해 콘텐츠 전체를 zoom (여백 비율 유지)
       cardEl.style.width = cardWidth + 'px';
-      if (cardHeight !== null) {
-        cardEl.style.height = cardHeight + 'px';
-      } else {
-        cardEl.style.height = '';
-      }
+      cardEl.style.height = '';
+      if (cardBodyEl) cardBodyEl.style.zoom = (cardWidth / DEFAULT_WIDTH).toFixed(3);
     }
     function saveSize() {
       try {
@@ -763,24 +763,18 @@
     }
     function moveResize(x, y) {
       if (!resizeDrag) return;
-      const dx = x - resizeDrag.startX;
-      const dy = y - resizeDrag.startY;
-      const dir = resizeDrag.direction;
-      if (dir === 'right' || dir === 'left') {
-        const delta = dir === 'right' ? dx : -dx;
-        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
-        const actualDelta = cardWidth - resizeDrag.startWidth;
-        if (widgetEl.style.position === 'fixed') {
-          widgetEl.style.left = (startLeft - actualDelta / 2) + 'px';
-        }
-      }
-      if (dir === 'bottom' || dir === 'top') {
-        const delta = dir === 'bottom' ? dy : -dy;
-        cardHeight = Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta);
-        const actualDelta = cardHeight - resizeDrag.startHeight;
-        if (widgetEl.style.position === 'fixed') {
-          widgetEl.style.top = (startTop - actualDelta / 2) + 'px';
-        }
+      // 반응형 비례 확대 — 어느 핸들이든 카드 폭을 조절(콘텐츠가 zoom으로 비례)
+      const dx = x - resizeDrag.startX, dy = y - resizeDrag.startY, dir = resizeDrag.direction;
+      let delta;
+      if (dir === 'right') delta = dx;
+      else if (dir === 'left') delta = -dx;
+      else if (dir === 'bottom') delta = dy;
+      else delta = -dy;
+      cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
+      const actual = cardWidth - resizeDrag.startWidth;
+      if (widgetEl.style.position === 'fixed') {
+        if (dir === 'left' || dir === 'right') widgetEl.style.left = (startLeft - actual / 2) + 'px';
+        else widgetEl.style.top = (startTop - actual / 2) + 'px';
       }
       applyCardSize();
     }
@@ -902,7 +896,6 @@
     document.addEventListener('touchcancel', endMove);
 
     // 크기 초기화
-    const DEFAULT_WIDTH = 360;
     document.getElementById('resizeResetBtn').addEventListener('click', () => {
       cardWidth = DEFAULT_WIDTH;
       cardHeight = null;

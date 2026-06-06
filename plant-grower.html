@@ -115,7 +115,6 @@
       border-radius: 0.75rem;
       padding: 1.5rem 1.75rem;
       width: 300px;
-      height: 360px;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -123,6 +122,15 @@
       justify-content: center;
       overflow: hidden;
       cursor: grab;
+    }
+
+    /* 반응형 zoom 대상: 카드 폭에 비례해 콘텐츠 전체를 확대 */
+    .card-body {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     .card.dragging { cursor: grabbing; }
@@ -398,28 +406,30 @@
 
     <!-- Main card -->
     <div class="card" id="card">
-      <div class="info-top">
-        <div class="plant-name" id="plantName">새싹</div>
-        <div class="plant-meta" id="plantMeta"></div>
-      </div>
+      <div class="card-body">
+        <div class="info-top">
+          <div class="plant-name" id="plantName">새싹</div>
+          <div class="plant-meta" id="plantMeta"></div>
+        </div>
 
-      <div class="plant-stage" id="plantStage"></div>
+        <div class="plant-stage" id="plantStage"></div>
 
-      <div class="info-bottom">
-        <button class="water-btn" id="waterBtn" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2.5C12 2.5 5.5 9.5 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 9.5 12 2.5 12 2.5z"/>
-          </svg>
-          <span id="waterBtnLabel">물주기</span>
-        </button>
-      </div>
+        <div class="info-bottom">
+          <button class="water-btn" id="waterBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2.5C12 2.5 5.5 9.5 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 9.5 12 2.5 12 2.5z"/>
+            </svg>
+            <span id="waterBtnLabel">물주기</span>
+          </button>
+        </div>
 
-      <!-- Collection gallery -->
-      <div class="gallery">
-        <div class="gallery-title" id="galleryTitle">내 식물 컬렉션</div>
-        <div class="gallery-hint" id="galleryHint">탭하여 키울 식물을 선택하세요</div>
-        <div class="gallery-grid" id="galleryGrid"></div>
+        <!-- Collection gallery -->
+        <div class="gallery">
+          <div class="gallery-title" id="galleryTitle">내 식물 컬렉션</div>
+          <div class="gallery-hint" id="galleryHint">탭하여 키울 식물을 선택하세요</div>
+          <div class="gallery-grid" id="galleryGrid"></div>
+        </div>
       </div>
 
       <div class="resize-handle handle-top"    data-direction="top">   <div class="bar"></div></div>
@@ -864,13 +874,20 @@
     /* ============ Resize ============ */
     (function () {
       const wrapper = document.getElementById('widget');
-      const MIN_W = 240, MAX_W = 640, MIN_H = 280, MAX_H = 640;
-      let on = false, dir = '', sw = 0, sh = 0, sx = 0, sy = 0, startLeft = 0, startTop = 0;
+      const cardBody = card.querySelector('.card-body');
+      const PL_DEFAULT_WIDTH = 300;
+      const MIN_W = 240, MAX_W = 640;
+      function plZoom(w) {
+        card.style.width = w + 'px';
+        card.style.height = '';
+        if (cardBody) cardBody.style.zoom = (w / PL_DEFAULT_WIDTH).toFixed(3);
+      }
+      let on = false, dir = '', sw = 0, sx = 0, sy = 0, startLeft = 0, startTop = 0;
 
       document.querySelectorAll('.resize-handle').forEach(h => {
         h.addEventListener('mousedown', e => {
           on = true; dir = h.dataset.direction;
-          sw = card.offsetWidth; sh = card.offsetHeight;
+          sw = card.offsetWidth;
           sx = e.clientX; sy = e.clientY;
           if (getComputedStyle(wrapper).position !== 'fixed') {
             const wr = wrapper.getBoundingClientRect();
@@ -887,27 +904,26 @@
 
       document.addEventListener('mousemove', e => {
         if (!on) return;
+        // 반응형 비례 확대 — 어느 핸들이든 카드 폭을 조절(콘텐츠가 zoom으로 비례)
         const dx = e.clientX - sx, dy = e.clientY - sy;
-        if (dir === 'right' || dir === 'left') {
-          const delta = dir === 'right' ? dx : -dx;
-          const newW = Math.min(MAX_W, Math.max(MIN_W, sw + 2 * delta));
-          const actualDelta = newW - sw;
-          card.style.width = newW + 'px';
-          if (wrapper.style.position === 'fixed') wrapper.style.left = (startLeft - actualDelta / 2) + 'px';
-        }
-        if (dir === 'bottom' || dir === 'top') {
-          const delta = dir === 'bottom' ? dy : -dy;
-          const newH = Math.min(MAX_H, Math.max(MIN_H, sh + 2 * delta));
-          const actualDelta = newH - sh;
-          card.style.height = newH + 'px';
-          if (wrapper.style.position === 'fixed') wrapper.style.top = (startTop - actualDelta / 2) + 'px';
+        let delta;
+        if (dir === 'right') delta = dx;
+        else if (dir === 'left') delta = -dx;
+        else if (dir === 'bottom') delta = dy;
+        else delta = -dy;
+        const newW = Math.min(MAX_W, Math.max(MIN_W, sw + 2 * delta));
+        const actualDelta = newW - sw;
+        plZoom(newW);
+        if (wrapper.style.position === 'fixed') {
+          if (dir === 'left' || dir === 'right') wrapper.style.left = (startLeft - actualDelta / 2) + 'px';
+          else wrapper.style.top = (startTop - actualDelta / 2) + 'px';
         }
       });
 
       document.addEventListener('mouseup', () => {
         if (!on) return; on = false;
         try {
-          localStorage.setItem(K_SIZE, JSON.stringify({ w: card.offsetWidth, h: card.offsetHeight }));
+          localStorage.setItem(K_SIZE, JSON.stringify({ w: card.offsetWidth }));
           if (wrapper.style.position === 'fixed') {
             localStorage.setItem(K_POS, JSON.stringify({ left: wrapper.style.left, top: wrapper.style.top }));
           }
@@ -916,7 +932,7 @@
 
       try {
         const s = JSON.parse(localStorage.getItem(K_SIZE) || 'null');
-        if (s) { if (s.w) card.style.width = `${s.w}px`; if (s.h) card.style.height = `${s.h}px`; }
+        if (s && s.w) plZoom(s.w);
       } catch (e) {}
     })();
 
@@ -933,7 +949,7 @@
       btn.addEventListener("click", () => {
         const c = document.getElementById("card");
         const w = document.getElementById("widget");
-        if (c) { c.style.width = ""; c.style.height = ""; }
+        if (c) { c.style.width = ""; c.style.height = ""; const cb = c.querySelector('.card-body'); if (cb) cb.style.zoom = ''; }
         if (w) { w.style.left = ""; w.style.top = ""; w.style.transform = ""; }
         try { localStorage.removeItem("nosion-plant-size-v1"); localStorage.removeItem("nosion-plant-pos-v1"); } catch (e) {}
       });

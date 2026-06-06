@@ -206,13 +206,19 @@
     const SIZE_KEY = 'nosion-gratitude-size-v1';
     const MIN_WIDTH = 270, MAX_WIDTH = 520, MIN_HEIGHT = 280, MAX_HEIGHT = 600, DEFAULT_WIDTH = 320;
     const cardEl = document.getElementById('card');
+    const cardBodyEl = cardEl.querySelector('.card-body');
     const widgetEl = document.getElementById('widget');
     let cardWidth = DEFAULT_WIDTH, cardHeight = null;
     try {
       const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null');
       if (s) { if (typeof s.width === 'number') cardWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, s.width)); if (typeof s.height === 'number' && s.height > 0) cardHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, s.height)); }
     } catch (e) {}
-    function applyCardSize() { cardEl.style.width = cardWidth + 'px'; cardEl.style.height = cardHeight !== null ? cardHeight + 'px' : ''; }
+    function applyCardSize() {
+      // 반응형: 카드 폭에 비례해 콘텐츠 전체를 zoom (여백 비율 유지)
+      cardEl.style.width = cardWidth + 'px';
+      cardEl.style.height = '';
+      if (cardBodyEl) cardBodyEl.style.zoom = (cardWidth / DEFAULT_WIDTH).toFixed(3);
+    }
     function saveSize() { try { localStorage.setItem(SIZE_KEY, JSON.stringify({ width: cardWidth, height: cardHeight })); } catch (e) {} }
     let resizeDrag = null, startLeft = 0, startTop = 0;
     function startResize(direction, x, y) {
@@ -229,18 +235,18 @@
     }
     function moveResize(x, y) {
       if (!resizeDrag) return;
+      // 반응형 비례 확대 — 어느 핸들이든 카드 폭을 조절(콘텐츠가 zoom으로 비례)
       const dx = x - resizeDrag.startX, dy = y - resizeDrag.startY, dir = resizeDrag.direction;
-      if (dir === 'right' || dir === 'left') {
-        const delta = dir === 'right' ? dx : -dx;
-        cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
-        const actual = cardWidth - resizeDrag.startWidth;
-        if (widgetEl.style.position === 'fixed') widgetEl.style.left = (startLeft - actual / 2) + 'px';
-      }
-      if (dir === 'bottom' || dir === 'top') {
-        const delta = dir === 'bottom' ? dy : -dy;
-        cardHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeDrag.startHeight + 2 * delta));
-        const actual = cardHeight - resizeDrag.startHeight;
-        if (widgetEl.style.position === 'fixed') widgetEl.style.top = (startTop - actual / 2) + 'px';
+      let delta;
+      if (dir === 'right') delta = dx;
+      else if (dir === 'left') delta = -dx;
+      else if (dir === 'bottom') delta = dy;
+      else delta = -dy;
+      cardWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeDrag.startWidth + 2 * delta));
+      const actual = cardWidth - resizeDrag.startWidth;
+      if (widgetEl.style.position === 'fixed') {
+        if (dir === 'left' || dir === 'right') widgetEl.style.left = (startLeft - actual / 2) + 'px';
+        else widgetEl.style.top = (startTop - actual / 2) + 'px';
       }
       applyCardSize();
     }

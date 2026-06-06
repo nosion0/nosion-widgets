@@ -157,6 +157,15 @@
 
     .card.dragging { cursor: grabbing; }
 
+    /* 반응형 zoom 대상: 카드 폭에 비례해 콘텐츠 전체를 확대 */
+    .card-body {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.75rem;
+    }
+
     /* ===== Mode title ===== */
     .mode-title {
       font-size: 1.5rem;
@@ -310,8 +319,10 @@
 
     <!-- Main card -->
     <div class="card" id="card">
-      <div class="mode-title" id="modeTitle">2분기</div>
-      <div id="dotContainer"></div>
+      <div class="card-body">
+        <div class="mode-title" id="modeTitle">2분기</div>
+        <div id="dotContainer"></div>
+      </div>
 
       <div class="resize-handle handle-top"    data-direction="top">   <div class="bar"></div></div>
       <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
@@ -571,13 +582,19 @@
     (function () {
       const wrapper = document.getElementById('widget');
       const card = document.getElementById('card');
-      const MIN_W = 220, MAX_W = 700, MIN_H = 160;
-      let on = false, dir = '', sw = 0, sh = 0, sx = 0, sy = 0, startLeft = 0, startTop = 0;
+      const cardBody = card.querySelector('.card-body');
+      const DC_DEFAULT_WIDTH = 400;
+      const MIN_W = 220, MAX_W = 700;
+      function dcZoom(w) {
+        card.style.width = w + 'px';
+        if (cardBody) cardBody.style.zoom = (w / DC_DEFAULT_WIDTH).toFixed(3);
+      }
+      let on = false, dir = '', sw = 0, sx = 0, sy = 0, startLeft = 0, startTop = 0;
 
       document.querySelectorAll('.resize-handle').forEach(h => {
         h.addEventListener('mousedown', e => {
           on = true; dir = h.dataset.direction;
-          sw = card.offsetWidth; sh = card.offsetHeight;
+          sw = card.offsetWidth;
           sx = e.clientX; sy = e.clientY;
           if (getComputedStyle(wrapper).position !== 'fixed') {
             const wrapperRect = wrapper.getBoundingClientRect();
@@ -594,31 +611,26 @@
 
       document.addEventListener('mousemove', e => {
         if (!on) return;
+        // 반응형 비례 확대 — 어느 핸들이든 카드 폭을 조절(콘텐츠가 zoom으로 비례)
         const dx = e.clientX - sx, dy = e.clientY - sy;
-        if (dir === 'right' || dir === 'left') {
-          const delta = dir === 'right' ? dx : -dx;
-          const newW = Math.min(MAX_W, Math.max(MIN_W, sw + 2 * delta));
-          const actualDelta = newW - sw;
-          card.style.width = newW + 'px';
-          if (wrapper.style.position === 'fixed') {
-            wrapper.style.left = (startLeft - actualDelta / 2) + 'px';
-          }
-        }
-        if (dir === 'bottom' || dir === 'top') {
-          const delta = dir === 'bottom' ? dy : -dy;
-          const newH = Math.max(MIN_H, sh + 2 * delta);
-          const actualDelta = newH - sh;
-          card.style.height = newH + 'px';
-          if (wrapper.style.position === 'fixed') {
-            wrapper.style.top = (startTop - actualDelta / 2) + 'px';
-          }
+        let delta;
+        if (dir === 'right') delta = dx;
+        else if (dir === 'left') delta = -dx;
+        else if (dir === 'bottom') delta = dy;
+        else delta = -dy;
+        const newW = Math.min(MAX_W, Math.max(MIN_W, sw + 2 * delta));
+        const actualDelta = newW - sw;
+        dcZoom(newW);
+        if (wrapper.style.position === 'fixed') {
+          if (dir === 'left' || dir === 'right') wrapper.style.left = (startLeft - actualDelta / 2) + 'px';
+          else wrapper.style.top = (startTop - actualDelta / 2) + 'px';
         }
       });
 
       document.addEventListener('mouseup', () => {
         if (!on) return; on = false;
         try {
-          localStorage.setItem(K_SIZE, JSON.stringify({ w: card.offsetWidth, h: card.offsetHeight }));
+          localStorage.setItem(K_SIZE, JSON.stringify({ w: card.offsetWidth }));
           if (wrapper.style.position === 'fixed') {
             localStorage.setItem(K_POS, JSON.stringify({ left: wrapper.style.left, top: wrapper.style.top }));
           }
@@ -627,7 +639,7 @@
 
       try {
         const s = JSON.parse(localStorage.getItem(K_SIZE) || 'null');
-        if (s) { if (s.w) card.style.width = `${s.w}px`; if (s.h) card.style.height = `${s.h}px`; }
+        if (s && s.w) dcZoom(s.w);
       } catch (e) {}
     })();
 
@@ -640,7 +652,7 @@
       btn.addEventListener("click", () => {
         const c = document.getElementById("card");
         const w = document.getElementById("widget");
-        if (c) { c.style.width = ""; c.style.height = ""; }
+        if (c) { c.style.width = ""; c.style.height = ""; const cb = c.querySelector('.card-body'); if (cb) cb.style.zoom = ''; }
         if (w) { w.style.left = ""; w.style.top = ""; w.style.transform = ""; }
         try { localStorage.removeItem("nosion-dc-size-v2"); localStorage.removeItem("nosion-dc-pos-v2"); } catch (e) {}
       });
