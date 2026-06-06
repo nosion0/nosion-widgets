@@ -13,6 +13,7 @@
       --border: hsl(220 9% 84%);
       --muted: hsl(210 20% 96%);
       --muted-foreground: hsl(215 14% 50%);
+      --hairline: hsl(220 14% 94%);
       --radius: 0.75rem;
       --transition: 0.2s ease;
     }
@@ -24,6 +25,7 @@
       --border: hsl(220 9% 28%);
       --muted: hsl(220 13% 18%);
       --muted-foreground: hsl(215 10% 65%);
+      --hairline: hsl(220 13% 19%);
     }
     html[data-theme="dark"] body { background: var(--background); }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -49,13 +51,43 @@
 
     .clock-list { display: flex; flex-direction: column; }
     .clock-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.6rem 0; }
-    .clock-row + .clock-row { border-top: 1px solid var(--border); }
+    .clock-row + .clock-row { border-top: 1px solid var(--hairline); }
 
     .dn { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--muted-foreground); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .city { flex: 1; font-size: 0.875rem; color: var(--foreground); }
     .offset { font-size: 0.625rem; color: var(--muted-foreground); background: var(--muted); border-radius: 99px; padding: 0.1rem 0.4rem; letter-spacing: 0.02em; }
     .time { font-size: 1.0625rem; font-weight: 500; color: var(--foreground); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
     .ampm { font-size: 0.6875rem; color: var(--muted-foreground); margin-left: 0.25rem; font-variant-numeric: tabular-nums; }
+
+    /* 행 삭제 버튼 (호버 시) */
+    .row-del { width: 18px; height: 18px; flex-shrink: 0; border: none; background: none; cursor: pointer; color: var(--muted-foreground); opacity: 0; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: opacity var(--transition), color var(--transition); margin-left: 0.125rem; }
+    .clock-row:hover .row-del { opacity: 0.55; }
+    .row-del:hover { opacity: 1; color: var(--foreground); }
+    .row-del svg { width: 11px; height: 11px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; }
+
+    /* 도시 추가 행 */
+    .add-city {
+      display: flex; align-items: center; gap: 0.625rem;
+      margin-top: 0.25rem; padding-top: 0.7rem;
+      border-top: 1px dashed var(--border);
+      position: relative;
+    }
+    .add-city-plus { width: 15px; height: 15px; flex-shrink: 0; stroke: var(--muted-foreground); stroke-width: 2; fill: none; stroke-linecap: round; }
+    .add-city-input { flex: 1; border: none; outline: none; background: none; font-family: inherit; font-size: 0.875rem; color: var(--foreground); padding: 0.1rem 0; }
+    .add-city-input::placeholder { color: var(--muted-foreground); opacity: 0.7; }
+
+    .city-results {
+      position: absolute; bottom: calc(100% + 4px); left: 0; right: 0;
+      background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.06); max-height: 200px; overflow-y: auto;
+      z-index: 100; display: none;
+    }
+    .city-results.show { display: block; }
+    .city-opt { padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.8125rem; color: var(--foreground); display: flex; justify-content: space-between; gap: 0.5rem; transition: background var(--transition); }
+    .city-opt + .city-opt { border-top: 1px solid var(--hairline); }
+    .city-opt:hover, .city-opt.focused { background: var(--muted); }
+    .city-opt .tz { font-size: 0.6875rem; color: var(--muted-foreground); }
+    .city-empty { padding: 0.6rem 0.75rem; font-size: 0.75rem; color: var(--muted-foreground); text-align: center; }
 
     /* 컨트롤 */
     .controls { display: flex; flex-direction: column; gap: 2px; opacity: 0; transition: opacity var(--transition); padding-top: 0.25rem; }
@@ -92,6 +124,12 @@
           <span class="head-date" id="headDate">—</span>
         </div>
         <div class="clock-list" id="list"></div>
+
+        <div class="add-city">
+          <svg class="add-city-plus" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <input class="add-city-input" id="addCityInput" type="text" placeholder="도시 추가..." autocomplete="off" maxlength="20" aria-label="도시 추가" />
+          <div class="city-results" id="cityResults" role="listbox"></div>
+        </div>
       </div>
 
       <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
@@ -128,7 +166,7 @@
         if (btn) btn.addEventListener('click', () => applyTheme(getTheme() === 'light' ? 'dark' : 'light'));
       });
     })();
-    const CITIES = [
+    const DEFAULT_CITIES = [
       { name: '서울', tz: 'Asia/Seoul' },
       { name: '도쿄', tz: 'Asia/Tokyo' },
       { name: '시드니', tz: 'Australia/Sydney' },
@@ -138,6 +176,43 @@
       { name: '뉴욕', tz: 'America/New_York' },
       { name: 'LA', tz: 'America/Los_Angeles' }
     ];
+
+    // 추가 가능한 전 세계 주요 도시 풀
+    const CITY_PRESETS = [
+      { name: '서울', tz: 'Asia/Seoul' }, { name: '도쿄', tz: 'Asia/Tokyo' },
+      { name: '베이징', tz: 'Asia/Shanghai' }, { name: '상하이', tz: 'Asia/Shanghai' },
+      { name: '홍콩', tz: 'Asia/Hong_Kong' }, { name: '타이베이', tz: 'Asia/Taipei' },
+      { name: '싱가포르', tz: 'Asia/Singapore' }, { name: '방콕', tz: 'Asia/Bangkok' },
+      { name: '자카르타', tz: 'Asia/Jakarta' }, { name: '뉴델리', tz: 'Asia/Kolkata' },
+      { name: '뭄바이', tz: 'Asia/Kolkata' }, { name: '두바이', tz: 'Asia/Dubai' },
+      { name: '이스탄불', tz: 'Europe/Istanbul' }, { name: '모스크바', tz: 'Europe/Moscow' },
+      { name: '시드니', tz: 'Australia/Sydney' }, { name: '멜버른', tz: 'Australia/Melbourne' },
+      { name: '오클랜드', tz: 'Pacific/Auckland' }, { name: '호놀룰루', tz: 'Pacific/Honolulu' },
+      { name: '런던', tz: 'Europe/London' }, { name: '파리', tz: 'Europe/Paris' },
+      { name: '베를린', tz: 'Europe/Berlin' }, { name: '로마', tz: 'Europe/Rome' },
+      { name: '마드리드', tz: 'Europe/Madrid' }, { name: '암스테르담', tz: 'Europe/Amsterdam' },
+      { name: '취리히', tz: 'Europe/Zurich' }, { name: '스톡홀름', tz: 'Europe/Stockholm' },
+      { name: '뉴욕', tz: 'America/New_York' }, { name: '워싱턴', tz: 'America/New_York' },
+      { name: '시카고', tz: 'America/Chicago' }, { name: '덴버', tz: 'America/Denver' },
+      { name: 'LA', tz: 'America/Los_Angeles' }, { name: '샌프란시스코', tz: 'America/Los_Angeles' },
+      { name: '시애틀', tz: 'America/Los_Angeles' }, { name: '토론토', tz: 'America/Toronto' },
+      { name: '밴쿠버', tz: 'America/Vancouver' }, { name: '멕시코시티', tz: 'America/Mexico_City' },
+      { name: '상파울루', tz: 'America/Sao_Paulo' }, { name: '부에노스아이레스', tz: 'America/Argentina/Buenos_Aires' },
+      { name: '카이로', tz: 'Africa/Cairo' }, { name: '요하네스버그', tz: 'Africa/Johannesburg' }
+    ];
+
+    const CITY_KEY = 'nosion-worldclock-cities-v1';
+    let CITIES = DEFAULT_CITIES.slice();
+    try {
+      const saved = JSON.parse(localStorage.getItem(CITY_KEY) || 'null');
+      if (Array.isArray(saved)) {
+        const valid = saved.filter(c => c && typeof c.name === 'string' && typeof c.tz === 'string');
+        if (valid.length) CITIES = valid.map(c => ({ name: c.name.slice(0, 20), tz: c.tz }));
+      }
+    } catch (e) {}
+    function saveCities() {
+      try { localStorage.setItem(CITY_KEY, JSON.stringify(CITIES)); } catch (e) {}
+    }
 
     const SUN_SVG = '<svg class="dn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5.6" y1="5.6" x2="7.3" y2="7.3"/><line x1="16.7" y1="16.7" x2="18.4" y2="18.4"/><line x1="18.4" y1="5.6" x2="16.7" y2="7.3"/><line x1="7.3" y1="16.7" x2="5.6" y2="18.4"/></svg>';
     const MOON_SVG = '<svg class="dn" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.5A6.5 6.5 0 1 1 9.8 6a5 5 0 0 0 7.7 8.5z"/></svg>';
@@ -167,7 +242,7 @@
       headDateEl.textContent = `${now.getMonth() + 1}월 ${now.getDate()}일 (${WEEKDAY[now.getDay()]})`;
 
       listEl.innerHTML = '';
-      CITIES.forEach(c => {
+      CITIES.forEach((c, idx) => {
         const z = zoned(c.tz);
         const isDay = z.h >= 6 && z.h < 18;
         const diff = dayDiff(z);
@@ -200,12 +275,85 @@
         ampm.textContent = mer;
         time.appendChild(ampm);
 
+        const del = document.createElement('button');
+        del.className = 'row-del';
+        del.type = 'button';
+        del.setAttribute('aria-label', c.name + ' 삭제');
+        del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        del.addEventListener('click', () => {
+          CITIES = CITIES.filter((x, i) => i !== idx);
+          saveCities(); update();
+        });
+
         row.appendChild(icon.firstChild);
         row.appendChild(city);
         row.appendChild(time);
+        row.appendChild(del);
         listEl.appendChild(row);
       });
     }
+
+    /* ===== 도시 추가 — 검색 드롭다운 ===== */
+    const addInput = document.getElementById('addCityInput');
+    const resultsEl = document.getElementById('cityResults');
+    let curResults = [], focusedIdx = -1;
+
+    function closeResults() {
+      resultsEl.classList.remove('show');
+      resultsEl.innerHTML = '';
+      curResults = []; focusedIdx = -1;
+    }
+    function searchCities(q) {
+      const lower = q.toLowerCase();
+      const existing = new Set(CITIES.map(c => c.name + '|' + c.tz));
+      return CITY_PRESETS
+        .filter(c => c.name.toLowerCase().includes(lower) && !existing.has(c.name + '|' + c.tz))
+        .slice(0, 8);
+    }
+    function renderResults(items) {
+      curResults = items;
+      focusedIdx = items.length ? 0 : -1;
+      if (!items.length) {
+        resultsEl.innerHTML = '<div class="city-empty">검색 결과 없음</div>';
+      } else {
+        resultsEl.innerHTML = items.map((c, i) =>
+          `<div class="city-opt${i === 0 ? ' focused' : ''}" data-idx="${i}" role="option">` +
+          `<span>${c.name}</span><span class="tz">${c.tz.split('/').pop().replace(/_/g, ' ')}</span></div>`
+        ).join('');
+        Array.from(resultsEl.querySelectorAll('.city-opt')).forEach(el => {
+          el.addEventListener('mousedown', (e) => { e.preventDefault(); pick(+el.dataset.idx); });
+          el.addEventListener('mouseenter', () => { focusedIdx = +el.dataset.idx; updateFocus(); });
+        });
+      }
+      resultsEl.classList.add('show');
+    }
+    function updateFocus() {
+      resultsEl.querySelectorAll('.city-opt').forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
+    }
+    function pick(i) {
+      const c = curResults[i];
+      if (!c) return;
+      CITIES.push({ name: c.name, tz: c.tz });
+      saveCities();
+      addInput.value = '';
+      closeResults();
+      update();
+    }
+    addInput.addEventListener('input', () => {
+      const q = addInput.value.trim();
+      if (!q) { closeResults(); return; }
+      renderResults(searchCities(q));
+    });
+    addInput.addEventListener('keydown', (e) => {
+      if (!resultsEl.classList.contains('show')) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (curResults.length) { focusedIdx = Math.min(curResults.length - 1, focusedIdx + 1); updateFocus(); } }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (curResults.length) { focusedIdx = Math.max(0, focusedIdx - 1); updateFocus(); } }
+      else if (e.key === 'Enter') { e.preventDefault(); if (focusedIdx >= 0) pick(focusedIdx); }
+      else if (e.key === 'Escape') closeResults();
+    });
+    document.addEventListener('click', (e) => {
+      if (!resultsEl.contains(e.target) && e.target !== addInput) closeResults();
+    });
 
     update();
     // 분 단위 표시라 30초 간격이면 충분 (모바일 배터리 절약)
