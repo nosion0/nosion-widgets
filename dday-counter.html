@@ -133,13 +133,6 @@
       letter-spacing: -0.025em;
     }
 
-    .dday-sub {
-      font-size: 0.8125rem;
-      color: var(--muted-foreground);
-      margin-bottom: 1.5rem;
-      letter-spacing: -0.005em;
-    }
-
     .divider {
       height: 1px;
       background: var(--border);
@@ -482,7 +475,6 @@
           <span class="dday-prefix" id="ddayPrefix">D-</span>
           <span class="dday-number" id="ddayNumber">0</span>
         </div>
-        <div class="dday-sub" id="ddaySub">남은 날</div>
 
         <div class="divider"></div>
         <div class="target-date-display" id="targetDateDisplay"></div>
@@ -581,7 +573,6 @@
     const eventTitleEl = document.getElementById('eventTitle');
     const ddayPrefixEl = document.getElementById('ddayPrefix');
     const ddayNumberEl = document.getElementById('ddayNumber');
-    const ddaySubEl = document.getElementById('ddaySub');
     const targetDateDisplayEl = document.getElementById('targetDateDisplay');
     const inputTitleEl = document.getElementById('inputTitle');
     const inputDateEl = document.getElementById('inputDate');
@@ -635,17 +626,14 @@
         ddayPrefixEl.textContent = '';
         ddayNumberEl.textContent = 'D-Day';
         ddayNumberEl.classList.add('today');
-        ddaySubEl.textContent = '오늘이 그날입니다';
       } else if (diff > 0) {
         ddayPrefixEl.textContent = 'D-';
         ddayNumberEl.textContent = diff;
         ddayNumberEl.classList.remove('today');
-        ddaySubEl.textContent = `앞으로 ${diff}일 남았습니다`;
       } else {
         ddayPrefixEl.textContent = 'D+';
         ddayNumberEl.textContent = Math.abs(diff);
         ddayNumberEl.classList.remove('today');
-        ddaySubEl.textContent = `${Math.abs(diff)}일 전이었습니다`;
       }
     }
 
