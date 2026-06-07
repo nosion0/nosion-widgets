@@ -149,6 +149,7 @@
       opacity: 0.55;
       font-size: 1.5rem;     /* 짧은 '?' 대신 긴 문구 들어가도 한 줄에 들어가게 */
       letter-spacing: -0.02em;
+      white-space: nowrap;
     }
 
     /* 최종 선정 시 터지는 폭죽 레이어 — picker-body 전체 오버레이 */
@@ -469,7 +470,7 @@
     .card.dragging,.card.resizing{user-select:none;box-shadow:0 12px 36px rgba(55,53,47,.16);}
     .whead{flex:none;cursor:grab;min-height:20px;width:100%;position:relative;z-index:2;background:inherit;}
     .whead:active{cursor:grabbing;}
-    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
+    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden;width:100%;align-self:stretch;}
     .rz{position:absolute;z-index:5;}
     .rz.n{top:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
     .rz.s{bottom:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
