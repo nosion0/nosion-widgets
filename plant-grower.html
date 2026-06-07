@@ -751,23 +751,27 @@
 
     /* ============ Watering ============ */
     function water() {
-      /* 데모 모드: 한 번 누르면 1초 안에 모든 단계를 거쳐 완성형으로 자람 */
+      /* 데모 모드: 한 번 누르면 물방울 떨어진 뒤 성장 단계 거쳐 완성형으로 ~1초에 자람 */
       if (DEMO_MODE) {
         const id = state.current;
         if (state.water[id] >= MAX_WATER) return; // already full
-        const svg = document.getElementById('plantSvg');
-        if (svg) { svg.classList.remove('wilted'); svg.classList.add('watering'); }
-        const steps = STAGE_THRESHOLDS.slice(1).concat([MAX_WATER]); // 10 frames: 2,4,7,10,13,17,21,25,30,30
+        // 물방울 먼저 떨어뜨리기 (현재 새싹 SVG에 .watering)
+        const svg0 = document.getElementById('plantSvg');
+        if (svg0) { svg0.classList.remove('wilted'); svg0.classList.add('watering'); }
+        const steps = STAGE_THRESHOLDS.slice(1).concat([MAX_WATER]); // 10 frames
         let i = 0;
         const tick = () => {
           state.water[id] = steps[i];
           state.lastWater = todayStr();
           render();
+          // 매 단계마다 새로 만든 SVG에 .watering 재부여(물방울이 계속 보이도록)
+          const svg = document.getElementById('plantSvg');
+          if (svg) { svg.classList.remove('wilted'); svg.classList.add('watering'); }
           i++;
-          if (i < steps.length) setTimeout(tick, 100); // ~100ms per stage → ~1초
-          // 데모에선 완성형으로 마무리(컬렉션 자동 열림 생략)
+          if (i < steps.length) setTimeout(tick, 100);
         };
-        tick();
+        // 첫 물방울이 떨어지기 시작한 뒤 ~250ms 후부터 성장 캐스케이드 → 총 ~1.25초
+        setTimeout(tick, 250);
         return;
       }
       if (wateredToday()) return;
