@@ -751,7 +751,26 @@
 
     /* ============ Watering ============ */
     function water() {
-      if (!DEMO_MODE && wateredToday()) return;
+      /* 데모 모드: 한 번 누르면 1초 안에 모든 단계를 거쳐 완성형으로 자람 */
+      if (DEMO_MODE) {
+        const id = state.current;
+        if (state.water[id] >= MAX_WATER) return; // already full
+        const svg = document.getElementById('plantSvg');
+        if (svg) { svg.classList.remove('wilted'); svg.classList.add('watering'); }
+        const steps = STAGE_THRESHOLDS.slice(1).concat([MAX_WATER]); // 10 frames: 2,4,7,10,13,17,21,25,30,30
+        let i = 0;
+        const tick = () => {
+          state.water[id] = steps[i];
+          state.lastWater = todayStr();
+          render();
+          i++;
+          if (i < steps.length) setTimeout(tick, 100); // ~100ms per stage → ~1초
+          // 데모에선 완성형으로 마무리(컬렉션 자동 열림 생략)
+        };
+        tick();
+        return;
+      }
+      if (wateredToday()) return;
       // completed plants (30/30) can still be watered daily — count stays capped at MAX_WATER,
       // so the plant keeps its final form while daily care/streak continues.
       const today = todayStr();
