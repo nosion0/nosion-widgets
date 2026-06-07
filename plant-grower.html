@@ -654,14 +654,18 @@
       if (saved && typeof saved === 'object') state = Object.assign(state, saved);
     } catch (e) {}
 
-    /* URL 데모 파라미터 ?demo=<plantId> -> 그 식물을 다 자란 상태로 시뮬레이트 (저장 안 함) */
+    /* URL 데모 파라미터
+       ?demo=<plantId>          → 새싹부터 시작, 클릭마다 자람 (일일 제한 없음, localStorage 저장 안 함)
+       ?demo=<plantId>&grown=1  → 다 자란 상태로 바로 표시 */
+    let DEMO_MODE = false;
     try {
       const u = new URL(location.href);
       const demo = u.searchParams.get('demo');
+      const grown = u.searchParams.get('grown');
       if (demo) {
-        const today = new Date();
-        const ymd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-        state = { current: demo, water: { [demo]: 30 }, lastWater: ymd, streak: 30, best: 30 };
+        DEMO_MODE = true;
+        const waterCount = grown ? 30 : 0;
+        state = { current: demo, water: { [demo]: waterCount }, lastWater: null, streak: 0, best: 0 };
       }
     } catch (e) {}
     if (!state.water || typeof state.water !== 'object' || Array.isArray(state.water)) state.water = {};
@@ -675,7 +679,7 @@
     if (typeof state.best !== 'number' || !Number.isFinite(state.best) || state.best < 0) state.best = 0;
     if (typeof state.lastWater !== 'string') state.lastWater = null;
 
-    function save() { try { localStorage.setItem(K_STATE, JSON.stringify(state)); } catch (e) {} }
+    function save() { if (DEMO_MODE) return; try { localStorage.setItem(K_STATE, JSON.stringify(state)); } catch (e) {} }
 
     /* ============ Date helpers ============ */
     function todayStr() {
@@ -715,9 +719,11 @@
     const waterBtnLabel = document.getElementById('waterBtnLabel');
 
     function isWilted() {
+      if (DEMO_MODE) return false;
       return daysBetween(state.lastWater, todayStr()) >= 2;
     }
     function wateredToday() {
+      if (DEMO_MODE) return false;
       return state.lastWater === todayStr();
     }
 
@@ -745,7 +751,7 @@
 
     /* ============ Watering ============ */
     function water() {
-      if (wateredToday()) return;
+      if (!DEMO_MODE && wateredToday()) return;
       // completed plants (30/30) can still be watered daily — count stays capped at MAX_WATER,
       // so the plant keeps its final form while daily care/streak continues.
       const today = todayStr();
