@@ -653,6 +653,17 @@
       const saved = JSON.parse(localStorage.getItem(K_STATE) || 'null');
       if (saved && typeof saved === 'object') state = Object.assign(state, saved);
     } catch (e) {}
+
+    /* URL 데모 파라미터 ?demo=<plantId> -> 그 식물을 다 자란 상태로 시뮬레이트 (저장 안 함) */
+    try {
+      const u = new URL(location.href);
+      const demo = u.searchParams.get('demo');
+      if (demo) {
+        const today = new Date();
+        const ymd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        state = { current: demo, water: { [demo]: 30 }, lastWater: ymd, streak: 30, best: 30 };
+      }
+    } catch (e) {}
     if (!state.water || typeof state.water !== 'object' || Array.isArray(state.water)) state.water = {};
     PLANTS.forEach(p => {
       let v = state.water[p.id];
