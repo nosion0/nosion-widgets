@@ -454,11 +454,12 @@
     }
     #card.card.dragging { cursor: grabbing; }
     #card.card > .card-body { flex: 1 1 auto; min-height: 0; }
-    /* .controls를 카드 바깥 우측으로 — 마우스 오버 시 노출 */
+    /* .controls를 카드 바깥 우측으로 — 마우스 오버 시 노출 (호버 브리지로 끊김 방지) */
     #w.card { overflow: visible; }
+    #w.card::after { content: ''; position: absolute; top: 0; bottom: 0; right: -40px; width: 40px; pointer-events: auto; }
     #w .controls { position: absolute; top: 0.5rem; right: -34px; left: auto; bottom: auto;
-      display: flex; flex-direction: column; gap: 4px; opacity: 0; transition: opacity 0.2s ease; z-index: 30; padding: 0; pointer-events: none; }
-    #w:hover .controls { opacity: 1; pointer-events: auto; }
+      display: flex; flex-direction: column; gap: 4px; opacity: 0; transition: opacity 0.2s ease 0.1s; z-index: 30; padding: 0; pointer-events: none; }
+    #w:hover .controls, #w .controls:hover { opacity: 1; pointer-events: auto; transition-delay: 0s; }
     .control-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
       background: none; border: none; color: rgba(115,115,115,0.5); cursor: pointer; transition: color var(--transition); border-radius: 4px; }
     .control-btn:hover:not(:disabled) { color: var(--foreground); }
@@ -532,13 +533,6 @@
           <polyline points="9 21 3 21 3 15"/>
           <line x1="21" y1="3" x2="14" y2="10"/>
           <line x1="3" y1="21" x2="10" y2="14"/>
-        </svg>
-      </button>
-      <button class="control-btn" id="themeBtn"
-              data-tooltip="테마 전환" title="테마 전환"
-              type="button" aria-label="라이트/다크 모드 전환">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
       </button>
     </div>
