@@ -83,9 +83,11 @@
     }
     #card.card.dragging { cursor: grabbing; }
     #card.card > .card-body { flex: 1 1 auto; min-height: 0; }
-    .controls { position: absolute; top: 0.75rem; right: 0.75rem; left: auto; bottom: auto;
-      display: flex; flex-direction: row; gap: 2px; opacity: 0; transition: opacity var(--transition); z-index: 30; padding: 0; }
-    #card.card:hover .controls { opacity: 1; }
+    /* .controls를 카드 바깥 우측으로 — 마우스 오버 시 노출 */
+    #w.card { overflow: visible; }
+    #w .controls { position: absolute; top: 0.5rem; right: -34px; left: auto; bottom: auto;
+      display: flex; flex-direction: column; gap: 4px; opacity: 0; transition: opacity 0.2s ease; z-index: 30; padding: 0; pointer-events: none; }
+    #w:hover .controls { opacity: 1; pointer-events: auto; }
     .control-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
       background: none; border: none; color: rgba(115,115,115,0.5); cursor: pointer; transition: color var(--transition); border-radius: 4px; }
     .control-btn:hover:not(:disabled) { color: var(--foreground); }
