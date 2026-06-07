@@ -353,6 +353,9 @@
     /* 좌상단 호버 패널 (컬렉션) — 카드 내부로 이동 */
     #card.card > .left-panel { position: absolute; top: 0.75rem; left: 0.75rem; z-index: 30; margin: 0; }
     #card.card:hover .left-panel, #card.card:focus-within .left-panel { opacity: 1; pointer-events: auto; }
+    /* 호버 시 식물 이름·물주기 버튼 노출 */
+    #w:hover .info-top, #w:hover .info-bottom { opacity: 1; }
+    #w:hover .info-bottom { pointer-events: auto; }
   
     /* === NOSION FRAME SPEC (드래그 이동 + 8방향 리사이즈) === */
     html,body{background:transparent;height:100%;overflow:hidden;}
@@ -362,7 +365,7 @@
     .card.dragging,.card.resizing{user-select:none;box-shadow:0 12px 36px rgba(55,53,47,.16);}
     .whead{flex:none;cursor:grab;min-height:20px;width:100%;position:relative;z-index:2;background:inherit;}
     .whead:active{cursor:grabbing;}
-    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
+    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden;width:100%;align-self:stretch;}
     .rz{position:absolute;z-index:5;}
     .rz.n{top:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
     .rz.s{bottom:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
