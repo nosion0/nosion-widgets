@@ -159,6 +159,36 @@
       color: var(--foreground);
     }
 
+    .action-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.375rem;
+      flex-wrap: wrap;
+    }
+
+    .action-row.hidden { display: none; }
+
+    /* 카드 높이가 고정이라, 버튼 줄과 자리를 맞바꿔 레이아웃이 밀리지 않게 한다 */
+    .share-url {
+      display: none;
+      width: 100%;
+      padding: 0.4375rem 0.75rem;
+      border: 1px solid var(--foreground);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--foreground);
+      font-family: inherit;
+      font-size: 0.6875rem;
+      letter-spacing: -0.005em;
+      text-align: center;
+      outline: none;
+    }
+    .share-url.show { display: block; }
+    .share-url:focus {
+      border-color: var(--foreground);
+      color: var(--foreground);
+    }
+
     /* ── 설정 모드 ── */
     .setup-mode { display: none; flex-direction: column; text-align: left; }
     .setup-mode.show { display: flex; }
@@ -447,12 +477,22 @@
         <div class="divider"></div>
         <div class="target-date-display" id="targetDateDisplay"></div>
 
-        <button class="edit-btn" id="openSetupBtn" type="button">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z"/>
-          </svg>
-          날짜 변경
-        </button>
+        <div class="action-row" id="actionRow">
+          <button class="edit-btn" id="openSetupBtn" type="button">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z"/>
+            </svg>
+            날짜 변경
+          </button>
+          <button class="edit-btn" id="copyUrlBtn" type="button">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="5.75" y="5.75" width="8" height="8" rx="1.5"/>
+              <path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1"/>
+            </svg>
+            <span id="copyUrlLabel">주소 복사</span>
+          </button>
+        </div>
+        <input class="share-url" id="shareUrl" type="text" readonly aria-label="설정이 담긴 위젯 주소" />
       </div>
 
       <!-- 첫 실행 -->
@@ -536,6 +576,12 @@
     const targetDateDisplayEl = document.getElementById('targetDateDisplay');
     const inputTitleEl = document.getElementById('inputTitle');
     const inputDateEl = document.getElementById('inputDate');
+    const shareUrlEl = document.getElementById('shareUrl');
+    const actionRowEl = document.getElementById('actionRow');
+    const copyUrlLabelEl = document.getElementById('copyUrlLabel');
+
+    let currentData = null;
+    let fromUrlParams = false;
 
     function loadData() {
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; }
@@ -555,6 +601,30 @@
     function parseLocalDate(dateStr) {
       const [y, m, d] = dateStr.split('-').map(Number);
       return new Date(y, m - 1, d);
+    }
+
+    function toLocalISO(d) {
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+
+    /**
+     * ?d=YYYY-MM-DD&t=이벤트이름
+     * 임베드 주소 자체에 설정을 실어, 기기가 바뀌거나 브라우저가 저장소를 비워도 그대로 뜨게 한다.
+     * localStorage는 파라미터가 없을 때만 쓰는 보조 수단.
+     */
+    function readParams() {
+      const p = new URLSearchParams(location.search);
+      const date = p.get('d') || p.get('date');
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+      const parsed = parseLocalDate(date);
+      if (isNaN(parsed) || toLocalISO(parsed) !== date) return null;
+      const title = (p.get('t') || p.get('title') || '').trim().slice(0, 30);
+      return { title: title || '목표일', date };
+    }
+
+    function buildShareUrl(data) {
+      return `${location.origin}${location.pathname}?d=${data.date}&t=${encodeURIComponent(data.title)}`;
     }
 
     function calcDday(targetDateStr) {
@@ -578,6 +648,8 @@
 
     function renderDisplay(data) {
       showOnly(displayModeEl);
+      currentData = data;
+      resetShareUI();
       const diff = calcDday(data.date);
       eventTitleEl.textContent = data.title || '목표일';
       targetDateDisplayEl.textContent = formatDate(data.date);
@@ -599,8 +671,49 @@
 
     function renderFirst() { showOnly(firstRunEl); }
 
+    let copyTimer = null;
+
+    function resetShareUI() {
+      clearTimeout(copyTimer);
+      shareUrlEl.classList.remove('show');
+      shareUrlEl.value = '';
+      actionRowEl.classList.remove('hidden');
+      copyUrlLabelEl.textContent = '주소 복사';
+      if (currentData) targetDateDisplayEl.textContent = formatDate(currentData.date);
+    }
+
+    function copyShareUrl() {
+      if (!currentData) return;
+      const url = buildShareUrl(currentData);
+      // 주소로 띄운 위젯은 이 주소를 임베드에 다시 넣어야 수정이 유지된다.
+      targetDateDisplayEl.textContent = '이 주소를 노션 임베드에 붙여넣으세요';
+
+      // 임베드된 iframe은 클립보드 권한이 막히는 경우가 많다.
+      // 그때는 버튼 줄을 주소창으로 바꿔 직접 복사할 수 있게 한다.
+      const manual = () => {
+        actionRowEl.classList.add('hidden');
+        shareUrlEl.classList.add('show');
+        shareUrlEl.value = url;
+        shareUrlEl.focus();
+        shareUrlEl.setSelectionRange(0, url.length);
+        try { document.execCommand('copy'); } catch (e) {}
+        clearTimeout(copyTimer);
+        copyTimer = setTimeout(resetShareUI, 8000);
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          copyUrlLabelEl.textContent = '복사됨';
+          clearTimeout(copyTimer);
+          copyTimer = setTimeout(resetShareUI, 4000);
+        }, manual);
+        return;
+      }
+      manual();
+    }
+
     function openSetup() {
-      const data = loadData();
+      const data = currentData || loadData();
       showOnly(setupModeEl);
       if (data) {
         inputTitleEl.value = data.title || '';
@@ -609,13 +722,13 @@
         inputTitleEl.value = '';
         const d = new Date();
         d.setDate(d.getDate() + 30);
-        inputDateEl.value = d.toISOString().slice(0, 10);
+        inputDateEl.value = toLocalISO(d);
       }
       setTimeout(() => inputTitleEl.focus(), 0);
     }
 
     function cancelSetup() {
-      const data = loadData();
+      const data = currentData || loadData();
       if (data) renderDisplay(data);
       else renderFirst();
     }
@@ -629,13 +742,19 @@
       }
       const data = { title, date };
       saveData(data);
+      // 주소에 파라미터가 남아 있으면 새로고침 때 수정 전 값이 되살아난다. 주소도 함께 맞춰준다.
+      try { history.replaceState(null, '', buildShareUrl(data)); } catch (e) {}
       renderDisplay(data);
+      // 임베드는 새로고침 때 원래 src로 돌아가므로, 주소로 띄운 위젯의 수정은
+      // 새 주소를 임베드에 다시 넣어야 유지된다. 바로 복사해서 알려준다.
+      if (fromUrlParams) copyShareUrl();
     }
 
     document.getElementById('openSetupBtn').addEventListener('click', (e) => { e.stopPropagation(); openSetup(); });
     document.getElementById('firstStartBtn').addEventListener('click', (e) => { e.stopPropagation(); openSetup(); });
     document.getElementById('cancelSetupBtn').addEventListener('click', (e) => { e.stopPropagation(); cancelSetup(); });
     document.getElementById('saveSetupBtn').addEventListener('click', (e) => { e.stopPropagation(); saveSetup(); });
+    document.getElementById('copyUrlBtn').addEventListener('click', (e) => { e.stopPropagation(); copyShareUrl(); });
 
     // 매 자정 갱신
     function scheduleNextDay() {
@@ -645,14 +764,15 @@
       tomorrow.setHours(0, 0, 0, 0);
       const ms = tomorrow - now;
       setTimeout(() => {
-        const data = loadData();
-        if (data && displayModeEl.classList.contains('show')) renderDisplay(data);
+        if (currentData && displayModeEl.classList.contains('show')) renderDisplay(currentData);
         scheduleNextDay();
       }, ms);
     }
 
     (function init() {
-      const data = loadData();
+      const params = readParams();
+      fromUrlParams = !!params;
+      const data = params || loadData();
       if (data) renderDisplay(data);
       else renderFirst();
       scheduleNextDay();
