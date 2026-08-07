@@ -446,7 +446,7 @@
     .card.dragging,.card.resizing{user-select:none;box-shadow:0 12px 36px rgba(55,53,47,.16);}
     .whead{flex:none;cursor:grab;min-height:20px;width:100%;position:relative;z-index:2;background:inherit;}
     .whead:active{cursor:grabbing;}
-    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden;width:100%;align-self:stretch;}
+    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:safe center;overflow-y:auto;overflow-x:hidden;width:100%;align-self:stretch;}
     .rz{position:absolute;z-index:5;}
     .rz.n{top:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
     .rz.s{bottom:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
@@ -619,8 +619,17 @@
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
       const parsed = parseLocalDate(date);
       if (isNaN(parsed) || toLocalISO(parsed) !== date) return null;
-      const title = (p.get('t') || p.get('title') || '').trim().slice(0, 30);
+      const title = trimTitle(p.get('t') || p.get('title') || '');
       return { title: title || '목표일', date };
+    }
+
+    /**
+     * 30자로 자를 때 이모지(서로게이트 페어)가 반토막 나면 홀로 남은 조각 때문에
+     * encodeURIComponent가 URIError를 던진다. 잘린 조각은 떼어낸다.
+     */
+    function trimTitle(s) {
+      const t = String(s).trim().slice(0, 30);
+      return /[\uD800-\uDBFF]$/.test(t) ? t.slice(0, -1) : t;
     }
 
     function buildShareUrl(data) {
@@ -696,7 +705,9 @@
         shareUrlEl.value = url;
         shareUrlEl.focus();
         shareUrlEl.setSelectionRange(0, url.length);
-        try { document.execCommand('copy'); } catch (e) {}
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) {}
+        if (ok) { resetShareUI(); copyUrlLabelEl.textContent = '복사됨'; copyTimer = setTimeout(resetShareUI, 4000); return; }
         clearTimeout(copyTimer);
         copyTimer = setTimeout(resetShareUI, 8000);
       };
@@ -734,7 +745,7 @@
     }
 
     function saveSetup() {
-      const title = inputTitleEl.value.trim() || '목표일';
+      const title = trimTitle(inputTitleEl.value) || '목표일';
       const date = inputDateEl.value;
       if (!date) {
         inputDateEl.focus();
@@ -755,6 +766,9 @@
     document.getElementById('cancelSetupBtn').addEventListener('click', (e) => { e.stopPropagation(); cancelSetup(); });
     document.getElementById('saveSetupBtn').addEventListener('click', (e) => { e.stopPropagation(); saveSetup(); });
     document.getElementById('copyUrlBtn').addEventListener('click', (e) => { e.stopPropagation(); copyShareUrl(); });
+    // 주소창이 떠 있는 8초 동안 버튼 줄이 가려지므로, 언제든 빠져나올 수 있게 한다
+    shareUrlEl.addEventListener('blur', () => { if (shareUrlEl.classList.contains('show')) resetShareUI(); });
+    shareUrlEl.addEventListener('keydown', (e) => { if (e.key === 'Escape') resetShareUI(); });
 
     // 매 자정 갱신
     function scheduleNextDay() {
@@ -818,6 +832,12 @@
     function u(){card.classList.remove('resizing');save();
       document.removeEventListener('pointermove',m);document.removeEventListener('pointerup',u);}
     document.addEventListener('pointermove',m);document.addEventListener('pointerup',u);}
+  var resetBtn=document.getElementById('resizeResetBtn');
+  if(resetBtn)resetBtn.addEventListener('click',function(e){e.stopPropagation();
+    try{localStorage.removeItem(KEY);}catch(err){}
+    var w=Math.min(DEFW,window.innerWidth-28),h=Math.min(DEFH,window.innerHeight-28);
+    frame={x:(window.innerWidth-w)/2,y:Math.max(14,(window.innerHeight-h)/2),w:w,h:h};
+    apply();save();});
   window.addEventListener('resize',apply);
   apply();
 })();

@@ -105,7 +105,7 @@
     .card.dragging,.card.resizing{user-select:none;box-shadow:0 12px 36px rgba(55,53,47,.16);}
     .whead{flex:none;cursor:grab;min-height:20px;width:100%;position:relative;z-index:2;background:inherit;}
     .whead:active{cursor:grabbing;}
-    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden;width:100%;align-self:stretch;}
+    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:safe center;overflow-y:auto;overflow-x:hidden;width:100%;align-self:stretch;}
     .rz{position:absolute;z-index:5;}
     .rz.n{top:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
     .rz.s{bottom:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
@@ -140,7 +140,7 @@
 
         <button class="add-btn" id="addBtn" type="button">＋ 한 잔</button>
 
-        <div class="footer" id="footer">한 잔 = 250㎖</div>
+        <div class="footer" id="footer">한 잔 = 250㎖ · 채운 잔을 누르면 취소</div>
       </div>
 
 
@@ -171,6 +171,7 @@
     })();
     const CUP_ML = 250;
     const GOALS = [6, 8, 10];
+    const MAX_CUPS = 30;   // 목표 초과도 기록하되 폭주는 막는다
     const STORE_KEY = 'nosion-water-v1';
 
     const countEl = document.getElementById('count');
@@ -193,7 +194,7 @@
       if (s) {
         if (GOALS.indexOf(s.goal) >= 0) goal = s.goal;
         // 날짜 다르면 0으로 리셋, 이상값(음수/소수)은 방어
-        if (s.date === todayStr() && typeof s.count === 'number' && isFinite(s.count)) count = Math.max(0, Math.floor(s.count));
+        if (s.date === todayStr() && typeof s.count === 'number' && isFinite(s.count)) count = Math.min(MAX_CUPS, Math.max(0, Math.floor(s.count)));
       }
     } catch (e) {}
 
@@ -202,16 +203,20 @@
     }
 
     function render() {
-      if (count > goal) count = goal;
       countEl.textContent = count;
       goalNumEl.textContent = goal;
-      const liters = (count * CUP_ML / 1000).toFixed(2).replace(/0$/, '');
+      // toFixed(2) 뒤 0을 하나만 지우면 4잔이 "1.0 L"이 된다. 숫자로 되돌려 정규화한다.
+      const liters = String(+(count * CUP_ML / 1000).toFixed(2));
       const left = goal - count;
-      subEl.textContent = left > 0 ? `${liters} L · 목표까지 ${left}잔` : `${liters} L · 목표 달성! 🎉`;
+      subEl.textContent = left > 0
+        ? `${liters} L · 목표까지 ${left}잔`
+        : (left === 0 ? `${liters} L · 목표 달성! 🎉` : `${liters} L · 목표 달성! 🎉 +${-left}잔`);
 
+      // 목표를 넘겨 마신 잔도 그대로 보여준다 (기록을 잘라내지 않는다)
+      const cupCount = Math.max(goal, count);
       cupsEl.innerHTML = '';
-      cupsEl.style.gridTemplateColumns = `repeat(${Math.ceil(goal / 2)}, auto)`;
-      for (let i = 0; i < goal; i++) {
+      cupsEl.style.gridTemplateColumns = `repeat(${Math.ceil(cupCount / 2)}, auto)`;
+      for (let i = 0; i < cupCount; i++) {
         const cup = document.createElement('div');
         cup.className = 'cup' + (i < count ? ' full' : '');
         cup.setAttribute('role', 'button');
@@ -224,27 +229,27 @@
         });
         cupsEl.appendChild(cup);
       }
-      addBtn.disabled = count >= goal;
+      addBtn.disabled = count >= MAX_CUPS;
 
       document.querySelectorAll('.goal-btn').forEach(b => b.classList.toggle('active', +b.dataset.goal === goal));
     }
 
-    addBtn.addEventListener('click', () => { if (count < goal) { count += 1; save(); render(); } });
+    addBtn.addEventListener('click', () => { if (count < MAX_CUPS) { count += 1; save(); render(); } });
     document.getElementById('goalSel').addEventListener('click', (e) => {
       const b = e.target.closest('.goal-btn');
       if (!b) return;
+      // 목표만 바꾼다. 이미 마신 잔은 건드리지 않는다.
       goal = +b.dataset.goal;
-      if (count > goal) count = goal;
       save(); render();
     });
 
     render();
     // 자정 넘어가면 자동 리셋 감지 (열어둔 채로 날짜가 바뀌는 경우)
+    // 저장소가 차단된 환경에서도 동작하도록 화면이 들고 있는 날짜와 비교한다
+    let curDate = todayStr();
     setInterval(() => {
-      try {
-        const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
-        if (s && s.date !== todayStr()) { count = 0; save(); render(); }
-      } catch (e) {}
+      const t = todayStr();
+      if (t !== curDate) { curDate = t; count = 0; save(); render(); }
     }, 60 * 1000);
 </script>
   <script>
@@ -287,6 +292,12 @@
     function u(){card.classList.remove('resizing');save();
       document.removeEventListener('pointermove',m);document.removeEventListener('pointerup',u);}
     document.addEventListener('pointermove',m);document.addEventListener('pointerup',u);}
+  var resetBtn=document.getElementById('resizeResetBtn');
+  if(resetBtn)resetBtn.addEventListener('click',function(e){e.stopPropagation();
+    try{localStorage.removeItem(KEY);}catch(err){}
+    var w=Math.min(DEFW,window.innerWidth-28),h=Math.min(DEFH,window.innerHeight-28);
+    frame={x:(window.innerWidth-w)/2,y:Math.max(14,(window.innerHeight-h)/2),w:w,h:h};
+    apply();save();});
   window.addEventListener('resize',apply);
   apply();
 })();

@@ -377,7 +377,7 @@
     .card.dragging,.card.resizing{user-select:none;box-shadow:0 12px 36px rgba(55,53,47,.16);}
     .whead{flex:none;cursor:grab;min-height:20px;width:100%;position:relative;z-index:2;background:inherit;}
     .whead:active{cursor:grabbing;}
-    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden;width:100%;align-self:stretch;}
+    .wbody{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:safe center;overflow-y:auto;overflow-x:hidden;width:100%;align-self:stretch;}
     .rz{position:absolute;z-index:5;}
     .rz.n{top:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
     .rz.s{bottom:-4px;left:10px;right:10px;height:8px;cursor:ns-resize;}
@@ -604,6 +604,9 @@
       const completedMode = mode;  // setMode 호출 전에 캡처 (알림 텍스트 정확성)
 
       if (completedMode === 'focus') {
+        // 자정을 넘겨 열어둔 경우, 카운트를 올리기 전에 날짜를 먼저 정리해야 한다.
+        // (saveStats 안에서 정리하면 방금 올린 세션까지 0으로 지워진다)
+        refreshTodayKey();
         focusDone++;
         focusMins += MODES.focus.mins;
         saveStats();
@@ -673,7 +676,7 @@
 (function(){
   var card=document.getElementById('w');
   var head=card.querySelector('.whead');
-  var KEY='nosion-pomodoro-timer-frame', MINW=230, MINH=200, DEFW=340, DEFH=300;
+  var KEY='nosion-pomodoro-timer-frame', MINW=230, MINH=200, DEFW=340, DEFH=470;
   ['n','s','e','w','ne','nw','se','sw'].forEach(function(d){
     var el=document.createElement('div');el.className='rz '+d;el.setAttribute('data-rz',d);card.appendChild(el);
   });
@@ -709,6 +712,12 @@
     function u(){card.classList.remove('resizing');save();
       document.removeEventListener('pointermove',m);document.removeEventListener('pointerup',u);}
     document.addEventListener('pointermove',m);document.addEventListener('pointerup',u);}
+  var resetBtn=document.getElementById('resizeResetBtn');
+  if(resetBtn)resetBtn.addEventListener('click',function(e){e.stopPropagation();
+    try{localStorage.removeItem(KEY);}catch(err){}
+    var w=Math.min(DEFW,window.innerWidth-28),h=Math.min(DEFH,window.innerHeight-28);
+    frame={x:(window.innerWidth-w)/2,y:Math.max(14,(window.innerHeight-h)/2),w:w,h:h};
+    apply();save();});
   window.addEventListener('resize',apply);
   apply();
 })();
