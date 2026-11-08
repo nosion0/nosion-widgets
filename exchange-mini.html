@@ -54,6 +54,7 @@
       border-radius: var(--radius);
       padding: 1.125rem 1.375rem 1rem;
       width: 210px;
+      min-height: min-content;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -129,6 +130,9 @@
       font-variant-numeric: tabular-nums;
       min-height: 1em;
     }
+
+    .rate-source { font-size: 9px; line-height: 1.3; text-align: right; }
+    .rate-source a { color: var(--muted-foreground); opacity: 0.6; }
 
     /* === Resize handles === */
     .resize-handle {
@@ -221,6 +225,7 @@
         <span id="diff"></span>
         <span id="updatedTime"></span>
       </div>
+      <div class="rate-source"><a id="rateSource" href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer">Rates By Exchange Rate API</a></div>
 
       <div class="resize-handle handle-top" data-direction="top"><div class="bar"></div></div>
       <div class="resize-handle handle-bottom" data-direction="bottom"><div class="bar"></div></div>
@@ -263,14 +268,14 @@
       SGD: { country: '싱가포르', unit: 1 },
     };
 
-    const param = (new URLSearchParams(location.search).get('c') || 'JPY').toUpperCase();
-    const CODE  = CURRENCIES[param] ? param : 'JPY';
-    const { country, unit } = CURRENCIES[CODE];
+    const param = (new URLSearchParams(location.search).get('c') || 'JPY').trim().toUpperCase();
+    const CODE  = Object.hasOwn(CURRENCIES, param) ? param : null;
+    const { country, unit } = CURRENCIES[CODE] || { country: '—', unit: 1 };
 
     /* ===== localStorage keys (통화별 분리) ===== */
     const KEY_SIZE = `nosion-exchange-mini-${CODE}-size-v1`;
     const KEY_POS  = `nosion-exchange-mini-${CODE}-pos-v1`;
-    const KEY_HIST = 'nosion-exchange-mini-hist-v1';
+    const KEY_HIST = 'nosion-exchange-mini-source-hist-v2';
 
     /* ===== 컬러 국기 SVG (30x20) ===== */
     const FB = 'hsl(220 9% 84%)';
@@ -337,27 +342,47 @@
 
     /* ===== 초기 정적 표시 ===== */
     document.title = `${country} 환율`;
-    document.getElementById('flag').innerHTML = flagSvg(CODE, FLAGS[CODE]);
+    document.getElementById('flag').innerHTML = CODE ? flagSvg(CODE, FLAGS[CODE]) : '';
     document.getElementById('country').textContent = country;
-    document.getElementById('unitLabel').textContent = unit === 1 ? CODE : `${CODE} ${unit}`;
+    document.getElementById('unitLabel').textContent = CODE ? (unit === 1 ? CODE : `${CODE} ${unit}`) : '';
 
     /* ===== Fetch rates (primary + fallback, 무료·키 불필요) ===== */
-    async function fetchRates() {
+    async function fetchJson(url) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
       try {
-        const res = await fetch('https://open.er-api.com/v6/latest/KRW');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (data.result !== 'success' || !data.rates) throw new Error('bad payload');
-        return data.rates;
+        const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return await response.json();
+      } finally { clearTimeout(timer); }
+    }
+
+    function validateQuote(rates, asOf, source) {
+      const rate = rates?.[CODE];
+      if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0 ||
+          !Number.isFinite(unit / rate) || !Number.isFinite(asOf) ||
+          asOf > Date.now() + 300000 || asOf < Date.now() - 72 * 3600000) {
+        throw new Error('Invalid or stale quote');
+      }
+      return { rates, asOf, source };
+    }
+
+    async function fetchRates() {
+      if (!CODE) throw new Error('Unsupported currency');
+      try {
+        const data = await fetchJson('https://open.er-api.com/v6/latest/KRW');
+        if (data.result !== 'success' || data.base_code !== 'KRW' ||
+            typeof data.time_last_update_unix !== 'number') throw new Error('bad payload');
+        return validateQuote(data.rates, data.time_last_update_unix * 1000, 'er-api');
       } catch (e) { /* fall through */ }
 
-      const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/krw.json');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (!data.krw) throw new Error('bad payload');
+      const data = await fetchJson('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/krw.json');
+      if (!data.krw || !/^\d{4}-\d{2}-\d{2}$/.test(data.date)) throw new Error('bad payload');
+      const asOf = Date.parse(data.date + 'T00:00:00Z');
+      if (!Number.isFinite(asOf) || new Date(asOf).toISOString().slice(0, 10) !== data.date) throw new Error('bad date');
       const rates = {};
       Object.entries(data.krw).forEach(([k, v]) => { rates[k.toUpperCase()] = v; });
-      return rates;
+      return validateQuote(rates, asOf, 'currency-api');
     }
 
     /* ===== Value formatting ===== */
@@ -377,7 +402,10 @@
 
     /* ===== History (전일 대비 비교용, 통화별 병합 저장) ===== */
     function loadHist() {
-      try { return JSON.parse(localStorage.getItem(KEY_HIST) || '{}'); }
+      try {
+        const hist = JSON.parse(localStorage.getItem(KEY_HIST) || '{}');
+        return hist && typeof hist === 'object' && !Array.isArray(hist) ? hist : {};
+      }
       catch (e) { return {}; }
     }
 
@@ -388,30 +416,34 @@
     }
 
     /* ===== Render ===== */
-    function render(rates) {
+    function render(quote) {
+      const { rates, asOf, source } = validateQuote(quote.rates, quote.asOf, quote.source);
+      const sourceLink = document.getElementById('rateSource');
+      sourceLink.textContent = source === 'er-api' ? 'Rates By Exchange Rate API' : 'Currency API';
+      sourceLink.href = source === 'er-api' ? 'https://www.exchangerate-api.com' : 'https://github.com/fawazahmed0/exchange-api';
       const per = rates[CODE];
       if (!per) { renderError(); return; }
       const krw = unit / per;
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date(asOf).toISOString().slice(0, 10);
       const hist = loadHist();
-      const prevDate = Object.keys(hist).filter(d => d < today).sort().pop();
-      const prev = prevDate ? hist[prevDate] : null;
+      const prevDate = new Date(Date.parse(today + 'T00:00:00Z') - 86400000).toISOString().slice(0, 10);
+      const prev = hist[prevDate]?.[CODE];
 
       document.getElementById('value').innerHTML =
         `${fmtValue(krw)}<span class="won">원</span>`;
 
       let diffText = '';
-      if (prev && prev[CODE]) {
-        const d = krw - prev[CODE];
+      if (prev?.source === source && Number.isFinite(prev.krw) && prev.krw > 0) {
+        const d = krw - prev.krw;
         if (Math.abs(d) >= 0.005) diffText = fmtDiff(d);
       }
       document.getElementById('diff').textContent = diffText;
 
-      hist[today] = Object.assign({}, hist[today], { [CODE]: krw });
+      hist[today] = Object.assign({}, hist[today], { [CODE]: { krw, source } });
       saveHist(hist);
 
-      const now = new Date();
+      const now = new Date(asOf);
       document.getElementById('updatedTime').textContent =
         now.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) + ' ' +
         now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
@@ -423,14 +455,20 @@
       document.getElementById('updatedTime').textContent = '';
     }
 
+    let refreshing = false;
     async function refresh() {
+      if (refreshing) return;
+      refreshing = true;
       const btn = document.getElementById('refreshBtn');
+      btn.disabled = true;
       btn.classList.add('loading');
       try {
         render(await fetchRates());
       } catch (e) {
         renderError();
       } finally {
+        refreshing = false;
+        btn.disabled = false;
         btn.classList.remove('loading');
       }
     }
